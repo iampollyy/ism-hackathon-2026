@@ -64,7 +64,7 @@ AGENTS: dict[str, dict[str, Any]] = {
                          "family. Have you got two minutes?",
         "max_duration_seconds": 360,
         "overrides": False,
-        "tools": ["consent_result"],
+        "tools": ["consent_result", "voice_consent_result"],
         "placeholders": {"member_name": "Sara", "organiser_name": "Jon", "family_name": "The Kovacs"},
     },
     "practice": {

@@ -36,7 +36,7 @@ const memberId = decodeURIComponent(location.pathname.split("/").filter(Boolean)
 const $ = (id) => document.getElementById(id);
 const S = { view: "waiting", phone: null, callId: null, kind: null, session: null, conv: null,
             queue: [], flushing: false, flushTimer: null, finished: false, startedAt: 0,
-            audio: null, ringTimer: null, result: null, revealText: "" };
+            audio: null, ringTimer: null, result: null, revealText: "", rec: null };
 
 function log(...parts) {
   const line = new Date().toLocaleTimeString() + "  " + parts.map(p => typeof p === "string" ? p : JSON.stringify(p)).join(" ");
@@ -93,6 +93,38 @@ async function poll() {
   } catch (e) { log("phone-state failed:", String(e)); }
 }
 
+// ------------------------------------------------------------ the member's own side of a welcome call (track 2)
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(
+      { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    const type = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"]
+      .find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || "";
+    const recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const chunks = [];
+    recorder.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    recorder.start(1000);
+    S.rec = { stream, recorder, chunks, type: recorder.mimeType || type || "audio/webm" };
+    log("recording your side of the call");
+  } catch (e) { S.rec = null; log("recording failed:", String(e)); }
+}
+
+async function uploadRecording(callId) {
+  const rec = S.rec; S.rec = null;
+  if (!rec) return;
+  if (rec.recorder.state !== "inactive") await new Promise(r => { rec.recorder.onstop = r; rec.recorder.stop(); });
+  rec.stream.getTracks().forEach(t => t.stop());
+  const blob = new Blob(rec.chunks, { type: rec.type });
+  if (!blob.size) return;
+  const form = new FormData();
+  form.append("audio", blob, rec.type.includes("mp4") ? "welcome.mp4" : "welcome.webm");
+  try {
+    const response = await fetch(`/api/calls/${callId}/voice-sample`, { method: "POST", body: form });
+    log("voice sample", response.status, await response.json().catch(() => null));
+  } catch (e) { log("voice sample failed:", String(e)); }
+}
+
 // ------------------------------------------------------------ the call
 
 function push(event) { S.queue.push(event); }
@@ -125,6 +157,7 @@ async function startConversation(session) {
   S.view = "in_call"; S.startedAt = Date.now(); render();
   log("session", session.kind, "voice override:", (session.overrides.tts || {}).voiceId || "none");
   S.flushTimer = setInterval(flush, 1000);
+  if (session.kind === "welcome") await startRecording();
   try {
     S.conv = await ElevenLabsClient.Conversation.startSession({
       conversationToken: session.conversation_token,
@@ -135,6 +168,7 @@ async function startConversation(session) {
         mark_tactic: (p) => { log("tactic", p.key); push({ type: "tactic", key: p.key }); },
         practice_result: (p) => { log("outcome", p.outcome); push({ type: "outcome", outcome: p.outcome }); },
         consent_result: (p) => { log("consent", p.given); push({ type: "consent", given: !!p.given }); },
+        voice_consent_result: (p) => { log("voice consent", p.given); push({ type: "voice_consent", given: p.given === true || p.given === "true" }); },
       },
       onConnect: () => log("connected"),
       onMessage: (m) => {
@@ -168,6 +202,7 @@ async function finish(endedBy, details) {
   await flush();
   try { await api(`/calls/${S.callId}/end`, { method: "POST", body: JSON.stringify({ ended_by: endedBy }) }); }
   catch (e) { log("end failed:", String(e)); }
+  if (S.kind === "welcome") uploadRecording(S.callId);
   S.conv = null;
   if (practice) {
     const voiceOf = (S.session.reveal || {}).voice_of;

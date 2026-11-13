@@ -6,7 +6,7 @@ Written on Friday 13 Nov at about 17:15, to go with [backend.md](backend.md) and
 
 | Agent | Layer | Runs on | Job | When |
 |---|---|---|---|---|
-| **Welcome** | Voice | ElevenLabs | Consent, then the five-question survey | Once per member |
+| **Welcome** | Voice | ElevenLabs | Consent, the voice question, then the five-question survey | Once per member |
 | **Practice** | Voice | ElevenLabs | Plays the scam caller, labels its own tactics, reveals | Each practice |
 | **Family line** | Voice | ElevenLabs | Answers the family number, confirms it was a practice | After a practice |
 | **Profiler** | Model job | Our back end | Welcome transcript to a readiness profile | After the welcome call |
@@ -50,7 +50,7 @@ The voice agents talk in real time and are configured on ElevenLabs. The model j
 | Longest call (`conversation.max_duration_seconds`) | 360 | 180 | 90 |
 | Authentication | On | On | On |
 | Overrides switched on | None | Voice ID; also system prompt and first message, as the fallback route | None |
-| Client tools | `consent_result` | `mark_tactic`, `practice_result` | None |
+| Client tools | `consent_result`, `voice_consent_result` | `mark_tactic`, `practice_result` | None |
 | System tools | `end_call` | `end_call` | `end_call` |
 | Variable placeholders | Set one for every variable | Set one for every variable | Set one for every variable |
 
@@ -60,7 +60,7 @@ The voice agents talk in real time and are configured on ElevenLabs. The model j
 
 ### Tools
 
-Client tools run in the phone page, which forwards each call to the back end. All three have "wait for response" off. Names are case-sensitive.
+Client tools run in the phone page, which forwards each call to the back end. All four have "wait for response" off. Names are case-sensitive. `voice_consent_result` (full app, track 2) is forwarded as a `voice_consent` event; what it starts is in [full-app/voice-from-call.md](full-app/voice-from-call.md).
 
 ```json
 [
@@ -76,6 +76,11 @@ Client tools run in the phone page, which forwards each call to the back end. Al
 
   { "type": "client", "name": "consent_result", "expects_response": false,
     "description": "Call this once, right after the person answers the question about receiving practice calls.",
+    "parameters": { "type": "object", "required": ["given"], "properties": {
+      "given": { "type": "boolean", "description": "true only for a clear yes" } } } },
+
+  { "type": "client", "name": "voice_consent_result", "expects_response": false,
+    "description": "Call this once, right after the person answers the question about using their voice from this call for practice calls to their family.",
     "parameters": { "type": "object", "required": ["given"], "properties": {
       "given": { "type": "boolean", "description": "true only for a clear yes" } } } }
 ]
@@ -193,27 +198,35 @@ spotting phone scams. You are friendly, unhurried and clear. You are talking to
    knowing when?" Then call consent_result with their answer. If the answer is
    not a clear yes, thank them, say nothing will be sent to them, and end the
    call.
-3. Ask the five questions below, one at a time. Let them talk. Ask one short
-   follow-up if an answer is a single word. Do not give advice and do not
-   correct them; this is to learn how they think.
+3. Ask about their voice: "One more thing. May Callback use your voice from
+   this call to make practice calls to your family, in your voice? It stays in
+   your family, and you can delete it any time." Then call
+   voice_consent_result with their answer. If the answer is not a clear yes,
+   say their voice will not be used. Either way, thank them and go on.
+4. Ask the five questions below, one at a time. They are open questions:
+   invite them to tell you a little more in their own words, for example "Tell
+   me a bit more about that." Ask one short follow-up if an answer is short.
+   Do not give advice and do not correct them; this is to learn how they think.
    a. "Has anyone ever phoned or messaged you pretending to be family, your
       bank or the police? What happened?"
    b. "If {{organiser_name}} rang from a new number, said they'd lost their
       phone and needed money today, what would you do first?"
    c. "Does your family have a secret word or question for checking it's really
       them? Don't tell me what it is; just say whether you have one."
-   d. "Who would you ring if something felt wrong?"
+   d. "Who would you ring if something felt wrong, and why them?"
    e. "How do you usually send money, and has anyone ever asked you to do it in
       an unusual way?"
-4. Close: thank them, and say the one habit: if a call asks for money or a
+5. Close: thank them, and say the one habit: if a call asks for money or a
    code, hang up and call the family number, or ask for the family word. Then
    call end_call.
 
 # Tone
-Short sentences, warm, never in a hurry. One question per turn.
+Short sentences, warm, never in a hurry. One question per turn. Let them do
+most of the talking, and keep the whole call to about three minutes.
 
 # Tools
 - consent_result: once, right after the consent answer.
+- voice_consent_result: once, right after the answer about their voice.
 - end_call: at the end, or straight after a refusal.
 
 # Guardrails
@@ -223,6 +236,8 @@ Short sentences, warm, never in a hurry. One question per turn.
 ```
 
 Question c differs from idea.md on purpose: it tells the person not to say the word, so that the word stays out of the transcript.
+
+Step 3 and the open questions are for the full app (track 2): the phone page records the person's own side of this call, and with their join tick and a clear yes to step 3 the back end clones their voice from it. About 30 to 60 seconds of their speech makes a good clone, so the questions invite them to talk, while the whole call stays near three minutes.
 
 ### The family line agent's prompt
 

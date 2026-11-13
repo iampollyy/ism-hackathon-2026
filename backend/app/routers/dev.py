@@ -3,8 +3,9 @@ has its phone page. Not part of backend.md's contract and not the product UI.
 
 GET /api/dev/phone/{member_id} serves app/static/dev_phone.html. The page
 uses only the public phone endpoints (phone-state, answer, events, end,
-family-line), exactly as the real phone page will, so it gives a member's
-link no extra power. It loads the ElevenLabs browser client from a CDN.
+family-line, and for a welcome call the voice-sample upload of the member's
+own microphone, track 2), exactly as the real phone page will, so it gives a
+member's link no extra power. It loads the ElevenLabs browser client from a CDN.
 """
 
 from pathlib import Path

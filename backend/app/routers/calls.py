@@ -19,7 +19,10 @@ Rules (docs/backend.md):
   `consent` with given=true sets consent_practice_at and writes a consents
   row (practice, welcome_call); given=false is an explicit no: it clears
   consent_practice_at and writes a row (practice_withdrawn, welcome_call),
-  so the consent gate refuses practice calls (services/consent.py). A batch
+  so the consent gate refuses practice calls (services/consent.py). A
+  welcome `voice_consent` (track 2) goes to services.voice_sample, which
+  records a yes and may start the clone of the call's recording; on other
+  kinds of call it is stored and changes nothing. A batch
   for a practice call that holds a caller turn (speaker "agent") starts the
   live risk check in the background (services.live_risk); the answer does
   not wait for it.
@@ -50,6 +53,7 @@ from app.db import get_db, now_iso, parse_time, seconds_between, to_iso, utcnow
 from app.ids import new_call_id
 from app.models import Call, CallEvent, Consent, Member, Result
 from app.services import briefs, consent, limits, live_risk, pipeline, run_in_background, sessions
+from app.services import voice_sample  # track 2
 
 log = logging.getLogger("app.calls")
 
@@ -392,9 +396,13 @@ async def post_events(call_id: str, body: schemas.EventsBatch,
             outcome_seen = True
         if item.type == "consent" and call.kind == "welcome":
             record_consent_answer(db, call, item.given)
+        if item.type == "voice_consent" and call.kind == "welcome":  # track 2
+            voice_sample.record_voice_consent(db, call, item.given)
         events.publish(call.id, item.type, data, db=db)  # commits the consent too
     if call.kind == "practice" and any(item.type == "turn" and item.speaker == "agent" for item in body.events):
         live_risk.start_check(call.id)  # in the background, on the transcript so far
+    if call.kind == "welcome" and any(item.type == "voice_consent" for item in body.events):
+        voice_sample.settle(call.id)  # a recording waiting for this answer: clone it, or let it go
     return schemas.Ok()
 
 
