@@ -204,3 +204,18 @@ class FamilyPlan(Base):
     bank_code: Mapped[str | None] = mapped_column(String)
     started_at: Mapped[str] = mapped_column(String, nullable=False)
     updated_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class WaitlistEntry(Base):
+    """Sign-ups from the landing page: families wanting early access, and
+    banks wanting to talk. Added on Saturday (routers/waitlist.py)."""
+
+    __tablename__ = "waitlist"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String, nullable=False)  # family | bank
+    organisation: Mapped[str | None] = mapped_column(String)
+    message: Mapped[str | None] = mapped_column(Text)
+    source: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)

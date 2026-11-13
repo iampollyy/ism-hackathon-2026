@@ -553,3 +553,19 @@ class FamilyPlanView(BaseModel):
 class PlanChoice(BaseModel):
     plan: Literal["family_monthly", "family_yearly", "bank"]
     bank_code: str | None = Field(default=None, max_length=40)
+
+
+# ---------------------------------------------------------------- waitlist (landing page)
+
+
+class WaitlistIn(BaseModel):
+    email: str = Field(min_length=5, max_length=200, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    kind: Literal["family", "bank"] = "family"
+    organisation: str | None = Field(default=None, max_length=120)
+    message: str | None = Field(default=None, max_length=1000)
+    source: str | None = Field(default=None, max_length=60)
+
+
+class WaitlistCount(BaseModel):
+    families: int
+    banks: int
