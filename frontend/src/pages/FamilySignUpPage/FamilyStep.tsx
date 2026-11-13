@@ -44,6 +44,7 @@ export function FamilyStep({ onCreated }: Props) {
     const remaining = rows.filter((row) => row.key !== key);
     setRows(remaining);
     if (organiser === key && remaining.length > 0) setOrganiser(remaining[0].key);
+    setErrors(({ [`name-${key}`]: _name, [`relationship-${key}`]: _relationship, ...rest }) => rest);
   };
 
   const validate = (): Errors => {

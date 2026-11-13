@@ -18,6 +18,11 @@ type Props = {
 
 type When = 'now' | 'later';
 
+const VOICE_GROUPS: { voice: ScenarioView['voice']; label: string }[] = [
+  { voice: 'clone', label: 'In a family voice (cloned)' },
+  { voice: 'library', label: "In a stranger's voice" },
+];
+
 function defaultTarget(members: MemberView[]): string {
   const candidates = members.filter((member) => !member.is_organiser);
   const pick =
@@ -65,6 +70,13 @@ export function PracticeForm({ familyId, members, week, scenarios, scenariosErro
       setVoiceId(voices[0].id);
     }
   }, [voices, voiceId]);
+
+  // An old error goes once anything it was about changes (a choice, or the phone opening).
+  const targetOnline = target?.phone_online;
+  const targetConsent = target?.consent.practice;
+  useEffect(() => {
+    setFailure(null);
+  }, [targetId, scenarioKey, voiceId, difficulty, when, minutes, targetOnline, targetConsent]);
 
   const voiceMember = members.find((member) => member.id === voiceId);
   const activeCall = week.find(
@@ -140,19 +152,26 @@ export function PracticeForm({ familyId, members, week, scenarios, scenariosErro
             disabled={scenarios.length === 0}
           >
             {scenarios.length === 0 ? <option value="">{scenariosError ? 'Could not load the stories' : 'Loading…'}</option> : null}
-            {scenarios.map((item) => (
-              <option key={item.key} value={item.key}>
-                {item.voice === 'clone' ? `${item.title} · family voice` : item.title}
-              </option>
-            ))}
+            {VOICE_GROUPS.map(({ voice, label }) => {
+              const group = scenarios.filter((item) => item.voice === voice);
+              return group.length > 0 ? (
+                <optgroup key={voice} label={label}>
+                  {group.map((item) => (
+                    <option key={item.key} value={item.key}>
+                      {item.title}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null;
+            })}
           </select>
         </label>
         {scenariosError ? <small className="field-error">{scenariosError}</small> : null}
         {scenario ? (
           <small className="form-hint">
             {usesClone
-              ? 'The caller sounds like someone in the family.'
-              : "The caller is a stranger, so no family voice is used."}
+              ? 'Uses a cloned family voice: the caller sounds like someone in the family.'
+              : "Uses a stranger's voice, so no family voice is cloned."}
           </small>
         ) : null}
 

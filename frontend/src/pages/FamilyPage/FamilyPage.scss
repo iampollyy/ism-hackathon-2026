@@ -42,6 +42,12 @@
     grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.75fr);
   }
 
+  // Panels keep their own height when the other column is taller.
+  .main-column,
+  .sidebar-column {
+    align-content: start;
+  }
+
   .family-stats {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 

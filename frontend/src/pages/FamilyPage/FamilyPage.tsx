@@ -31,35 +31,42 @@ export function FamilyPage() {
   const [scenarios, setScenarios] = useState<ScenarioView[]>([]);
   const [scenariosError, setScenariosError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const liveRef = useRef(true);
+  const refreshRef = useRef<() => void>(() => undefined);
 
-  const refresh = useCallback(async () => {
-    try {
-      const next = await api.getFamily(familyId);
-      if (!liveRef.current) return;
-      setFamily(next);
-      setLoadError(null);
-    } catch (error) {
-      if (!liveRef.current) return;
-      const notFound = error instanceof ApiError && error.status === 404;
-      setLoadError({
-        notFound,
-        message: error instanceof ApiError ? error.message : 'The family could not be loaded.',
-      });
-    }
-  }, [familyId]);
-
+  // Load the family, then again every few seconds (one request at a time).
+  // Answers for a family this page no longer shows are dropped.
   useEffect(() => {
-    liveRef.current = true;
+    let live = true;
+    let inFlight = false;
     setFamily(null);
     setLoadError(null);
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), REFRESH_MS);
+    const load = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const next = await api.getFamily(familyId);
+        if (!live) return;
+        setFamily(next);
+        setLoadError(null);
+      } catch (error) {
+        if (!live) return;
+        setLoadError({
+          notFound: error instanceof ApiError && error.status === 404,
+          message: error instanceof ApiError ? error.message : 'The family could not be loaded.',
+        });
+      } finally {
+        inFlight = false;
+      }
+    };
+    refreshRef.current = () => void load();
+    void load();
+    const timer = window.setInterval(() => void load(), REFRESH_MS);
     return () => {
-      liveRef.current = false;
+      live = false;
       window.clearInterval(timer);
     };
-  }, [refresh]);
+  }, [familyId]);
+  const refresh = useCallback(() => refreshRef.current(), []);
 
   useEffect(() => {
     let live = true;
@@ -219,7 +226,7 @@ export function FamilyPage() {
                   scenarios={scenarios}
                   selected={member.id === selected?.id}
                   onSelect={() => select(member.id)}
-                  onChanged={() => void refresh()}
+                  onChanged={refresh}
                 />
               ))}
             </div>

@@ -2,7 +2,7 @@
 // now, voice, phone, practice consent (with a toggle), the family word and the
 // next practice, and a button for the welcome call.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, PhoneIncoming } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
@@ -35,18 +35,27 @@ function voiceWords(member: MemberView): { text: string; good: boolean } {
 
 export function FamilyMemberCard({ member, index, familyId, safeWordSet, scenarios, selected, onSelect, onChanged }: Props) {
   const [consentBusy, setConsentBusy] = useState(false);
+  // The answer we just sent, shown until the next refresh of the family agrees.
+  const [consentSent, setConsentSent] = useState<boolean | null>(null);
   const [welcomeBusy, setWelcomeBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
+  useEffect(() => {
+    if (consentSent !== null && member.consent.practice === consentSent) setConsentSent(null);
+  }, [member.consent.practice, consentSent]);
+
+  const consent = consentSent ?? member.consent.practice;
   const voice = voiceWords(member);
   const nextStep = member.plan?.steps.find((step) => step.status !== 'done');
   const { before, now, max } = member.readiness;
 
   const toggleConsent = async () => {
+    const next = !consent;
     setConsentBusy(true);
     setNotice(null);
     try {
-      await api.setConsent(member.id, { consent_practice: !member.consent.practice });
+      await api.setConsent(member.id, { consent_practice: next });
+      setConsentSent(next);
       onChanged();
     } catch (error) {
       setNotice({ tone: 'bad', text: error instanceof ApiError ? error.message : 'Something went wrong. Please try again.' });
@@ -117,14 +126,14 @@ export function FamilyMemberCard({ member, index, familyId, safeWordSet, scenari
             <button
               type="button"
               role="switch"
-              aria-checked={member.consent.practice}
+              aria-checked={consent}
               aria-label={`${member.name} agrees to practice calls`}
-              className={`consent-switch${member.consent.practice ? ' on' : ''}`}
+              className={`consent-switch${consent ? ' on' : ''}`}
               onClick={toggleConsent}
               disabled={consentBusy}
             >
               <span className="switch-track" aria-hidden="true" />
-              <span>{member.consent.practice ? 'Agreed' : 'Not agreed'}</span>
+              <span>{consent ? 'Agreed' : 'Not agreed'}</span>
             </button>
           </dd>
         </div>
