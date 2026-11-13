@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from app.schemas import Outcome, ReadinessKey, ScenarioKey, Tactic
+from app.schemas import Outcome, ReadinessKey, RiskSignal, ScenarioKey, Tactic
 
 TrustsMost = Literal["family", "bank", "police", "hospital", "unknown"]
 
@@ -80,3 +80,8 @@ class Digest(BaseModel):  # Digest
 
 class WeeklyNote(BaseModel):  # the weekly note, one per person
     text: str
+
+
+class RiskCheck(BaseModel):  # the live risk check; code turns the signals into the level
+    signals: list[RiskSignal]
+    reason: str  # a few plain words for the laptop screen

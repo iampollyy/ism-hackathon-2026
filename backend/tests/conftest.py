@@ -1,8 +1,10 @@
 """Shared test fixtures.
 
 - `client`: a TestClient on a fresh temporary SQLite database, with
-  FAKE_ELEVENLABS on, the scheduler loop off, and every outside API key
-  blanked, so no test reaches the network by accident.
+  FAKE_ELEVENLABS on, the scheduler loop off, the live risk check off (its
+  background `risk` events would race tests that list a call's events), and
+  every outside API key (and the VAPID keys, so push is off) blanked, so no
+  test reaches the network by accident.
 - `db`: a session on that same database, for setting up or checking rows.
 - `make_family`: creates a family through the API and returns the response.
 """
@@ -20,10 +22,13 @@ from app.config import get_settings
 TEST_ENV = {
     "FAKE_ELEVENLABS": "true",
     "SCHEDULER_ENABLED": "false",
+    "RISK_CHECK_ENABLED": "false",  # tests/test_risk.py switches it on
     "ELEVENLABS_API_KEY": "",
     "OPENAI_API_KEY": "",
     "ANTHROPIC_API_KEY": "",
     "FIRECRAWL_API_KEY": "",
+    "VAPID_PUBLIC_KEY": "",  # push off; tests/test_push.py turns it on with a fake sender
+    "VAPID_PRIVATE_KEY": "",
     "ELEVENLABS_WELCOME_AGENT_ID": "agent_welcome_test",
     "ELEVENLABS_PRACTICE_AGENT_ID": "agent_practice_test",
     "ELEVENLABS_FAMILY_LINE_AGENT_ID": "agent_family_line_test",

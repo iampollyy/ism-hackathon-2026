@@ -33,7 +33,7 @@ log = logging.getLogger("app.briefs")
 # The phone rings only after the brief, so the whole director job gets 4 s.
 # The second-choice model is tried only if the first fails within that time;
 # a slow first model leaves the template, which is a complete call.
-DIRECTOR_TIMEOUT_SECONDS = 4.0
+DIRECTOR_TIMEOUT_SECONDS = 6.0  # the laptop waits for this when it starts a practice
 FALLBACK_SCENARIO = "relative_new_number"
 
 TEXT_FIELDS = ("caller_claim", "address_as", "opening_line", "scenario_brief", "ask")

@@ -7,9 +7,12 @@ with the error shape {"error": {"code", "message"}}.
 No shape here has a field for the safe word. Only `safe_word_set` exists.
 """
 
+import base64
+import re
 from typing import Annotated, Any, Literal, Union
+from urllib.parse import urlsplit
 
-from pydantic import BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field
 
 # ---------------------------------------------------------------- fixed lists
 
@@ -27,14 +30,21 @@ EndedBy = Literal["agent", "user", "timeout", "error"]
 Speaker = Literal["agent", "user"]
 VoiceStatus = Literal["none", "ready", "failed", "deleted"]
 MessageKind = Literal["weekly", "callback_notice", "reminder"]
-ConsentKind = Literal["clone", "practice", "opt_out"]
+ConsentKind = Literal["clone", "practice", "practice_withdrawn", "opt_out"]
 ConsentSource = Literal["voice_recording", "welcome_call", "manual"]
 ReadinessKey = Literal["verify_first", "safe_word", "trusted_contact", "payment_caution", "under_pressure"]
 EventType = Literal[
     "call.status", "turn", "tactic", "outcome", "revealed", "callback.connected", "result", "consent",
+    "risk",
 ]
+# The live risk check (agents/risk.py): the tactics, plus three signs that a
+# call is a scam. Code maps the signals to the level.
+RiskSignal = Literal[Tactic, "money_request", "asks_for_code", "refuses_callback"]
+RiskLevel = Literal["green", "yellow", "red"]
 
 TACTICS: tuple[str, ...] = Tactic.__args__  # type: ignore[attr-defined]
+RISK_SIGNALS: tuple[str, ...] = RiskSignal.__args__  # type: ignore[attr-defined]
+RISK_LEVELS: tuple[str, ...] = RiskLevel.__args__  # type: ignore[attr-defined]
 OUTCOMES: tuple[str, ...] = Outcome.__args__  # type: ignore[attr-defined]
 SCENARIOS: tuple[str, ...] = ScenarioKey.__args__  # type: ignore[attr-defined]
 READINESS_KEYS: tuple[str, ...] = ReadinessKey.__args__  # type: ignore[attr-defined]
@@ -48,6 +58,13 @@ TACTIC_LABELS: dict[str, str] = {
     "small_ask_first": "Small ask first",
     "isolation": "Don't call anyone",
     "unusual_payment": "Unusual payment",
+}
+
+RISK_SIGNAL_LABELS: dict[str, str] = {
+    **TACTIC_LABELS,
+    "money_request": "Asks for money",
+    "asks_for_code": "Asks for a code",
+    "refuses_callback": "Avoids a call-back",
 }
 
 OUTCOME_LABELS: dict[str, str] = {
@@ -124,6 +141,10 @@ class MemberLink(BaseModel):
 class FamilyCreated(BaseModel):
     family_id: str
     members: list[MemberLink]
+
+
+class ConsentUpdate(BaseModel):
+    consent_practice: bool  # the same tick as at sign-up, later: true gives consent, false withdraws it
 
 
 class ConsentView(BaseModel):
@@ -268,6 +289,18 @@ class TacticView(BaseModel):
     t: float | None
 
 
+class RiskPointView(BaseModel):
+    """One stored `risk` event: the light after one check (backend.md)."""
+
+    level: RiskLevel
+    signals: list[RiskSignal]
+    labels: list[str]
+    reason: str
+    turn_index: int  # index in CallView.turns of the last caller line checked
+    source: str  # the prompt version, or "fallback"
+    t: float | None
+
+
 class CallResultView(BaseModel):
     outcome: Outcome
     seconds_to_challenge: float | None
@@ -288,6 +321,7 @@ class CallView(BaseModel):
     caller_label: str | None
     turns: list[TurnView]
     tactics: list[TacticView]
+    risk: list[RiskPointView] = []  # the live risk check's results, in order (practice calls)
     result: CallResultView | None  # None until the call is scored
     callback_seconds: float | None
     answered_at: str | None = None
@@ -373,6 +407,63 @@ class PhoneState(BaseModel):
 
 class MessagesRead(BaseModel):
     ids: list[int] | None = None  # None: mark all as read
+
+
+# ---------------------------------------------------------------- web push
+
+# The push services the browsers use (Chrome and Android, Firefox, Safari and
+# iOS, Edge). We POST to the endpoint a page sends, so only these hosts are taken.
+PUSH_SERVICE_HOSTS = ("fcm.googleapis.com", "push.services.mozilla.com", "push.apple.com", "notify.windows.com")
+
+
+def _b64url_bytes(value: str) -> bytes:
+    if not re.fullmatch(r"[A-Za-z0-9_-]+={0,2}", value):
+        raise ValueError("must be URL-safe base64")
+    stripped = value.rstrip("=")
+    return base64.urlsafe_b64decode(stripped + "=" * (-len(stripped) % 4))
+
+
+def _p256dh(value: str) -> str:
+    raw = _b64url_bytes(value)
+    if len(raw) != 65 or raw[0] != 4:
+        raise ValueError("must be an uncompressed P-256 public key")
+    return value
+
+
+def _auth_secret(value: str) -> str:
+    if len(_b64url_bytes(value)) != 16:
+        raise ValueError("must be 16 bytes")
+    return value
+
+
+def _push_endpoint(value: str) -> str:
+    url = urlsplit(value)
+    host = (url.hostname or "").lower()
+    if url.scheme != "https" or not any(host == known or host.endswith("." + known)
+                                        for known in PUSH_SERVICE_HOSTS):
+        raise ValueError("must be the https address of a browser push service")
+    return value
+
+
+class PushKeys(BaseModel):
+    p256dh: Annotated[str, Field(max_length=200), AfterValidator(_p256dh)]
+    auth: Annotated[str, Field(max_length=100), AfterValidator(_auth_secret)]
+
+
+class PushSubscriptionIn(BaseModel):
+    """The browser's PushSubscription.toJSON(); expirationTime is ignored."""
+
+    endpoint: Annotated[str, Field(max_length=2048), AfterValidator(_push_endpoint)]
+    keys: PushKeys
+
+
+class PushSubscriptionRemove(BaseModel):
+    endpoint: str = Field(min_length=1, max_length=2048)  # toJSON() works here too
+
+
+class PushPublicKey(BaseModel):
+    enabled: bool  # False: push is off (no VAPID keys set); do not subscribe
+    public_key: str | None = None  # for pushManager.subscribe({applicationServerKey})
 
 
 # ---------------------------------------------------------------- scenarios

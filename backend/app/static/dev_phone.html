@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Callback test phone</title>
+<!-- A bare test phone for real calls before the real front end exists.
+     Served by the back end at /api/dev/phone/{member_id}. Not the product UI. -->
+<script src="https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.32.1/dist/lib.iife.js"></script>
+<style>
+  :root { --ink: #14213d; --bg: #f4f6f5; --card: #fff; --green: #1f9d55; --red: #d64545; --line: #dfe5e2; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--ink); }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #5b6475; margin: 0 0 16px; font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 12px; }
+  .big { font-size: 26px; font-weight: 700; margin: 0 0 6px; }
+  button { display: block; width: 100%; font-size: 19px; font-weight: 600; padding: 16px; margin: 10px 0 0;
+           border: 0; border-radius: 14px; background: #e2e8f0; color: var(--ink); }
+  button.green { background: var(--green); color: #fff; }
+  button.red { background: var(--red); color: #fff; }
+  .row { display: flex; gap: 10px; } .row button { flex: 1; }
+  .ring { animation: pulse 1s infinite; } @keyframes pulse { 50% { opacity: .55; } }
+  .msg { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; font-size: 15px; }
+  #log { font: 12px ui-monospace, monospace; white-space: pre-wrap; max-height: 35vh; overflow: auto;
+         background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+</style>
+</head>
+<body>
+<h1 id="who">Callback test phone</h1>
+<p class="sub">Test page. Keep it open and the screen on.</p>
+<div id="screen"></div>
+<details open><summary>Log</summary><div id="log"></div></details>
+<script>
+const memberId = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop());
+const $ = (id) => document.getElementById(id);
+const S = { view: "waiting", phone: null, callId: null, kind: null, session: null, conv: null,
+            queue: [], flushing: false, flushTimer: null, finished: false, startedAt: 0,
+            audio: null, ringTimer: null, result: null, revealText: "" };
+
+function log(...parts) {
+  const line = new Date().toLocaleTimeString() + "  " + parts.map(p => typeof p === "string" ? p : JSON.stringify(p)).join(" ");
+  $("log").textContent = line + "\n" + $("log").textContent.slice(0, 6000);
+}
+
+async function api(path, options = {}) {
+  const response = await fetch("/api" + path, { headers: { "Content-Type": "application/json" }, ...options });
+  const body = response.status === 204 ? null : await response.json().catch(() => null);
+  if (!response.ok) throw new Error(response.status + " " + JSON.stringify(body));
+  return body;
+}
+
+// ------------------------------------------------------------ sound
+
+async function soundOn() {
+  try {
+    S.audio = S.audio || new (window.AudioContext || window.webkitAudioContext)();
+    await S.audio.resume();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+    log("sound and microphone on");
+  } catch (e) { log("sound/microphone failed:", String(e)); }
+  render();
+}
+
+function beep() {
+  if (!S.audio) return;
+  const now = S.audio.currentTime;
+  for (const [start, freq] of [[0, 440], [0.25, 480]]) {
+    const osc = S.audio.createOscillator(), gain = S.audio.createGain();
+    osc.frequency.value = freq; gain.gain.value = 0.15;
+    osc.connect(gain).connect(S.audio.destination);
+    osc.start(now + start); osc.stop(now + start + 0.2);
+  }
+}
+function startRing() { stopRing(); beep(); S.ringTimer = setInterval(beep, 1500); }
+function stopRing() { clearInterval(S.ringTimer); S.ringTimer = null; }
+
+// ------------------------------------------------------------ phone state
+
+async function poll() {
+  try {
+    const phone = await api(`/members/${memberId}/phone-state`);
+    S.phone = phone;
+    const incoming = phone.incoming_call;
+    if (S.view === "waiting" && incoming) {
+      S.view = "ringing"; S.callId = incoming.call_id; S.kind = incoming.kind;
+      log("incoming", incoming.kind, incoming.call_id); startRing();
+    } else if (S.view === "ringing" && (!incoming || incoming.call_id !== S.callId)) {
+      log("stopped ringing"); stopRing(); S.view = "waiting";
+    }
+    render();
+  } catch (e) { log("phone-state failed:", String(e)); }
+}
+
+// ------------------------------------------------------------ the call
+
+function push(event) { S.queue.push(event); }
+
+async function flush() {
+  if (S.flushing || !S.callId || !S.queue.length) return;
+  S.flushing = true;
+  const batch = S.queue.splice(0, 100);
+  try { await api(`/calls/${S.callId}/events`, { method: "POST", body: JSON.stringify({ events: batch }) }); }
+  catch (e) { log("events failed:", String(e)); }
+  S.flushing = false;
+}
+
+async function answer() {
+  stopRing();
+  try {
+    const session = await api(`/calls/${S.callId}/answer`, { method: "POST" });
+    await startConversation(session);
+  } catch (e) { log("answer failed:", String(e)); S.view = "waiting"; render(); }
+}
+
+async function decline() {
+  stopRing();
+  try { await api(`/calls/${S.callId}/decline`, { method: "POST" }); } catch (e) { log("decline failed:", String(e)); }
+  S.view = "waiting"; render();
+}
+
+async function startConversation(session) {
+  S.session = session; S.kind = session.kind; S.finished = false; S.queue = []; S.result = null;
+  S.view = "in_call"; S.startedAt = Date.now(); render();
+  log("session", session.kind, "voice override:", (session.overrides.tts || {}).voiceId || "none");
+  S.flushTimer = setInterval(flush, 1000);
+  try {
+    S.conv = await ElevenLabsClient.Conversation.startSession({
+      conversationToken: session.conversation_token,
+      connectionType: "webrtc",
+      overrides: session.overrides,
+      dynamicVariables: session.dynamic_variables,
+      clientTools: {
+        mark_tactic: (p) => { log("tactic", p.key); push({ type: "tactic", key: p.key }); },
+        practice_result: (p) => { log("outcome", p.outcome); push({ type: "outcome", outcome: p.outcome }); },
+        consent_result: (p) => { log("consent", p.given); push({ type: "consent", given: !!p.given }); },
+      },
+      onConnect: () => log("connected"),
+      onMessage: (m) => {
+        const speaker = (m.role === "agent" || m.source === "ai") ? "agent" : "user";
+        const text = (m.message || "").trim().slice(0, 4000);
+        if (text) { log(speaker + ":", text); push({ type: "turn", speaker, text }); }
+      },
+      onModeChange: (m) => { S.mode = m.mode; render(); },
+      onError: (message) => log("error:", message),
+      onDisconnect: (d) => finish(d && d.reason === "user" ? "user" : d && d.reason === "agent" ? "agent" : "error", d),
+    });
+  } catch (e) {
+    log("startSession failed:", String(e));
+    finish("error");
+  }
+}
+
+async function hangUp() {
+  if (S.conv) { try { await S.conv.endSession(); } catch (e) { log("endSession:", String(e)); } }
+  finish("user");
+}
+
+async function finish(endedBy, details) {
+  if (S.finished) return;
+  S.finished = true;
+  log("call ended by", endedBy, details && details.reason === "error" ? details.message : "");
+  const practice = S.kind === "practice";
+  if (practice) push({ type: "revealed" });
+  clearInterval(S.flushTimer);
+  while (S.flushing) await new Promise(r => setTimeout(r, 100));
+  await flush();
+  try { await api(`/calls/${S.callId}/end`, { method: "POST", body: JSON.stringify({ ended_by: endedBy }) }); }
+  catch (e) { log("end failed:", String(e)); }
+  S.conv = null;
+  if (practice) {
+    const voiceOf = (S.session.reveal || {}).voice_of;
+    S.revealText = "This was a Callback practice call. The voice you heard was artificial, " +
+      (voiceOf ? `made with ${voiceOf}'s permission.` : "from a voice library.");
+    S.view = "reveal"; render(); waitForResult(S.callId);
+  } else {
+    S.view = "waiting"; render();
+  }
+}
+
+async function waitForResult(callId) {
+  for (let i = 0; i < 40; i++) {
+    try {
+      const call = await api(`/calls/${callId}`);
+      if (call.status === "scored") { S.result = call.result; log("scored", call.result); render(); return; }
+    } catch (e) { log("call view failed:", String(e)); }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+}
+
+async function familyNumber() {
+  try {
+    const started = await api(`/members/${memberId}/family-line`, { method: "POST" });
+    S.callId = started.call_id;
+    await startConversation(started.session);
+  } catch (e) { log("family line failed:", String(e)); }
+}
+
+// ------------------------------------------------------------ screens
+
+function render() {
+  const p = S.phone;
+  if (p) $("who").textContent = `${p.member.name} · ${p.member.family}`;
+  let html = "";
+  if (S.view === "waiting") {
+    html = `<div class="card"><p class="big">Callback is on</p><p>Waiting for a call.</p>
+      <button class="${S.audio ? "" : "green"}" onclick="soundOn()">${S.audio ? "Sound is on" : "Tap to switch on sound"}</button></div>`;
+    for (const m of (p && p.messages) || []) html += `<div class="card msg"><b>${m.kind}</b><br>${escapeHtml(m.text)}</div>`;
+  } else if (S.view === "ringing") {
+    const c = (p && p.incoming_call && p.incoming_call.caller) || { label: "Unknown number", number: "" };
+    html = `<div class="card ring"><p class="big">${escapeHtml(c.label)}</p><p>${escapeHtml(c.number)}</p></div>
+      <div class="row"><button class="red" onclick="decline()">Decline</button><button class="green" onclick="answer()">Answer</button></div>`;
+  } else if (S.view === "in_call") {
+    const title = S.kind === "family_line" ? "Family line" : S.kind === "welcome" ? "Callback" : "Unknown number";
+    const secs = Math.round((Date.now() - S.startedAt) / 1000);
+    html = `<div class="card"><p class="big">${title}</p><p>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")} · ${S.mode || "connecting"}</p></div>
+      <button class="red" onclick="hangUp()">End call</button>`;
+  } else if (S.view === "reveal") {
+    html = `<div class="card"><p class="big">Practice call</p><p>${escapeHtml(S.revealText)}</p>
+      <p><b>${S.result ? escapeHtml(S.result.lesson || "") : "Scoring…"}</b></p>
+      ${S.result ? `<p>Outcome: ${escapeHtml(S.result.outcome)}</p>` : ""}</div>
+      ${p && p.family_number && p.family_number.enabled ? `<button class="green" onclick="familyNumber()">Call the family number</button>` : ""}
+      <button onclick="S.view='waiting'; render()">Done</button>`;
+  }
+  $("screen").innerHTML = html;
+}
+
+function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])); }
+
+if (!window.ElevenLabsClient) log("The ElevenLabs client did not load (no internet?).");
+render(); poll(); setInterval(poll, 1000); setInterval(() => { if (S.view === "in_call") render(); }, 1000);
+</script>
+</body>
+</html>

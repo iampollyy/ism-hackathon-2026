@@ -51,8 +51,39 @@ FAKE_ELEVENLABS=true .venv/bin/uvicorn app.main:app --timeout-graceful-shutdown 
 .venv/bin/python scripts/fake_phone.py http://localhost:8765
 ```
 
-It prints PASS or FAIL per step. It fails against the stubs until tracks A,
-B and C are done.
+It prints PASS or FAIL per step.
+
+### A real call with the test phone page
+
+Until the front end has its phone page, `GET /api/dev/phone/{member_id}`
+serves a bare one (`app/static/dev_phone.html`): it rings, answers with the
+real ElevenLabs session, sends the events, shows the reveal and the family
+number. It uses only the public phone endpoints.
+
+```bash
+.venv/bin/uvicorn app.main:app --timeout-graceful-shutdown 3 --port 8000   # without FAKE_ELEVENLABS
+cloudflared tunnel --url http://localhost:8000                               # prints https://….trycloudflare.com
+.venv/bin/python scripts/dev_call.py setup --voice ~/Desktop/me.m4a --public https://….trycloudflare.com
+# open the printed link on your phone, tap "Tap to switch on sound", then:
+.venv/bin/python scripts/dev_call.py ring                      # cloned voice (your own recording)
+.venv/bin/python scripts/dev_call.py ring --scenario bank_security   # library voice
+.venv/bin/python scripts/dev_call.py status                    # turns, tactics, result
+```
+
+Record 30 to 60 seconds of your own voice for `--voice`.
+
+### Web Push
+
+Off until both VAPID keys are set. To turn it on, print a pair and paste the
+two lines into `.env` yourself (the script writes no file):
+
+```bash
+.venv/bin/python scripts/make_vapid_keys.py
+```
+
+A new pair makes every stored subscription useless; the phones subscribe
+again. The endpoints, the payload and the front-end recipe are in
+`docs/backend.md`, "Waking the phone: Web Push".
 
 ## Tests
 
@@ -62,9 +93,44 @@ cd backend
 ```
 
 Each test gets a fresh SQLite file, `FAKE_ELEVENLABS=true`, the scheduler
-off and all outside API keys blanked (`tests/conftest.py`). Fixtures:
+and the live risk check off (`tests/test_risk.py` turns the check back on)
+and all outside API keys blanked (`tests/conftest.py`). Fixtures:
 `client` (TestClient), `db` (a session on the same database), `make_family`.
 Spec tests from the independent test writers live in `tests/spec/`.
+
+## Live tests
+
+`tests/live/` calls the real ElevenLabs, OpenAI, Anthropic and Firecrawl
+APIs with the keys and ids in `backend/.env`. They are marked `live` and left
+out of the default run (`pytest.ini`: `-m "not live"`):
+
+```bash
+cd backend
+.venv/bin/pytest -m live -v              # about 80 s and a few cents
+LIVE_CLONE=1 .venv/bin/pytest -m live -v # also clones a voice and deletes it (uses a voice slot for a moment)
+```
+
+They still get a temporary database and media folder, with the scheduler
+off. A test skips, naming the setting, when a key or id it needs is not set.
+What they check:
+
+- ElevenLabs: the key works and characters are left; each agent exists, has
+  authentication on, its client tools from `voice_agents/tools.json` (and no
+  others), `end_call` on, a placeholder for every variable the back end sends
+  (and the prompt uses no variable it does not send); the practice agent
+  allows the voice, prompt and first-message overrides; the three library
+  voices exist; `elevenlabs.conversation_token` works for each agent.
+- Each model job once on a fixture input: a model answered (not the
+  fallback), the first choice did not fail, and no attempt took longer than
+  the job's limit in `app/agents/llm.py`.
+- Firecrawl: the weekly run's pages come back with usable text.
+- The practice path in process (like `scripts/fake_phone.py`) with real
+  models and a fake voice: `model_runs` has director, scorer and planner rows
+  without errors.
+
+The end of the run prints a "live report": credit left, the voices, which
+model answered each job and how fast against its limit, and the pages
+fetched. Keys and tokens are never printed.
 
 ## Stubs
 
@@ -83,20 +149,22 @@ Paths under `backend/`. Edit only files you own; ask for changes elsewhere.
 | Shared (foundation, frozen) | `app/main.py`, `app/config.py`, `app/db.py`, `app/models.py`, `app/schemas.py`, `app/ids.py`, `app/events.py`, `app/routers/families.py`, `app/routers/__init__.py`, `app/services/__init__.py`, `app/agents/__init__.py`, `tests/conftest.py`, `tests/test_families.py`, `tests/test_health.py`, `tests/test_events.py`, `tests/test_config.py`, `tests/spec/__init__.py`, `scripts/fake_phone.py`, `requirements.txt`, `pytest.ini`, `.env.example`, `README.md` |
 | Track A (ElevenLabs, voice, sessions) | `app/services/elevenlabs.py`, `app/services/audio.py`, `app/services/sessions.py`, `app/services/briefs.py`, `app/services/scenarios.py`, `app/scenarios/*.json`, `app/routers/voice.py`, `app/routers/scenarios.py`, `voice_agents/*`, `tests/test_elevenlabs.py`, `tests/test_voice.py`, `tests/test_sessions.py`, `tests/test_briefs.py` |
 | Track B (calls and phones) | `app/routers/calls.py`, `app/routers/streams.py`, `app/routers/phone.py`, `app/services/scheduler.py`, `tests/test_calls.py`, `tests/test_phone.py`, `tests/test_stream.py`, `tests/test_scheduler.py` |
-| Track C (AI and rules) | `app/agents/*` (except `__init__.py`), `app/services/outcome.py`, `app/services/readiness.py`, `app/services/pipeline.py`, `app/services/firecrawl.py`, `app/routers/weekly.py`, `tests/test_outcome.py`, `tests/test_readiness.py`, `tests/test_pipeline.py`, `tests/test_agents.py`, `tests/fixtures/*`, `scripts/eval_scorer.py` |
+| Track C (AI and rules) | `app/agents/*` (except `__init__.py`), `app/services/outcome.py`, `app/services/readiness.py`, `app/services/pipeline.py`, `app/services/firecrawl.py`, `app/services/live_risk.py`, `app/routers/weekly.py`, `tests/test_outcome.py`, `tests/test_readiness.py`, `tests/test_pipeline.py`, `tests/test_agents.py`, `tests/test_risk.py`, `tests/fixtures/*`, `scripts/eval_scorer.py`, `scripts/eval_risk.py` |
+| Web Push | `app/routers/push.py`, `app/services/push.py`, `scripts/make_vapid_keys.py`, `tests/test_push.py` |
 | Spec tests (independent writers) | `tests/spec/test_track_a.py`, `tests/spec/test_track_b.py`, `tests/spec/test_track_c.py` |
 
 ## Where endpoints live
 
 | Endpoint | Router | Track |
 |---|---|---|
-| `GET /api/health`, `POST /api/families`, `GET /api/families/{id}` | `families.py` | shared |
+| `GET /api/health`, `POST /api/families`, `GET /api/families/{id}`, `POST /api/members/{id}/consent` | `families.py` | shared |
 | `POST /api/families/{id}/weekly-run` | `weekly.py` | C |
 | `POST`/`DELETE /api/members/{id}/voice`, `POST /api/members/{id}/opt-out` | `voice.py` | A |
 | `GET /api/scenarios` | `scenarios.py` | A |
 | `POST /api/members/{id}/welcome-call`, `POST /api/practice-calls`, `POST /api/calls/{id}/answer`, `/decline`, `/events`, `/end`, `GET /api/calls/{id}` | `calls.py` | B |
 | `GET /api/calls/{id}/events` (stream) | `streams.py` | B |
 | `GET /api/members/{id}/phone-state`, `POST /api/members/{id}/messages/read`, `POST /api/members/{id}/family-line` | `phone.py` | B |
+| `GET /api/push/public-key`, `POST`/`DELETE /api/members/{id}/push-subscription` | `push.py` (sending: `services/push.py`) | shared |
 
 ## Conventions
 
