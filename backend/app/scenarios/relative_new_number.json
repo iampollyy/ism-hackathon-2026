@@ -4,6 +4,8 @@
   "voice": "clone",
   "caller_label": "Unknown number",
   "allowed_tactics": ["new_number", "urgency", "secrecy", "emotional_appeal", "small_ask_first"],
+  "summary": "about a new phone number and an urgent transfer",
+  "default_caller": { "name": "Sam", "relationship": "nephew" },
   "template": {
     "caller_claim": "{target_relation_to_caller}'s {caller_relationship}, {caller_name}",
     "opening_line": "{address_as}? It's me. I dropped my phone, so this is a new number.",

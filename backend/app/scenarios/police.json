@@ -1,0 +1,17 @@
+{
+  "key": "police",
+  "title": "Police officer",
+  "voice": "ELEVENLABS_POLICE_VOICE_ID",
+  "caller_label": "Unknown number",
+  "allowed_tactics": ["authority", "secrecy", "urgency", "isolation", "unusual_payment"],
+  "summary": "from someone posing as a police officer",
+  "default_caller": { "name": "Officer Daniel Hart", "relationship": "police officer" },
+  "template": {
+    "caller_claim": "{caller_name}, a police officer from the fraud team",
+    "address_as": "{target_name}",
+    "opening_line": "Hello, is that {target_name}? This is {caller_name} from the police fraud team.",
+    "scenario_brief": "You say criminals have been using {target_name}'s bank account, and someone working at the bank may be helping them, so {target_name} must not tell the bank or anyone else yet. Their savings are only safe once they move some of it to a protected account today.",
+    "ask": "moving 900 euros today into a protected account that you will give them",
+    "tactic_order": ["authority", "secrecy", "urgency"]
+  }
+}

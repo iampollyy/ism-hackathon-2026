@@ -1,40 +1,53 @@
 """The laptop's live stream for one call. OWNER: track B.
 
-GET /api/calls/{id}/events: server-sent events. Replay stored events from
-Last-Event-ID (or from the start), then live ones, using
-events.subscribe(call_id, after_seq, keepalive_seconds=15) and
-events.sse_format(event); send events.SSE_KEEPALIVE when it yields None.
-Headers: events.SSE_HEADERS, media type text/event-stream.
+GET /api/calls/{id}/events: server-sent events. Replays stored events after
+Last-Event-ID (or from the start), then sends live ones, forever:
+- each event's `id` is its seq, `event` its type, `data` its JSON fields plus t;
+- a comment line (events.SSE_KEEPALIVE) after 15 idle seconds;
+- headers: text/event-stream, events.SSE_HEADERS;
+- the subscriber is removed when the client goes away (aclosing).
 404 not_found for an unknown call.
 """
 
-import json
 from collections.abc import AsyncIterator
+from contextlib import aclosing
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from fastapi.responses import StreamingResponse
 
-from app.events import SSE_HEADERS
+from app import events
+from app.db import new_session
+from app.models import Call
+from app.schemas import ApiError
 
 router = APIRouter(tags=["streams"])
 
-SAMPLE_EVENTS = [
-    (1, "call.status", {"status": "ringing"}, None),
-    (2, "call.status", {"status": "in_progress"}, 0.0),
-    (3, "turn", {"speaker": "agent", "text": "Mum? It's me. I dropped my phone, so this is a new number."}, 1.2),
-    (4, "tactic", {"key": "new_number", "label": "New number"}, 1.2),
-    (5, "turn", {"speaker": "user", "text": "Jon? What's our family word?"}, 9.8),
-    (6, "outcome", {"outcome": "asked_safe_word", "seconds_to_challenge": 9.8}, 9.8),
-    (7, "revealed", {}, 20.5),
-    (8, "call.status", {"status": "ended"}, 41.0),
-]
+KEEPALIVE_SECONDS = 15.0
+
+
+def parse_last_event_id(value: str | None) -> int:
+    """The seq to resume after; 0 (replay everything) if missing or bad."""
+    try:
+        return max(0, int((value or "").strip()))
+    except ValueError:
+        return 0
+
+
+async def event_stream(call_id: str, after_seq: int) -> AsyncIterator[str]:
+    async with aclosing(events.subscribe(call_id, after_seq, KEEPALIVE_SECONDS)) as stream:
+        async for event in stream:
+            yield events.SSE_KEEPALIVE if event is None else events.sse_format(event)
 
 
 @router.get("/calls/{call_id}/events")
-async def stream_events(call_id: str) -> StreamingResponse:
-    # STUB (track B): replace. This sample replays fixed events and closes.
-    async def sample() -> AsyncIterator[str]:
-        for seq, kind, data, t in SAMPLE_EVENTS:
-            yield f"id: {seq}\nevent: {kind}\ndata: {json.dumps({**data, 't': t})}\n\n"
-
-    return StreamingResponse(sample(), media_type="text/event-stream", headers=SSE_HEADERS)
+async def stream_events(call_id: str, last_event_id: str | None = Header(default=None)) -> StreamingResponse:
+    # A short session of our own: a request session would stay open for the
+    # whole life of the stream.
+    with new_session() as db:
+        if db.get(Call, call_id) is None:
+            raise ApiError(404, "not_found", "No call with this id.")
+    return StreamingResponse(
+        event_stream(call_id, parse_last_event_id(last_event_id)),
+        media_type="text/event-stream",
+        headers=events.SSE_HEADERS,
+    )
