@@ -49,7 +49,7 @@ from app import events, schemas
 from app.db import get_db, now_iso, parse_time, seconds_between, to_iso, utcnow
 from app.ids import new_call_id
 from app.models import Call, CallEvent, Consent, Member, Result
-from app.services import briefs, consent, live_risk, pipeline, run_in_background, sessions
+from app.services import briefs, consent, limits, live_risk, pipeline, run_in_background, sessions
 
 log = logging.getLogger("app.calls")
 
@@ -207,6 +207,7 @@ async def create_practice(db: DbSession, target_member_id: str, voice_member_id:
     if scenario not in schemas.SCENARIOS:
         raise schemas.ApiError(422, "invalid_request", f"Unknown scenario: {scenario}.")
     difficulty = max(1, min(3, int(difficulty)))
+    limits.check(db, "call")
     target, voice_member = check_practice_gate(db, target_member_id, voice_member_id, check_phone_online)
 
     brief = await briefs.build_brief(db, target, voice_member, scenario, difficulty)
@@ -252,6 +253,7 @@ async def create_welcome_call(member_id: str, db: DbSession = Depends(get_db)) -
     member = get_member(db, member_id)
     if member.opted_out_at is not None:
         raise schemas.ApiError(409, "consent_missing", f"{member.name} has left Callback.")
+    limits.check(db, "call")
     if is_busy(db, member.id):
         raise busy_error(member)
     if not seen_within(member.last_seen_at, PHONE_ONLINE_SECONDS):

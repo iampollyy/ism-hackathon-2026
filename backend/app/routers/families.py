@@ -13,7 +13,7 @@ from app.config import get_settings
 from app.db import get_db, now_iso, parse_time, utcnow
 from app.ids import new_family_id, new_member_id
 from app.models import Call, Consent, Family, Member, Message, ReadinessSnapshot
-from app.services import consent
+from app.services import consent, limits
 
 router = APIRouter(tags=["families"])
 
@@ -32,6 +32,7 @@ def phone_link(member_id: str) -> str:
 
 @router.post("/families", status_code=201, response_model=schemas.FamilyCreated)
 async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db)) -> schemas.FamilyCreated:
+    limits.check(db, "family")
     now = now_iso()
     family = Family(id=new_family_id(), name=body.name.strip(), safe_word_set=body.safe_word_set, created_at=now)
     db.add(family)
