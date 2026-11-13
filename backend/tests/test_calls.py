@@ -351,16 +351,27 @@ def test_events_after_the_end_are_kept_with_a_capped_challenge_time(client, make
     assert abs(outcome["data"]["seconds_to_challenge"] - 10) < 1
 
 
-@pytest.mark.parametrize("status", ["scored", "failed"])
-def test_events_for_a_call_that_is_over_are_409(client, make_family, fakes, status):
+def test_events_for_a_failed_call_are_409(client, make_family, fakes):
     call_id = answered(client, make_family())
     with new_session() as db:
-        db.get(Call, call_id).status = status
+        db.get(Call, call_id).status = "failed"
         db.commit()
     before = len(events.list_events(call_id))
     response = client.post(f"/api/calls/{call_id}/events", json={"events": [{"type": "revealed"}]})
     assert (response.status_code, response.json()["error"]["code"]) == (409, "call_over")
     assert len(events.list_events(call_id)) == before
+
+
+def test_a_late_revealed_on_a_scored_call_is_kept(client, make_family, fakes):
+    call_id = answered(client, make_family())
+    client.post(f"/api/calls/{call_id}/end", json={"ended_by": "agent"})
+    with new_session() as db:
+        db.get(Call, call_id).status = "scored"
+        db.commit()
+    response = client.post(f"/api/calls/{call_id}/events", json={"events": [{"type": "revealed"}]})
+    assert response.status_code == 200
+    assert events.list_events(call_id)[-1]["type"] == "revealed"
+    assert fakes.after == [call_id], "a late event never starts the after-call work again"
 
 
 def test_spoken_consent_on_the_welcome_call(client, make_family, fakes):

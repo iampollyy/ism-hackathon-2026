@@ -227,7 +227,8 @@ async def family_line(member_id: str, db: DbSession = Depends(get_db)) -> schema
         raise schemas.ApiError(404, "no_recent_practice", "No practice call ended in the last ten minutes.")
     now = now_iso()
     end_open_family_lines(db, member.id, now)
-    if practice.callback_seconds is None:
+    first_tap = practice.callback_seconds is None
+    if first_tap:
         record_callback(db, member, practice, now)
     line = Call(
         id=new_call_id(),
@@ -243,8 +244,12 @@ async def family_line(member_id: str, db: DbSession = Depends(get_db)) -> schema
     db.add(line)
     db.commit()  # everything above, before any await
 
-    events.publish(practice.id, "callback.connected",
-                   {"seconds": practice.callback_seconds, "family_line_call_id": line.id})
+    if first_tap:  # a second tap only opens another family line
+        events.publish(practice.id, "callback.connected",
+                       {"seconds": practice.callback_seconds, "family_line_call_id": line.id})
     events.publish(line.id, "call.status", {"status": "in_progress"})
     session = await start_session(db, line)
+    db.refresh(line)
+    if line.status != "in_progress":  # a second tap ended this line while its session was built
+        raise schemas.ApiError(409, "call_over", "A newer family line replaced this one.")
     return schemas.FamilyLineStarted(call_id=line.id, session=session)

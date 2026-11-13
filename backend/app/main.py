@@ -9,10 +9,12 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
-from app.db import init_db
+from app.db import init_db, new_session
+from app.models import Call
 from app.routers import calls, families, phone, scenarios, streams, voice, weekly
 from app.schemas import ApiError
 from app.services import scheduler
@@ -43,9 +45,24 @@ async def _run_scheduler() -> None:
         log.exception("scheduler loop crashed; the app keeps running without it")
 
 
+def resume_after_call_work() -> None:
+    """Start the after-call work again for every call a restart left
+    'ended' (that work runs only in memory). after_call re-checks the
+    status, so a call scored meanwhile is left alone."""
+    with new_session() as db:
+        call_ids = list(db.scalars(select(Call.id).where(Call.status == "ended")))
+    for call_id in call_ids:
+        log.info("resuming the after-call work for %s", call_id)
+        calls.start_after_call(call_id)
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     init_db()
+    try:
+        resume_after_call_work()
+    except Exception:
+        log.exception("could not resume the after-call work of ended calls")
     task: asyncio.Task | None = None
     if get_settings().scheduler_enabled:
         task = asyncio.create_task(_run_scheduler(), name="scheduler")

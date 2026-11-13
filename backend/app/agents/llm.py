@@ -177,6 +177,17 @@ def _record(job: str, model: str, prompt_version: str, user: str, answer: Answer
         log.exception("could not write the model_runs row for job %s", job)
 
 
+def describe_error(exc: Exception) -> str:
+    """The error for the log and the model_runs row. A provider SDK's own
+    error gives only its class and HTTP status: its message can quote part
+    of the API key (an authentication error does)."""
+    module = type(exc).__module__ or ""
+    if module.split(".")[0] in ("openai", "anthropic"):
+        status = getattr(exc, "status_code", None)
+        return f"{type(exc).__name__} (status {status})" if status else type(exc).__name__
+    return f"{type(exc).__name__}: {exc}"
+
+
 async def _attempt(job: str, model: str, system: str, user: str, schema: type[BaseModel],
                    prompt_version: str, max_tokens: int) -> BaseModel | None:
     """One model, within the job's time limit. Writes its row; never raises."""
@@ -198,7 +209,7 @@ async def _attempt(job: str, model: str, system: str, user: str, schema: type[Ba
                 int((time.monotonic() - started) * 1000))
         raise
     except Exception as exc:  # noqa: BLE001  (any provider failure means: try the next model)
-        error = f"{type(exc).__name__}: {exc}"
+        error = describe_error(exc)
     latency_ms = int((time.monotonic() - started) * 1000)
     ok = error is None
     _record(job, model, prompt_version, user, answer, ok, error, latency_ms)

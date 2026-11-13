@@ -109,29 +109,59 @@ def _mark_clone_failed(db: DbSession, member_id: str) -> None:
 
 
 async def _delete_clone_quietly(voice_id: str) -> None:
+    """Delete a replaced clone. If that fails, the log line keeps its id,
+    so it can still be deleted by hand."""
     try:
         await elevenlabs.delete_voice(voice_id)
     except elevenlabs.ElevenLabsError:
-        log.exception("could not delete voice %s at ElevenLabs", voice_id)
+        log.exception("could not delete replaced voice %s at ElevenLabs; delete it by hand", voice_id)
 
 
-async def _delete_clone(db: DbSession, member: Member) -> None:
+async def _delete_new_clone_after_opt_out(db: DbSession, member: Member, new_voice_id: str) -> None:
+    """The member opted out while their clone was being made: delete it. If
+    that fails, store its id (opted_out_at already blocks every use) so a
+    retried opt-out deletes it, and answer 502 voice_delete_failed."""
+    try:
+        await elevenlabs.delete_voice(new_voice_id)
+    except elevenlabs.ElevenLabsError as error:
+        db.refresh(member)
+        old_voice_id = member.voice_id
+        member.voice_id = new_voice_id
+        member.voice_status = "ready"
+        db.commit()
+        if old_voice_id and old_voice_id != new_voice_id:
+            log.error("voice %s was not deleted after an opt-out; delete it by hand", old_voice_id)
+        raise _delete_failed(error) from error
+
+
+def _delete_failed(error: elevenlabs.ElevenLabsError) -> schemas.ApiError:
+    return schemas.ApiError(502, "voice_delete_failed",
+                            f"The voice could not be deleted at ElevenLabs: {error.message}")
+
+
+async def _delete_clone(db: DbSession, member: Member, delete_newer: bool = False) -> None:
     """Delete the member's clone at ElevenLabs, then clear it here and commit.
-    Raises 502 voice_delete_failed, keeping the id so a retry can delete it."""
+    Raises 502 voice_delete_failed, keeping the id so a retry can delete it.
+
+    A new recording may store a new clone while this one is being deleted.
+    Its status is then left alone, unless delete_newer (an opt-out), which
+    deletes that clone too."""
+    had_clone = bool(member.voice_id)
     voice_id = member.voice_id
-    if voice_id:
+    while voice_id:
         try:
             await elevenlabs.delete_voice(voice_id)
         except elevenlabs.ElevenLabsError as error:
-            raise schemas.ApiError(502, "voice_delete_failed",
-                                   f"The voice could not be deleted at ElevenLabs: {error.message}") from error
+            raise _delete_failed(error) from error
         db.refresh(member)
         if member.voice_id == voice_id:
             member.voice_id = None
-    if member.voice_status != "none" or voice_id:
+        voice_id = member.voice_id if delete_newer else None
+    if member.voice_id is None and (had_clone or member.voice_status != "none"):
         member.voice_status = "deleted"
     db.commit()
-    clean_path(member.id).unlink(missing_ok=True)
+    if member.voice_id is None:
+        clean_path(member.id).unlink(missing_ok=True)
 
 
 # ---------------------------------------------------------------- endpoints
@@ -157,7 +187,7 @@ async def upload_voice(member_id: str, audio: UploadFile = File(...),
 
     db.refresh(member)
     if member.opted_out_at:  # opted out while the clone was being made
-        await _delete_clone_quietly(new_voice_id)
+        await _delete_new_clone_after_opt_out(db, member, new_voice_id)
         raise schemas.ApiError(409, "opted_out", "This member has opted out.")
     old_voice_id = member.voice_id
     member.voice_id = new_voice_id
@@ -186,5 +216,5 @@ async def opt_out(member_id: str, db: DbSession = Depends(get_db)) -> schemas.Ok
         db.add(Consent(member_id=member.id, kind="opt_out", source="manual",
                        evidence="Opted out from the app.", created_at=now))
         db.commit()
-    await _delete_clone(db, member)
+    await _delete_clone(db, member, delete_newer=True)
     return schemas.Ok()

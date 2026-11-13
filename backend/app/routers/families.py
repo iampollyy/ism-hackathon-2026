@@ -68,11 +68,7 @@ async def get_family(family_id: str, db: Session = Depends(get_db)) -> schemas.F
         safe_word_set=family.safe_word_set,
         family_number=schemas.FamilyNumber(enabled=True),
         members=views,
-        readiness=schemas.FamilyReadinessView(
-            before=sum(view.readiness.before for view in views),
-            now=sum(view.readiness.now for view in views),
-            max=sum(view.readiness.max for view in views),
-        ),
+        readiness=family_readiness(db, members, views),
         week=week_items(db, family_id, {member.id: member.name for member in members}),
     )
 
@@ -124,6 +120,26 @@ def readiness_view(db: Session, member_id: str) -> schemas.ReadinessView:
         before=sum(item.before for item in items),
         now=sum(item.now for item in items),
         items=items,
+    )
+
+
+def has_snapshot(db: Session, member_id: str) -> bool:
+    found = db.scalar(select(ReadinessSnapshot.id).where(ReadinessSnapshot.member_id == member_id).limit(1))
+    return found is not None
+
+
+def family_readiness(db: Session, members: list[Member],
+                     views: list[schemas.MemberView]) -> schemas.FamilyReadinessView:
+    """The family's readiness on the same 0 to 10 scale as one person's: the
+    mean of the members who have a readiness score yet (rounded), so a
+    member without a welcome call does not pull it down. 0 if nobody has one."""
+    scored = [view.readiness for member, view in zip(members, views) if has_snapshot(db, member.id)]
+    if not scored:
+        return schemas.FamilyReadinessView(before=0, now=0, max=schemas.READINESS_MAX)
+    return schemas.FamilyReadinessView(
+        before=round(sum(item.before for item in scored) / len(scored)),
+        now=round(sum(item.now for item in scored) / len(scored)),
+        max=schemas.READINESS_MAX,
     )
 
 

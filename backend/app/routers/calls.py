@@ -24,9 +24,10 @@ Rules (docs/backend.md):
 
 Wrong-state answers are 409: not_ringing (answer or decline a call that is
 not ringing), not_answered (events or end for a call never answered) and
-call_over (events for a call already scored or failed). Events are taken
-while the call is in progress, and after it ended, so a last batch that
-arrives just after /end is not lost.
+call_over (events for a call that failed). Events are taken while the call
+is in progress, after it ended and after it was scored, so a last batch
+that arrives just after /end (such as `revealed`, sent when the reveal
+screen shows) is not lost. Late events never re-score the call.
 """
 
 import json
@@ -51,7 +52,7 @@ router = APIRouter(tags=["calls"])
 PHONE_ONLINE_SECONDS = 10  # practice and welcome calls need the page seen this recently
 ACTIVE_STATUSES = ("ringing", "in_progress")  # a member with one of these is busy
 NOT_ANSWERED_STATUSES = ("scheduled", "ringing", "declined", "missed")
-OVER_STATUSES = ("scored", "failed")  # events are no longer taken
+OVER_STATUSES = ("failed",)  # events are no longer taken
 WELCOME_CALLER_LABEL = "Callback"
 WELCOME_CALLER_NUMBER = "+00 600 555 0100"  # made up; "+00" is no country's code
 DEFAULT_CALLER_LABEL = "Unknown number"
@@ -324,9 +325,10 @@ def challenge_seconds(call: Call) -> float | None:
     track C's (outcome.decide_outcome)."""
     until_now = seconds_between(call.answered_at, now_iso())
     until_end = seconds_between(call.answered_at, call.ended_at)
-    if until_now is None or until_end is None:
-        return until_now
-    return min(until_now, until_end)
+    if until_now is None:
+        return None
+    seconds = until_now if until_end is None else min(until_now, until_end)
+    return round(max(0.0, seconds), 1)  # as the result rounds it
 
 
 def event_data(item: Any) -> dict[str, Any]:

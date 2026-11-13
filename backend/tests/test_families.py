@@ -83,7 +83,7 @@ def test_get_family_shape_with_defaults(client, make_family):
     assert family["id"] == body["family_id"]
     assert family["name"] == "The Kovacs"
     assert family["family_number"] == {"enabled": True}
-    assert family["readiness"] == {"before": 0, "now": 0, "max": 20}
+    assert family["readiness"] == {"before": 0, "now": 0, "max": 10}
     assert family["week"] == []
     sara = family["members"][0]
     assert sara["name"] == "Sara" and sara["relationship"] == "mother"
@@ -147,3 +147,19 @@ def test_unknown_family_is_404(client):
     response = client.get("/api/families/fam_nope")
     assert response.status_code == 404
     assert response.json() == {"error": {"code": "not_found", "message": "No family with this id."}}
+
+
+def test_family_readiness_is_the_mean_of_members_with_a_score(client, make_family, db):
+    body = make_family()
+    sara, jon = (m["id"] for m in body["members"])
+    low = [{"key": "verify_first", "score": 2}, {"key": "safe_word", "score": 2}]
+    high = low + [{"key": "trusted_contact", "score": 2}, {"key": "payment_caution", "score": 2}]
+    db.add(ReadinessSnapshot(member_id=sara, items_json=json.dumps(low), total=4, max=10, created_at=now_iso()))
+    db.commit()
+    family = client.get(f"/api/families/{body['family_id']}").json()
+    assert family["readiness"] == {"before": 4, "now": 4, "max": 10}, "Jon has no score yet, so he does not count"
+
+    db.add(ReadinessSnapshot(member_id=jon, items_json=json.dumps(high), total=8, max=10, created_at=now_iso()))
+    db.commit()
+    family = client.get(f"/api/families/{body['family_id']}").json()
+    assert family["readiness"] == {"before": 6, "now": 6, "max": 10}

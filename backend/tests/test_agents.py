@@ -347,3 +347,13 @@ async def test_firecrawl_keeps_the_pages_it_could_fetch(monkeypatch: pytest.Monk
         router.post(firecrawl.SCRAPE_URL).mock(side_effect=answer)
         pages = await firecrawl.fetch_warnings(["https://example.org/good", "https://example.org/bad"])
     assert pages == [{"url": "https://example.org/good", "title": "Alerts", "text": "Scam warning text"}]
+
+
+def test_provider_errors_never_quote_their_message() -> None:
+    import openai
+
+    request = httpx.Request("POST", "https://api.openai.com/v1/responses")
+    response = httpx.Response(401, request=request)
+    error = openai.AuthenticationError("Incorrect API key provided: sk-proj-****abcd", response=response, body=None)
+    assert llm.describe_error(error) == "AuthenticationError (status 401)"
+    assert llm.describe_error(ValueError("bad shape")) == "ValueError: bad shape"

@@ -158,11 +158,30 @@ def test_family_line_connects_and_tells_the_voice_owner(client, make_family, fak
     second = tap(client, sara)
     assert second.status_code == 200
     assert len(client.get(f"/api/members/{jon}/phone-state").json()["messages"]) == 1
+    connected = [e for e in events.list_events(practice_id) if e["type"] == "callback.connected"]
+    assert len(connected) == 1, "a second tap does not announce the callback again"
     with new_session() as db:
         first_line = db.get(Call, body["call_id"])
         assert (first_line.status, first_line.ended_by) == ("ended", "user")
         open_lines = db.scalars(select(Call).where(Call.kind == "family_line", Call.status == "in_progress")).all()
         assert [line.id for line in open_lines] == [second.json()["call_id"]]
+
+
+def test_family_line_ended_while_its_session_was_built_is_409(client, make_family, fakes, monkeypatch):
+    family = make_family()
+    sara, _ = members(family)
+    ended_practice(client, family)
+
+    async def ended_meanwhile(db, call):
+        with new_session() as other:  # a second tap ends this line during the await
+            other.get(Call, call.id).status = "ended"
+            other.commit()
+        return schemas.Session(kind=call.kind, conversation_token="tok", conversation_id="conv_test",
+                               overrides={}, dynamic_variables={}, max_seconds=schemas.MAX_SECONDS[call.kind])
+
+    monkeypatch.setattr(sessions, "build_session", ended_meanwhile)
+    response = tap(client, sara)
+    assert (response.status_code, response.json()["error"]["code"]) == (409, "call_over")
 
 
 def test_family_line_tells_the_organiser_for_a_library_voice(client, make_family, fakes):

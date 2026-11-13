@@ -94,3 +94,48 @@ def test_sends_a_keep_alive_comment_when_idle(client, make_family, monkeypatch):
     with client.stream("GET", f"/api/calls/{call_id}/events") as response:
         block = read_blocks(response.iter_lines(), 1)[0]
     assert block == {"comment": events.SSE_KEEPALIVE.strip()}
+
+
+def make_over_call(family, kind: str, status: str) -> str:
+    with new_session() as db:
+        call = Call(id=new_call_id(), family_id=family["family_id"], kind=kind,
+                    target_member_id=family["members"][0]["id"], status=status,
+                    answered_at=now_iso(), ended_at=now_iso(), created_at=now_iso())
+        db.add(call)
+        db.commit()
+        return call.id
+
+
+def test_the_stream_ends_once_the_call_is_over(client, make_family):
+    call_id = make_over_call(make_family(), "welcome", "scored")
+    events.publish(call_id, "turn", {"speaker": "agent", "text": "Hello."})
+    events.publish(call_id, "call.status", {"status": "scored"})
+    with client.stream("GET", f"/api/calls/{call_id}/events") as response:
+        assert response.status_code == 200
+        blocks = read_blocks(response.iter_lines(), 10)  # returns when the stream ends
+    assert [b.get("event") for b in blocks] == ["turn", "call.status"]
+    # the browser reconnects with the last id: 204 tells it to stop
+    again = client.get(f"/api/calls/{call_id}/events", headers={"Last-Event-ID": "2"})
+    assert again.status_code == 204
+
+
+def test_a_scored_practice_stays_open_for_the_family_number(client, make_family):
+    family = make_family()
+    call_id = make_over_call(family, "practice", "scored")
+    events.publish(call_id, "call.status", {"status": "scored"})
+    assert streams.call_is_over(call_id) is False
+    with new_session() as db:
+        db.get(Call, call_id).callback_seconds = 12.0
+        db.commit()
+    events.publish(call_id, "callback.connected", {"seconds": 12.0})
+    assert streams.call_is_over(call_id) is True
+    with client.stream("GET", f"/api/calls/{call_id}/events") as response:
+        blocks = read_blocks(response.iter_lines(), 10)
+    assert [b.get("event") for b in blocks] == ["call.status", "callback.connected"]
+
+
+def test_failed_missed_and_declined_calls_are_over(client, make_family):
+    family = make_family()
+    for status in ("failed", "missed", "declined"):
+        assert streams.call_is_over(make_over_call(family, "practice", status)) is True
+    assert streams.call_is_over(make_over_call(family, "practice", "ended")) is False

@@ -195,6 +195,51 @@ def test_new_recording_replaces_and_deletes_the_old_clone(client, make_family, w
     assert deleted == ["voice_old"]
 
 
+def test_opt_out_during_cloning_keeps_the_id_when_its_delete_fails(client, make_family, webm,
+                                                                     monkeypatch) -> None:
+    jon = make_family()["members"][1]["id"]
+
+    async def clone_then_opt_out(name: str, path: Path) -> str:
+        with new_session() as db:  # the member opts out while the clone is being made
+            db.get(Member, jon).opted_out_at = now_iso()
+            db.commit()
+        return "voice_new"
+
+    monkeypatch.setattr(elevenlabs, "clone_voice", clone_then_opt_out)
+    record_deletes(monkeypatch, fail=True)
+    response = client.post(f"/api/members/{jon}/voice", files={"audio": ("r.webm", webm, "audio/webm")})
+    assert (response.status_code, response.json()["error"]["code"]) == (502, "voice_delete_failed")
+    assert member(jon).voice_id == "voice_new", "kept, so a retried opt-out can delete it"
+
+    deleted = record_deletes(monkeypatch)
+    assert client.post(f"/api/members/{jon}/opt-out").status_code == 200
+    assert deleted == ["voice_new"]
+    assert member(jon).voice_id is None and member(jon).voice_status == "deleted"
+
+
+def test_delete_keeps_the_status_of_a_clone_stored_meanwhile(client, make_family, monkeypatch) -> None:
+    jon = make_family()["members"][1]["id"]
+    set_voice(jon, "voice_old")
+    deleted: list[str] = []
+
+    async def delete_while_a_new_clone_arrives(voice_id: str) -> None:
+        deleted.append(voice_id)
+        if voice_id == "voice_old":
+            set_voice(jon, "voice_new")
+
+    monkeypatch.setattr(elevenlabs, "delete_voice", delete_while_a_new_clone_arrives)
+    assert client.delete(f"/api/members/{jon}/voice").status_code == 200
+    row = member(jon)
+    assert deleted == ["voice_old"]
+    assert (row.voice_id, row.voice_status) == ("voice_new", "ready")
+
+    set_voice(jon, "voice_old")
+    deleted.clear()
+    assert client.post(f"/api/members/{jon}/opt-out").status_code == 200
+    assert deleted == ["voice_old", "voice_new"], "an opt-out deletes the newer clone too"
+    assert (member(jon).voice_id, member(jon).voice_status) == (None, "deleted")
+
+
 def test_opted_out_member_cannot_upload(client, make_family, webm) -> None:
     jon = make_family()["members"][1]["id"]
     assert client.post(f"/api/members/{jon}/opt-out").status_code == 200

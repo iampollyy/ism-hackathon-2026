@@ -13,6 +13,10 @@ after_call(call_id) runs in the background once the phone reports the end.
 
 A family-line call is only set to scored.
 
+Every path that sets a call to scored then publishes call.status
+{status: scored} on its stream (after `result`, for a practice), so the
+laptop always gets a final signal, even when there is no result.
+
 Before step 1, after_call waits until EVENT_GRACE_SECONDS have passed since
 the end, so a last event batch sent just after /end is still read.
 
@@ -25,6 +29,8 @@ A welcome call where nothing was said changes no profile or readiness. A
 later welcome call replaces "before" while no practice has moved the scores.
 A practice with no rule outcome and no model answer gets a result row, but
 its readiness is carried forward (only the family-number item can move).
+A practice where nothing was said and nothing was decided (the voice
+session never connected) gets no result: it is scored with result null.
 
 Database rule: no session is open across an await. Each step reads or
 writes in its own short session and commits before the next model call
@@ -219,18 +225,21 @@ async def score_practice(call_id: str) -> None:
         decision = outcome.decide_outcome(call_events, call.ended_by,
                                           parse_time(call.answered_at), parse_time(call.ended_at))
         marked = tactics_marked(call_events)
-        if decision.outcome is None and not has_turns(call_events):
-            # Nothing was said and nothing was decided (an error or a silent
-            # timeout): no result, and readiness does not move.
+        # Nothing was said and nothing was decided (an error or a silent
+        # timeout): no result, and readiness does not move.
+        no_conversation = decision.outcome is None and not has_turns(call_events)
+        if no_conversation:
             call.status = "scored"
-            db.commit()
-            log.info("practice %s had no conversation; scored without a result", call_id)
-            return
         transcript = transcript_text(call_events, "Caller", target.name, show_tactics=True)
         context = {"rule_outcome": decision.outcome, "tactics_marked": marked, "scenario": call.scenario,
                    "difficulty": call.difficulty, "target_name": target.name}
         member_id = target.id
         db.commit()  # nothing pending while the model runs
+
+    if no_conversation:
+        log.info("practice %s had no conversation; scored without a result", call_id)
+        publish_scored(call_id)
+        return
 
     score = await scorer.score_call(transcript, context)
 
@@ -250,7 +259,19 @@ async def score_practice(call_id: str) -> None:
         events.publish(call_id, "result", data)
     except Exception:
         log.exception("could not publish the result of %s", call_id)
+    publish_scored(call_id)
     await plan_members(call_id, only_member_id=member_id)
+
+
+def publish_scored(call_id: str) -> None:
+    """Publish call.status {status: scored} on the call's stream: every
+    status change is published, and it tells the laptop that scoring is
+    finished (also when there is no result). Call after committing the
+    status. Never raises."""
+    try:
+        events.publish(call_id, "call.status", {"status": "scored"})
+    except Exception:
+        log.exception("could not publish the scored status of %s", call_id)
 
 
 def write_result(db: DbSession, call: Call, decision: outcome.OutcomeDecision,
@@ -362,12 +383,16 @@ async def score_welcome(call_id: str) -> None:
             return
         call_events = events.list_events(call_id, db=db)
         consent_event = consent_from_events(call_events)
-        if not has_turns(call_events):
+        no_conversation = not has_turns(call_events)
+        if no_conversation:
             finish_welcome(db, member, call, consent_event)
-            log.info("welcome %s had no conversation; profile and readiness unchanged", call_id)
-            return
         transcript = transcript_text(call_events, "Callback", member.name)
         db.commit()
+
+    if no_conversation:
+        log.info("welcome %s had no conversation; profile and readiness unchanged", call_id)
+        publish_scored(call_id)
+        return
 
     profile = await profiler.build_profile(transcript, consent_event)
 
@@ -384,6 +409,7 @@ async def score_welcome(call_id: str) -> None:
         call.status = "scored"
         db.commit()
 
+    publish_scored(call_id)
     await plan_members(call_id)
 
 
@@ -459,9 +485,11 @@ def record_spoken_consent(db: DbSession, member: Member, call: Call, quote: str)
 def finish_family_line(call_id: str) -> None:
     with new_session() as db:
         call = db.get(Call, call_id)
-        if call is not None:
-            call.status = "scored"
-            db.commit()
+        if call is None:
+            return
+        call.status = "scored"
+        db.commit()
+    publish_scored(call_id)
 
 
 # ---------------------------------------------------------------- planner

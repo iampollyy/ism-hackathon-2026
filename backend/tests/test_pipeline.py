@@ -163,6 +163,16 @@ async def test_a_call_with_no_conversation_has_no_result(client: Any, family: di
     assert get(Result, call_id) is None
     assert snapshots(family["sara"]) == []
     assert jobs.jobs == []
+    last = events.list_events(call_id)[-1]
+    assert (last["type"], last["data"]) == ("call.status", {"status": "scored"}), "the laptop learns scoring is done"
+
+
+async def test_scored_is_published_after_the_result(client: Any, family: dict[str, str], jobs: FakeRunJob) -> None:
+    call_id = new_call(family)
+    say(call_id, *CHAT, ("outcome", {"outcome": "hung_up"}))
+    await pipeline.after_call(call_id)
+    kinds = [(e["type"], e["data"].get("status")) for e in events.list_events(call_id)][-2:]
+    assert kinds == [("result", None), ("call.status", "scored")]
 
 
 async def test_only_ended_calls_are_scored_and_only_once(client: Any, family: dict[str, str], jobs: FakeRunJob) -> None:
@@ -375,6 +385,7 @@ async def test_family_line_is_only_marked_scored(client: Any, family: dict[str, 
     await pipeline.after_call(call_id)
     assert get(Call, call_id).status == "scored"
     assert jobs.jobs == []
+    assert events.list_events(call_id)[-1]["data"] == {"status": "scored"}
 
 
 # ---------------------------------------------------------------- ElevenLabs' transcript

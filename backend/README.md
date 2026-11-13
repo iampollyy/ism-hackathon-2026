@@ -19,12 +19,17 @@ Needs Python 3.12 and `ffmpeg` on the machine.
 
 ```bash
 cd backend
-.venv/bin/uvicorn app.main:app --reload --port 8000
+.venv/bin/uvicorn app.main:app --reload --timeout-graceful-shutdown 3 --port 8000
 ```
 
 Vite proxies `/api` to port 8000. Run one process only (no `--workers`), or
 the live streams split. Tables and the `data/` and `media/` folders are made
 on start-up.
+
+Keep `--timeout-graceful-shutdown 3`: an open live stream otherwise stops
+uvicorn from exiting or reloading (it waits for every connection), and every
+`/api` request fails until the laptop tab is closed. Streams of finished
+calls end on their own.
 
 ### FAKE_ELEVENLABS
 
@@ -33,7 +38,7 @@ conversation id, voice id), so the whole flow runs without voice and without
 spending credit:
 
 ```bash
-FAKE_ELEVENLABS=true .venv/bin/uvicorn app.main:app --reload --port 8000
+FAKE_ELEVENLABS=true .venv/bin/uvicorn app.main:app --reload --timeout-graceful-shutdown 3 --port 8000
 ```
 
 ### The fake phone
@@ -42,7 +47,7 @@ FAKE_ELEVENLABS=true .venv/bin/uvicorn app.main:app --reload --port 8000
 voice upload, practice call, answer, events, end, scoring, family number):
 
 ```bash
-FAKE_ELEVENLABS=true .venv/bin/uvicorn app.main:app --port 8765 &
+FAKE_ELEVENLABS=true .venv/bin/uvicorn app.main:app --timeout-graceful-shutdown 3 --port 8765 &
 .venv/bin/python scripts/fake_phone.py http://localhost:8765
 ```
 
