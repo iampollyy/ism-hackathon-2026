@@ -72,6 +72,10 @@ cloudflared tunnel --url http://localhost:8000                               # p
 
 Record 30 to 60 seconds of your own voice for `--voice`.
 
+On the deployed server no tunnel is needed: use `--base https://callback.denishoti.dev`
+for every `dev_call.py` command (and no `--public`), and open the printed link
+on the phone. See `deploy/README.md`.
+
 ### Web Push
 
 Off until both VAPID keys are set. To turn it on, print a pair and paste the
