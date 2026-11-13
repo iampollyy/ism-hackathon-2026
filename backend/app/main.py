@@ -15,7 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import get_settings
 from app.db import init_db, new_session
 from app.models import Call
-from app.routers import calls, families, phone, push, scenarios, streams, voice, weekly
+from app.routers import calls, dev, families, phone, push, scenarios, streams, voice, weekly
 from app.schemas import ApiError
 from app.services import scheduler
 
@@ -113,7 +113,7 @@ def create_app() -> FastAPI:
         log.exception("unhandled error", exc_info=exc)
         return JSONResponse(status_code=500, content=error_body("internal_error", "Something went wrong."))
 
-    for module in (families, voice, phone, push, scenarios, calls, streams, weekly):
+    for module in (families, voice, phone, push, scenarios, calls, streams, weekly, dev):
         app.include_router(module.router, prefix="/api")
     return app
 

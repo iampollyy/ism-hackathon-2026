@@ -51,8 +51,26 @@ FAKE_ELEVENLABS=true .venv/bin/uvicorn app.main:app --timeout-graceful-shutdown 
 .venv/bin/python scripts/fake_phone.py http://localhost:8765
 ```
 
-It prints PASS or FAIL per step. It fails against the stubs until tracks A,
-B and C are done.
+It prints PASS or FAIL per step.
+
+### A real call with the test phone page
+
+Until the front end has its phone page, `GET /api/dev/phone/{member_id}`
+serves a bare one (`app/static/dev_phone.html`): it rings, answers with the
+real ElevenLabs session, sends the events, shows the reveal and the family
+number. It uses only the public phone endpoints.
+
+```bash
+.venv/bin/uvicorn app.main:app --timeout-graceful-shutdown 3 --port 8000   # without FAKE_ELEVENLABS
+cloudflared tunnel --url http://localhost:8000                               # prints https://….trycloudflare.com
+.venv/bin/python scripts/dev_call.py setup --voice ~/Desktop/me.m4a --public https://….trycloudflare.com
+# open the printed link on your phone, tap "Tap to switch on sound", then:
+.venv/bin/python scripts/dev_call.py ring                      # cloned voice (your own recording)
+.venv/bin/python scripts/dev_call.py ring --scenario bank_security   # library voice
+.venv/bin/python scripts/dev_call.py status                    # turns, tactics, result
+```
+
+Record 30 to 60 seconds of your own voice for `--voice`.
 
 ### Web Push
 
