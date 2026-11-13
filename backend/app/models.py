@@ -114,7 +114,7 @@ class Consent(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), nullable=False, index=True)
-    kind: Mapped[str] = mapped_column(String, nullable=False)  # clone | practice | opt_out
+    kind: Mapped[str] = mapped_column(String, nullable=False)  # clone | practice | practice_withdrawn | opt_out
     source: Mapped[str] = mapped_column(String, nullable=False)  # voice_recording | welcome_call | manual
     evidence: Mapped[str | None] = mapped_column(Text)
     call_id: Mapped[str | None] = mapped_column(String)

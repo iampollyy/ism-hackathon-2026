@@ -30,7 +30,7 @@ EndedBy = Literal["agent", "user", "timeout", "error"]
 Speaker = Literal["agent", "user"]
 VoiceStatus = Literal["none", "ready", "failed", "deleted"]
 MessageKind = Literal["weekly", "callback_notice", "reminder"]
-ConsentKind = Literal["clone", "practice", "opt_out"]
+ConsentKind = Literal["clone", "practice", "practice_withdrawn", "opt_out"]
 ConsentSource = Literal["voice_recording", "welcome_call", "manual"]
 ReadinessKey = Literal["verify_first", "safe_word", "trusted_contact", "payment_caution", "under_pressure"]
 EventType = Literal[
@@ -141,6 +141,10 @@ class MemberLink(BaseModel):
 class FamilyCreated(BaseModel):
     family_id: str
     members: list[MemberLink]
+
+
+class ConsentUpdate(BaseModel):
+    consent_practice: bool  # the same tick as at sign-up, later: true gives consent, false withdraws it
 
 
 class ConsentView(BaseModel):

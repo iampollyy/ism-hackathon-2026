@@ -1,4 +1,5 @@
-"""Families: create one, read the family page, and the health check."""
+"""Families: create one, read the family page, the health check, and a
+member's later practice tick (POST /api/members/{id}/consent)."""
 
 import json
 from typing import Any
@@ -12,6 +13,7 @@ from app.config import get_settings
 from app.db import get_db, now_iso, parse_time, utcnow
 from app.ids import new_family_id, new_member_id
 from app.models import Call, Consent, Family, Member, Message, ReadinessSnapshot
+from app.services import consent
 
 router = APIRouter(tags=["families"])
 
@@ -53,6 +55,27 @@ async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db
         links.append(schemas.MemberLink(id=member.id, name=member.name, phone_link=phone_link(member.id)))
     db.commit()
     return schemas.FamilyCreated(family_id=family.id, members=links)
+
+
+@router.post("/members/{member_id}/consent", response_model=schemas.Ok)
+async def set_practice_consent(member_id: str, body: schemas.ConsentUpdate,
+                               db: Session = Depends(get_db)) -> schemas.Ok:
+    """The member's own practice tick after sign-up. True gives consent
+    (again, for example after a no on the welcome call); false withdraws it.
+    A change writes a consents row with source manual; the same answer
+    twice writes nothing more."""
+    member = db.get(Member, member_id)
+    if member is None:
+        raise schemas.ApiError(404, "not_found", "No member with this id.")
+    if body.consent_practice:
+        if member.opted_out_at is not None:
+            raise schemas.ApiError(409, "consent_missing", f"{member.name} has left Callback.")
+        if member.consent_practice_at is None:
+            consent.give_practice(db, member, "manual", "consent tick")
+    else:
+        consent.withdraw_practice(db, member, "manual", "consent tick removed")
+    db.commit()
+    return schemas.Ok()
 
 
 @router.get("/families/{family_id}", response_model=schemas.FamilyView)

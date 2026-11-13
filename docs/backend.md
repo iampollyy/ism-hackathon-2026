@@ -180,7 +180,7 @@ CREATE TABLE results (
 CREATE TABLE consents (                       -- the record behind the two consent columns
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   member_id  TEXT NOT NULL REFERENCES members(id),
-  kind       TEXT NOT NULL,                   -- clone | practice | opt_out
+  kind       TEXT NOT NULL,                   -- clone | practice | practice_withdrawn | opt_out
   source     TEXT NOT NULL,                   -- voice_recording | welcome_call | manual
   evidence   TEXT,                            -- a file path, or the sentence they said
   call_id    TEXT,
@@ -255,6 +255,7 @@ any state ──► failed            (token or connection error)
 | `POST /api/members/{id}/voice` | Upload the recording; clone it | `voice_ready` |
 | `DELETE /api/members/{id}/voice` | Delete the clone | `ok` |
 | `POST /api/members/{id}/opt-out` | Leave for good; deletes the clone | `ok` |
+| `POST /api/members/{id}/consent` | The practice tick again, later: give or withdraw | `ok` |
 | `POST /api/members/{id}/welcome-call` | Ring their phone page with the welcome agent | `call_id` |
 | `GET /api/members/{id}/phone-state` | What the phone page should show now; asked each second | Phone state |
 | `POST /api/members/{id}/messages/read` | Mark messages as seen | `ok` |
@@ -290,7 +291,25 @@ Returns `201`:
                { "id": "mem_7Lr2pWcd", "name": "Jon",  "phone_link": "/phone/mem_7Lr2pWcd" } ] }
 ```
 
-`consent_practice` is each member's own tick on the sign-up page: "I agree to receive practice calls without knowing when." When it is true, the back end sets `consent_practice_at` and writes a `consents` row with `source: manual`. That passes the consent check, so a practice call works before the welcome call is built. The welcome call asks again and records a spoken yes as a second row.
+`consent_practice` is each member's own tick on the sign-up page: "I agree to receive practice calls without knowing when." When it is true, the back end sets `consent_practice_at` and writes a `consents` row with `source: manual`. That passes the consent check, so a practice call works before the welcome call is built. The welcome call asks again and records a spoken yes as a second row; a spoken no withdraws the tick (below).
+
+### Practice consent
+
+`members.consent_practice_at` is what the consent gate reads. Every change to it after sign-up writes one `consents` row (`services/consent.py`):
+
+| What happened | `consent_practice_at` | `consents` row (`kind`, `source`, `call_id`) |
+|---|---|---|
+| Ticked at sign-up | set | `practice`, `manual`, empty |
+| A yes on the welcome call (`consent` event, `given: true`) | set, if it was empty | `practice`, `welcome_call`, the welcome call |
+| An explicit no on the welcome call (`consent` event, `given: false`) | cleared | `practice_withdrawn`, `welcome_call`, the welcome call |
+| The tick again, later: `POST /api/members/{id}/consent` with `{ "consent_practice": true }` | set | `practice`, `manual`, empty |
+| The tick taken away: the same with `false` | cleared | `practice_withdrawn`, `manual`, empty |
+
+- **A no withdraws.** The welcome agent tells a person who does not say a clear yes that nothing will be sent to them, so a `given: false` from `consent_result` clears `consent_practice_at` at once, when the phone sends the event. From then on the consent gate refuses practice calls to them with `409 consent_missing`: a new one is not created, a scheduled one fails when it comes due, and a ringing one cannot be answered. The family page shows `consent.practice: false`.
+- **Only the explicit event counts.** No `consent` event, or the profiler's reading of the transcript (a "maybe" it reads as no), never withdraws. The profiler can still record a clear yes it reads, but never against a `given: false` in the same call, even one that arrives while it runs.
+- **The latest answer wins.** A yes after a no, in the same call or a later welcome call, gives consent again; so does a new tick. A no from someone who had not consented changes nothing and writes no row (the stored event is the record). The same answer twice writes one row.
+- The `consent_result` tool has only `given` ("true only for a clear yes"), so the agent sends `false` for any answer that is not a clear yes.
+- `POST /api/members/{id}/consent` answers `409 consent_missing` to a `true` from someone who opted out (they left for good), and `404` for an unknown member.
 
 `GET /api/families/{id}` returns the family object from idea.md, with two additions per member: `phone_online` (their page asked for phone-state in the last five seconds) and `voice_status`.
 
@@ -359,7 +378,7 @@ Returns `201`:
 - The back end checks `key` and `outcome` against the fixed lists in idea.md, adds the tactic's label, stamps `t` and `seq`, stores each event and publishes it to the call's stream.
 - On the first `outcome` it computes `seconds_to_challenge` as the time since `answered_at` and adds it to the published event.
 - Only final lines should be sent as `turn`; the library's `onMessage` also delivers tentative ones.
-- For a welcome call the page may also send `{ "type": "consent", "given": true }` from the `consent_result` tool.
+- For a welcome call the page may also send `{ "type": "consent", "given": true }` (or `false`) from the `consent_result` tool. A yes records consent; a no withdraws it ("Practice consent", above). On other calls it changes nothing.
 
 `POST /api/calls/{id}/end` with `{ "ended_by": "agent" }` (`user` when the person tapped End, `timeout`, `error`). The back end sets `ended`, publishes `call.status`, answers `ok` at once and starts the after-call work in the background.
 
@@ -560,7 +579,7 @@ Show only `title` and `body`; do not add words such as "practice". When the page
 **2. Welcome call**
 1. Laptop: `POST /api/members/{id}/welcome-call`. The call is `ringing`.
 2. Phone: sees `incoming_call`, rings. Answer: `POST /api/calls/{id}/answer`, then `startSession`.
-3. The agent asks for consent and calls `consent_result`; the page forwards it as an event. On `given: true` the back end sets `consent_practice_at` and writes a `consents` row.
+3. The agent asks for consent and calls `consent_result`; the page forwards it as an event. On `given: true` the back end sets `consent_practice_at` and writes a `consents` row. On `given: false` it clears `consent_practice_at` and writes a `practice_withdrawn` row, so no practice call reaches them until they tick again or say yes on a later welcome call.
 4. The agent runs the five questions and ends the call. Phone: `POST /api/calls/{id}/end`.
 5. After-call work: transcript, then the profiler, then the planner (below).
 
@@ -622,7 +641,7 @@ The agents' settings, variables and prompts are in ai.md.
 
 These are checks in the back end, not instructions to a model.
 
-1. **Consent gate.** No practice call is created unless the target has consented to practice and the voice's owner has consented to cloning. See the checks under "Starting a practice".
+1. **Consent gate.** No practice call is created unless the target has consented to practice and the voice's owner has consented to cloning. See the checks under "Starting a practice". Practice consent can be withdrawn (a no on the welcome call, or the tick taken away; "Practice consent"), and the gate is checked again when a scheduled practice comes due and when a call is answered.
 2. **Same family only.** A clone can be used only on a call inside its owner's family.
 3. **The safe word is never collected.** Sign-up takes only `safe_word_set`, and no table has a column for the word.
 4. **The brief is checked before it is sent:** no run of six or more digits, no name from a short list of real banks and institutions, tactic keys only from the fixed list, length limits on every field. A brief that fails is replaced by the scenario's fixed template.
@@ -653,6 +672,7 @@ The front end can build against steps 2, 4 and 5 as soon as their shapes are fix
 
 - The consent gate: each missing consent gives its `409`.
 - The sign-up tick: a member with `consent_practice: true` can receive a practice call before any welcome call.
+- A no on the welcome call: consent is withdrawn, a practice gets `409 consent_missing`, the family page shows it; a new tick or a later yes gives it back (`tests/test_consent.py`).
 - The brief checks: a brief with a card-like number or a listed bank name is replaced by the template.
 - The outcome rules: the four cases above, from stored events.
 - Readiness: each outcome moves the scores as the table in ai.md says.

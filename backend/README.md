@@ -98,6 +98,40 @@ and all outside API keys blanked (`tests/conftest.py`). Fixtures:
 `client` (TestClient), `db` (a session on the same database), `make_family`.
 Spec tests from the independent test writers live in `tests/spec/`.
 
+## Live tests
+
+`tests/live/` calls the real ElevenLabs, OpenAI, Anthropic and Firecrawl
+APIs with the keys and ids in `backend/.env`. They are marked `live` and left
+out of the default run (`pytest.ini`: `-m "not live"`):
+
+```bash
+cd backend
+.venv/bin/pytest -m live -v              # about 80 s and a few cents
+LIVE_CLONE=1 .venv/bin/pytest -m live -v # also clones a voice and deletes it (uses a voice slot for a moment)
+```
+
+They still get a temporary database and media folder, with the scheduler
+off. A test skips, naming the setting, when a key or id it needs is not set.
+What they check:
+
+- ElevenLabs: the key works and characters are left; each agent exists, has
+  authentication on, its client tools from `voice_agents/tools.json` (and no
+  others), `end_call` on, a placeholder for every variable the back end sends
+  (and the prompt uses no variable it does not send); the practice agent
+  allows the voice, prompt and first-message overrides; the three library
+  voices exist; `elevenlabs.conversation_token` works for each agent.
+- Each model job once on a fixture input: a model answered (not the
+  fallback), the first choice did not fail, and no attempt took longer than
+  the job's limit in `app/agents/llm.py`.
+- Firecrawl: the weekly run's pages come back with usable text.
+- The practice path in process (like `scripts/fake_phone.py`) with real
+  models and a fake voice: `model_runs` has director, scorer and planner rows
+  without errors.
+
+The end of the run prints a "live report": credit left, the voices, which
+model answered each job and how fast against its limit, and the pages
+fetched. Keys and tokens are never printed.
+
 ## Stubs
 
 Every endpoint in backend.md's API table answers already, with a fixed
@@ -123,7 +157,7 @@ Paths under `backend/`. Edit only files you own; ask for changes elsewhere.
 
 | Endpoint | Router | Track |
 |---|---|---|
-| `GET /api/health`, `POST /api/families`, `GET /api/families/{id}` | `families.py` | shared |
+| `GET /api/health`, `POST /api/families`, `GET /api/families/{id}`, `POST /api/members/{id}/consent` | `families.py` | shared |
 | `POST /api/families/{id}/weekly-run` | `weekly.py` | C |
 | `POST`/`DELETE /api/members/{id}/voice`, `POST /api/members/{id}/opt-out` | `voice.py` | A |
 | `GET /api/scenarios` | `scenarios.py` | A |
