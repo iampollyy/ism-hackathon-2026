@@ -1,30 +1,47 @@
-import {
-  BookText,
-  House,
-  ListChecks,
-  Phone,
-  Settings,
-  ShieldCheck,
-  UserRound,
-  Users,
-} from 'lucide-react';
+import { House, Phone, UserRound, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useStoredFamilyId } from '../../pages/FamilySignUpPage/familyStorage';
 
-const familyItems = [
-  { label: 'Overview', to: '/dashboard', icon: House },
-  { label: 'Members', to: '/dashboard#members', icon: Users },
-  { label: 'Practice calls', to: '/practice', icon: Phone },
-  { label: 'Progress', to: '/result', icon: ListChecks },
-];
-
-const resourceItems = [
-  { label: 'Safety guide', to: '/dashboard', icon: BookText },
-  { label: 'Settings', to: '/settings', icon: Settings },
-  { label: 'Set up family', to: '/signup', icon: UserRound },
-];
+type Item = { label: string; path: string; hash?: string; icon: typeof House };
 
 export function Sidebar() {
   const location = useLocation();
+  const familyId = useStoredFamilyId();
+  const familyPath = familyId ? `/family/${familyId}` : '/signup';
+
+  // The real pages only. The mock pages (/dashboard, /practice, /result,
+  // /settings) are left out: they show sample data.
+  const setUp: Item = { label: 'Set up family', path: '/signup', icon: UserRound };
+  const familyItems: Item[] = familyId
+    ? [
+        { label: 'Overview', path: familyPath, icon: House },
+        { label: 'Members', path: familyPath, hash: '#members', icon: Users },
+        { label: 'Start a practice', path: familyPath, hash: '#practice', icon: Phone },
+      ]
+    : [setUp];
+  const resourceItems: Item[] = familyId ? [setUp] : [];
+
+  const isActive = ({ path, hash }: Item) => {
+    if (location.pathname !== path) return false;
+    if (hash) return location.hash === hash;
+    return !familyItems.some((item) => item.hash && item.path === path && item.hash === location.hash);
+  };
+
+  const renderLink = (item: Item) => {
+    const active = isActive(item);
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.label}
+        to={`${item.path}${item.hash ?? ''}`}
+        className={`sidebar-link${active ? ' active' : ''}`}
+        aria-current={active ? 'page' : undefined}
+      >
+        <Icon size={18} />
+        <span>{item.label}</span>
+      </Link>
+    );
+  };
 
   return (
     <aside className="practice-sidebar">
@@ -34,51 +51,24 @@ export function Sidebar() {
 
       <div className="sidebar-section">
         <span className="sidebar-label">Family</span>
-        <nav className="sidebar-nav">
-          {familyItems.map(({ label, to, icon: Icon }) => (
-            <Link
-              key={label}
-              to={to}
-              className={`sidebar-link${location.pathname === '/dashboard' && (label === 'Members' ? location.hash === '#members' : label === 'Overview' && location.hash !== '#members') || location.pathname === to && location.hash === '' && label !== 'Safety guide' ? ' active' : ''}`}
-              aria-current={
-                location.pathname === '/dashboard' && (label === 'Members' ? location.hash === '#members' : label === 'Overview' && location.hash !== '#members') ||
-                location.pathname === to && location.hash === '' && label !== 'Safety guide'
-                  ? 'page'
-                  : undefined
-              }
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-            </Link>
-          ))}
-        </nav>
+        <nav className="sidebar-nav">{familyItems.map(renderLink)}</nav>
       </div>
 
-      <div className="sidebar-section resources">
-        <span className="sidebar-label">Resources</span>
-        <nav className="sidebar-nav">
-          {resourceItems.map(({ label, to, icon: Icon }) => (
-            <Link
-              key={label}
-              to={to}
-              className={`sidebar-link${label !== 'Safety guide' && location.pathname === to ? ' active' : ''}`}
-              aria-current={label !== 'Safety guide' && location.pathname === to ? 'page' : undefined}
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-            </Link>
-          ))}
-        </nav>
-      </div>
+      {resourceItems.length > 0 ? (
+        <div className="sidebar-section resources">
+          <span className="sidebar-label">Resources</span>
+          <nav className="sidebar-nav">{resourceItems.map(renderLink)}</nav>
+        </div>
+      ) : null}
 
-      <div className="family-strip">
-        <div className="family-avatar">MF</div>
+      <Link to={familyPath} className="family-strip">
+        <div className="family-avatar">{familyId ? 'F' : '+'}</div>
         <div>
-          <strong>Morgan Family</strong>
-          <small>Family admin</small>
+          <strong>{familyId ? 'Your family' : 'No family yet'}</strong>
+          <small>{familyId ? 'Open the family page' : 'Set one up'}</small>
         </div>
         <span className="arrow-pill">→</span>
-      </div>
+      </Link>
     </aside>
   );
 }
