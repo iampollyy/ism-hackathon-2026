@@ -20,6 +20,8 @@ Conventions:
     keys from schemas.READINESS_KEYS; total is their sum, max is 10.
 
 Added after backend.md: push_subscriptions (Web Push, services/push.py).
+Track 3 (docs/full-app/protection.md): protection_settings,
+member_drill_settings, call_shield, drill_calls; messages.kind gains `alert`.
 """
 
 from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text, UniqueConstraint
@@ -138,7 +140,7 @@ class Message(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), nullable=False, index=True)
-    kind: Mapped[str] = mapped_column(String, nullable=False)  # weekly | callback_notice | reminder
+    kind: Mapped[str] = mapped_column(String, nullable=False)  # weekly | callback_notice | reminder | alert
     text: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
     read_at: Mapped[str | None] = mapped_column(String)
@@ -185,4 +187,61 @@ class ModelRun(Base):
     latency_ms: Mapped[int | None] = mapped_column(Integer)
     input_tokens: Mapped[int | None] = mapped_column(Integer)
     output_tokens: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+# ---------------------------------------------------------------- track 3: protection, drills, the Shield
+# New tables only (create_all adds them to an existing database file); see
+# docs/full-app/protection.md.
+
+
+class ProtectionSettings(Base):
+    """A family's protection: random drills and the Shield. No row means the
+    defaults below (drills off, the Shield on)."""
+
+    __tablename__ = "protection_settings"
+
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # random drills
+    drills_per_week: Mapped[int] = mapped_column(Integer, nullable=False, default=2)  # 1 to 7
+    window_start_hour: Mapped[int] = mapped_column(Integer, nullable=False, default=10)  # local, inclusive
+    window_end_hour: Mapped[int] = mapped_column(Integer, nullable=False, default=19)  # local, exclusive
+    timezone: Mapped[str] = mapped_column(String, nullable=False, default="Europe/Vilnius")
+    shield_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_at: Mapped[str | None] = mapped_column(String)
+
+
+class MemberDrillSettings(Base):
+    """One member's own switch for random drills. No row means not paused."""
+
+    __tablename__ = "member_drill_settings"
+
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), primary_key=True)
+    paused: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[str | None] = mapped_column(String)
+
+
+class CallShield(Base):
+    """Marks a practice call as a shield call: a simulated scam call during
+    which the Shield warns the person and alerts the family by itself.
+    alerted_at is set once, when the family is alerted."""
+
+    __tablename__ = "call_shield"
+
+    call_id: Mapped[str] = mapped_column(ForeignKey("calls.id"), primary_key=True)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    alerted_at: Mapped[str | None] = mapped_column(String)
+    alert_level: Mapped[str | None] = mapped_column(String)  # the risk level that set off the alert
+
+
+class DrillCall(Base):
+    """A practice call made by the random-drill pass or a surprise drill, so
+    a pause or a change of the drill settings can cancel the pending ones."""
+
+    __tablename__ = "drill_calls"
+
+    call_id: Mapped[str] = mapped_column(ForeignKey("calls.id"), primary_key=True)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), nullable=False, index=True)
+    source: Mapped[str] = mapped_column(String, nullable=False)  # random | surprise
     created_at: Mapped[str] = mapped_column(String, nullable=False)

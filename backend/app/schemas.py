@@ -29,13 +29,13 @@ CallStatus = Literal[
 EndedBy = Literal["agent", "user", "timeout", "error"]
 Speaker = Literal["agent", "user"]
 VoiceStatus = Literal["none", "ready", "failed", "deleted"]
-MessageKind = Literal["weekly", "callback_notice", "reminder"]
+MessageKind = Literal["weekly", "callback_notice", "reminder", "alert"]  # alert: track 3, the Shield
 ConsentKind = Literal["clone", "practice", "practice_withdrawn", "opt_out"]
 ConsentSource = Literal["voice_recording", "welcome_call", "manual"]
 ReadinessKey = Literal["verify_first", "safe_word", "trusted_contact", "payment_caution", "under_pressure"]
 EventType = Literal[
     "call.status", "turn", "tactic", "outcome", "revealed", "callback.connected", "result", "consent",
-    "risk",
+    "risk", "shield.alert",  # shield.alert: track 3, the Shield alerted the family
 ]
 # The live risk check (agents/risk.py): the tactics, plus three signs that a
 # call is a scam. Code maps the signals to the level.
@@ -208,7 +208,7 @@ class FamilyNumber(BaseModel):
 
 
 class WeekItem(BaseModel):
-    kind: Literal["welcome", "practice", "family_line", "message", "reminder", "weekly"]
+    kind: Literal["welcome", "practice", "family_line", "message", "reminder", "weekly", "alert"]
     member_id: str
     member_name: str
     status: str  # a call status, or "sent" / "read" for a message
@@ -252,6 +252,7 @@ class CallCreated(BaseModel):
 
 class Reveal(BaseModel):
     voice_of: str | None  # the name whose clone spoke, or None for a library voice
+    kind: Literal["practice", "shield"] = "practice"  # shield: a simulated scam call (track 3)
 
 
 class Session(BaseModel):
@@ -322,6 +323,7 @@ class CallView(BaseModel):
     turns: list[TurnView]
     tactics: list[TacticView]
     risk: list[RiskPointView] = []  # the live risk check's results, in order (practice calls)
+    shield: "CallShieldView | None" = None  # set only on a shield call (track 3)
     result: CallResultView | None  # None until the call is scored
     callback_seconds: float | None
     answered_at: str | None = None
@@ -403,6 +405,7 @@ class PhoneState(BaseModel):
     incoming_call: IncomingCall | None
     messages: list[PhoneMessage]  # unread only
     family_number: FamilyNumber
+    shield: "ShieldState | None" = None  # set only during a shield call (track 3)
 
 
 class MessagesRead(BaseModel):
@@ -512,3 +515,109 @@ class WeeklyRunResult(BaseModel):
 class Health(BaseModel):
     ok: bool = True
     fake_elevenlabs: bool
+
+
+# ---------------------------------------------------------------- track 3: protection, random drills, the Shield
+# The endpoints and rules: docs/full-app/protection.md.
+
+
+class ProtectionMemberView(BaseModel):
+    member_id: str
+    name: str
+    eligible: bool  # random and surprise drills may pick them
+    reason_if_not: str | None = None  # plain words, e.g. "Drills are paused."
+    paused: bool
+    next_drill_at: str | None = None  # their next scheduled practice, of any source
+    drills_last_7_days: int  # practice calls (not shield calls) that rang in the last 7 days
+
+
+class ProtectionView(BaseModel):
+    family_id: str
+    enabled: bool  # random drills
+    drills_per_week: int
+    window_start_hour: int  # local hour, inclusive
+    window_end_hour: int  # local hour, exclusive (24 is midnight)
+    timezone: str
+    shield_enabled: bool
+    updated_at: str | None = None  # None: never changed (the defaults)
+    members: list[ProtectionMemberView]
+
+
+class ProtectionUpdate(BaseModel):
+    """Every field optional; a missing or null field keeps its value."""
+
+    enabled: bool | None = None
+    drills_per_week: int | None = Field(default=None, ge=1, le=7)
+    window_start_hour: int | None = Field(default=None, ge=0, le=23)
+    window_end_hour: int | None = Field(default=None, ge=1, le=24)
+    timezone: str | None = Field(default=None, min_length=1, max_length=64)
+    shield_enabled: bool | None = None
+
+
+class DrillPause(BaseModel):
+    paused: bool
+
+
+class SurpriseDrillRequest(BaseModel):
+    member_id: str | None = None  # None: a random eligible member
+    within_seconds: int = Field(default=60, ge=20, le=300)
+
+
+class SurpriseDrillCreated(BaseModel):
+    call_id: str
+    member: PersonRef
+    scenario: ScenarioKey
+    scheduled_for: str
+
+
+class ShieldCallRequest(BaseModel):
+    member_id: str
+    voice_member_id: str | None = None  # None: a random other member's ready voice, if any
+    scenario: ScenarioKey | None = None  # None: relative_new_number, or bank_security without a voice
+
+
+class ShieldCallCreated(BaseModel):
+    call_id: str
+    member: PersonRef
+    scenario: ScenarioKey
+
+
+class CallBackContact(BaseModel):
+    """Whom the Shield tells the person to call back."""
+
+    member_id: str
+    name: str
+    phone_number: str | None = None  # from member_joins, when the join stored one
+
+
+class ShieldState(BaseModel):
+    """phone-state's `shield`: the live warning during a shield call."""
+
+    call_id: str
+    level: RiskLevel
+    reason: str
+    signals: list[RiskSignal] = []
+    labels: list[str]
+    warn: bool
+    message: str | None = None  # the warning, from code; None while warn is false
+    call_back: CallBackContact | None = None
+
+
+class CallShieldView(BaseModel):
+    """GET /api/calls/{id}'s `shield`, for a laptop without the live stream."""
+
+    alerted: int  # family members alerted; 0 until the alert
+    alerted_at: str | None = None
+    alert_level: RiskLevel | None = None
+
+
+class AlertRequest(BaseModel):
+    claimed_member_id: str | None = None  # the relative the caller pretends to be, if known
+
+
+class AlertSent(BaseModel):
+    alerted: int  # how many family members got the alert
+
+
+PhoneState.model_rebuild()
+CallView.model_rebuild()
