@@ -303,11 +303,11 @@ Both calls follow the providers' own examples: `messages.parse` with `output_for
 | Job | First choice | Second choice | Time limit each | Fallback in code |
 |---|---|---|---|---|
 | Profiler | `gpt-6-astra` | `claude-opus-5-5` | 30 s | All items 0, consent from the `consent` event only |
-| Planner | `gpt-6-astra` | `claude-opus-5-5` | 30 s | The rule's choice with a fixed sentence as the reason |
+| Planner | `gpt-6-astra` | `claude-opus-5-5` | 45 s | The rule's choice with a fixed sentence as the reason |
 | Digest | `gpt-6-astra` | `claude-opus-5-5` | 60 s | Last week's digest |
-| Director | `claude-haiku-5-5` | `gpt-6-luna` | 4 s | The scenario's template with names filled in |
+| Director | `claude-haiku-5-5` | `gpt-6-luna` | 5 s per model, 6 s in all | The scenario's template with names filled in |
 | Scorer | `claude-haiku-5-5` | `gpt-6-luna` | 8 s | The rule's outcome with a fixed lesson per outcome |
-| Risk | `claude-haiku-5-5` | `gpt-6-luna` | 3 s (5 s for both) | Keywords and phrases in code |
+| Risk | `claude-haiku-5-5` | `gpt-6-luna` | 4 s (6 s for both) | Keywords and phrases in code |
 
 - The three careful jobs are not timed by anyone waiting, and they read the most text, so they go to the flagship model on the account with the most credit.
 - The two fast jobs sit where someone is waiting: the director before the phone rings, the scorer before the debrief appears. Time both providers on the first evening and put the faster one first.

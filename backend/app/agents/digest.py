@@ -18,7 +18,7 @@ log = logging.getLogger("app.agents.digest")
 JOB = "digest"
 PROMPT_VERSION = "digest.v1"
 NOTE_JOB = "weekly_note"
-NOTE_PROMPT_VERSION = "weekly_note.v1"
+NOTE_PROMPT_VERSION = "weekly_note.v2"
 MAX_PATTERNS = 3
 # Scraped pages can be very long; the warnings are near the top.
 PAGE_CHARS = 15000
@@ -104,7 +104,7 @@ async def write_note(pattern: dict[str, Any], member_name: str, weak_spot: str |
         pattern_view = {key: pattern.get(key) for key in ("title", "summary", "tactics")}
         result = await llm.run_job(
             NOTE_JOB,
-            system=llm.load_prompt(NOTE_JOB),
+            system=llm.load_prompt(NOTE_JOB, NOTE_PROMPT_VERSION.split(".", 1)[1]),
             user=(f"<pattern>\n{json.dumps(pattern_view, ensure_ascii=False)}\n</pattern>\n"
                   f"<person>\n{json.dumps(person, ensure_ascii=False)}\n</person>"),
             schema=WeeklyNote,

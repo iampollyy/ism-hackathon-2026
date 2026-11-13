@@ -38,12 +38,12 @@ PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 # Time limit for each attempt, in seconds (ai.md, the job table).
 JOB_SECONDS: dict[str, float] = {
     "profiler": 30,
-    "planner": 30,
+    "planner": 45,  # runs after the result is shown; nobody waits for it
     "digest": 60,
-    "director": 4,
+    "director": 5,
     "scorer": 8,
     "weekly_note": 15,
-    "risk": 3,
+    "risk": 4,
 }
 
 # Jobs without their own model setting borrow another job's models.

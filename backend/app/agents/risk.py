@@ -41,7 +41,7 @@ PROMPT_VERSION = "risk.v1"
 FALLBACK_VERSION = "fallback"
 CALLER = "agent"  # the `speaker` of the caller's lines: the practice agent plays the caller
 # Both models together (each has llm.JOB_SECONDS["risk"]): the light must keep up with the call.
-TOTAL_SECONDS = 5.0
+TOTAL_SECONDS = 6.0
 MAX_TOKENS = 2000
 REASON_WORDS = 8
 GREEN_REASON = "Nothing worrying yet"

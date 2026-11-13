@@ -1596,12 +1596,18 @@ class SseReader:
 
 @pytest.fixture
 def server(client):
-    """The real app on port 8765 (TestClient cannot read an endless stream)."""
+    """The real app on a free port (TestClient cannot read an endless stream).
+    A free port, not a fixed one, so parallel test runs do not clash."""
+    import socket
+
     import uvicorn
 
     from app.main import app
 
-    config = uvicorn.Config(app, host="127.0.0.1", port=8765, log_level="warning",
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning",
                             timeout_graceful_shutdown=2)
     uv = uvicorn.Server(config)
     thread = threading.Thread(target=uv.run, daemon=True)
@@ -1610,7 +1616,7 @@ def server(client):
     readers: list[SseReader] = []
 
     def open_stream(call_id: str, headers: dict[str, str] | None = None) -> SseReader:
-        reader = SseReader(f"http://127.0.0.1:8765/api/calls/{call_id}/events", headers)
+        reader = SseReader(f"http://127.0.0.1:{port}/api/calls/{call_id}/events", headers)
         readers.append(reader)
         return reader
 
