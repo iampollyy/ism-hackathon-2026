@@ -7,14 +7,21 @@ import { FamilyDashboardPage } from './pages/FamilyDashboardPage/FamilyDashboard
 import { PracticeCallPage } from './pages/PracticeCallPage/PracticeCallPage';
 import { CallResultPage } from './pages/CallResultPage/CallResultPage';
 import { DashboardLayout } from './layouts/DashboardLayout';
-import { PhonePage } from './pages/PhonePage/PhonePage';
-import { LiveCallPage } from './pages/LiveCallPage/LiveCallPage';
-import { FamilyPage } from './pages/FamilyPage/FamilyPage';
-import { FamilySignUpPage } from './pages/FamilySignUpPage/FamilySignUpPage';
+import { lazy, Suspense } from 'react';
+
+// The real app's screens load on demand, so the ElevenLabs/LiveKit SDK (phone
+// page) and the rest never weigh on pages that don't need them.
+const PhonePage = lazy(() => import('./pages/PhonePage/PhonePage').then((m) => ({ default: m.PhonePage })));
+const LiveCallPage = lazy(() => import('./pages/LiveCallPage/LiveCallPage').then((m) => ({ default: m.LiveCallPage })));
+const FamilyPage = lazy(() => import('./pages/FamilyPage/FamilyPage').then((m) => ({ default: m.FamilyPage })));
+const FamilySignUpPage = lazy(() =>
+  import('./pages/FamilySignUpPage/FamilySignUpPage').then((m) => ({ default: m.FamilySignUpPage })),
+);
 
 export default function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<div className="route-loading" aria-busy="true" />}>
       <Routes>
         {/* The phone page is full screen: no sidebar. */}
         <Route path="/phone/:memberId" element={<PhonePage />} />
@@ -35,6 +42,7 @@ export default function App() {
           <Route path="/result" element={<CallResultPage />} />
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
