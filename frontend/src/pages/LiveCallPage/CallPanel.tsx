@@ -16,13 +16,16 @@ const STATUS_PILL: Record<CallStatus, { text: string; tone: 'good' | 'warn' | 'a
   failed: { text: 'Could not connect', tone: 'warn' },
 };
 
-function statusLine(status: CallStatus, target: string, endedBy: EndedBy | null): string {
+function statusLine(status: CallStatus, target: string, endedBy: EndedBy | null, hadConversation: boolean): string {
+  // An error end with no conversation means the voice never connected; after
+  // a conversation it means the connection dropped partway through.
+  const errorText = endedBy !== 'error' ? null : hadConversation ? 'The connection dropped.' : 'The voice could not connect.';
   switch (status) {
     case 'scheduled': return `This practice will ring ${possessive(target)} phone soon.`;
     case 'ringing': return `${possessive(target)} phone is ringing.`;
     case 'in_progress': return `${target} is on the call.`;
-    case 'ended': return endedBy === 'error' ? 'The voice could not connect. Wrapping up the call…' : 'The call has ended. Working out the result…';
-    case 'scored': return endedBy === 'error' ? 'The call is over. The voice could not connect.' : 'The call is over.';
+    case 'ended': return errorText ? `${errorText} Working out the result…` : 'The call has ended. Working out the result…';
+    case 'scored': return errorText ? `The call is over. ${errorText}` : 'The call is over.';
     case 'declined': return `${target} declined the call. That’s fine: no practice this time.`;
     case 'missed': return `${target} didn’t answer in time. No practice this time.`;
     case 'failed': return 'The call could not connect.';
@@ -50,15 +53,20 @@ type CallPanelProps = {
   status: CallStatus;
   endedBy: EndedBy | null;
   connection: Connection;
+  /** Anything was said on the call. */
+  hadConversation: boolean;
 };
 
 /** The call itself: who is called, in whose voice, its state and its length. */
-export function CallPanel({ call, status, endedBy, connection }: CallPanelProps) {
+export function CallPanel({ call, status, endedBy, connection, hadConversation }: CallPanelProps) {
   const target = call.target.name || 'them';
   const running = status === 'in_progress';
   const seconds = useCallSeconds(call.answered_at, call.ended_at, running);
   const ringing = status === 'ringing' || status === 'scheduled';
-  const answered = !ringing && !['declined', 'missed'].includes(status);
+  // Connected for real. A call refused at Answer (consent withdrawn, voice
+  // deleted while it rang) fails with no answered_at and claims no voice.
+  // ended and scored only ever follow in_progress (backend: end_call).
+  const answered = status === 'in_progress' || status === 'ended' || status === 'scored' || !!call.answered_at;
   const pill = STATUS_PILL[status];
   const unanswered = ['declined', 'missed', 'failed'].includes(status);
   const Icon = status === 'ringing' ? PhoneIncoming : running ? PhoneCall : unanswered ? PhoneOff : Phone;
@@ -104,7 +112,7 @@ export function CallPanel({ call, status, endedBy, connection }: CallPanelProps)
             <strong>{seconds === null ? (status === 'ringing' ? 'Ringing…' : status === 'scheduled' ? 'Not yet' : '–') : clock(seconds)}</strong>
           </div>
         )}
-        <p className="lc-call__status">{statusLine(status, target, endedBy)}</p>
+        <p className="lc-call__status">{statusLine(status, target, endedBy, hadConversation)}</p>
       </div>
     </section>
   );

@@ -94,6 +94,10 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
   const stages = deriveStages(state, revealed);
   const stopped = stoppedAt(stages, outcome);
 
+  // Polling rebuilds the screen from the call object, which has no outcome,
+  // reveal or consent: those are only known from the stream (or the result).
+  const fromCallObject = connection === 'polling' || (connection === 'done' && state.source === 'snapshot');
+
   const risk = latestRisk(state);
   const agreed = agreeing(state);
   const callerMarked = new Set<string>(state.tactics.map((tactic) => tactic.key));
@@ -119,7 +123,13 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
 
       <div className="lc-grid">
         <div className="lc-col lc-col--left">
-          <CallPanel call={call} status={status} endedBy={state.endedBy} connection={connection} />
+          <CallPanel
+            call={call}
+            status={status}
+            endedBy={state.endedBy}
+            connection={connection}
+            hadConversation={state.turns.length > 0}
+          />
 
           {isPractice && !final ? (
             <TrafficLight risk={risk} callerMarked={callerMarked} listening={live && !risk} over={over} />
@@ -135,7 +145,7 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
                     ? `${target} agreed to practice calls`
                     : state.consent === false
                       ? `${target} said no to practice calls`
-                      : 'Not asked yet'}
+                      : fromCallObject ? `${possessive(target)} answer is shown on the family page` : 'Not asked yet'}
                 </strong>
               </div>
             </section>
@@ -153,6 +163,7 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
                 result={state.result}
                 callback={state.callback}
                 callbackClosed={callbackWindowOver(call.ended_at)}
+                fromCallObject={fromCallObject}
               />
               <ResultPanel target={target} status={status} result={state.result} hadConversation={state.turns.length > 0} />
             </>

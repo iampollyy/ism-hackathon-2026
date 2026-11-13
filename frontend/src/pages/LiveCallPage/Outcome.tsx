@@ -30,10 +30,13 @@ type OutcomeTilesProps = {
   callback: { seconds: number | null } | null;
   /** Ten minutes have passed since the call ended, so the family number can no longer be tapped for it. */
   callbackClosed: boolean;
+  /** The screen is fed by the call object (polling), which carries no outcome
+   * before scoring: say nothing about what the person did until then. */
+  fromCallObject: boolean;
 };
 
 /** "What Sara did" and "Family number", side by side. */
-export function OutcomeTiles({ target, status, outcome, result, callback, callbackClosed }: OutcomeTilesProps) {
+export function OutcomeTiles({ target, status, outcome, result, callback, callbackClosed, fromCallObject }: OutcomeTilesProps) {
   const done = result?.outcome ?? outcome?.outcome ?? null;
   const seconds = result?.seconds_to_challenge ?? outcome?.secondsToChallenge ?? null;
   const safe = isSafe(done);
@@ -44,6 +47,9 @@ export function OutcomeTiles({ target, status, outcome, result, callback, callba
   if (done) {
     didText = OUTCOME_LABELS[done];
     didDetail = outcomeDetail(done, seconds);
+  } else if (status === 'in_progress' && fromCallObject) {
+    didText = 'Shown when the call is scored';
+    didDetail = `This screen is updating every second, and learns what ${target} did once the call is scored.`;
   } else if (status === 'in_progress') {
     didText = 'Listening…';
     didDetail = `This turns green when ${target} checks who is calling or hangs up.`;

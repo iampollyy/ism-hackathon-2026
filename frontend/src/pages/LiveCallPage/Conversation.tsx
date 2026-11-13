@@ -25,6 +25,7 @@ export function Conversation({
 }: ConversationProps) {
   const body = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
+  const lastTop = useRef(0);
 
   // Follow the newest line, unless someone scrolled up to read.
   useEffect(() => {
@@ -32,9 +33,16 @@ export function Conversation({
     if (el && stick.current) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [turns.length, tactics.length, lightChanges.size]);
 
+  // Only a scroll upwards (someone reading back) stops the following, and
+  // reaching the bottom again restarts it. The page's own smooth scroll only
+  // ever goes down, so lines arriving close together never switch it off.
   const onScroll = () => {
     const el = body.current;
-    if (el) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (!el) return;
+    const top = el.scrollTop;
+    if (el.scrollHeight - top - el.clientHeight < 80) stick.current = true;
+    else if (top < lastTop.current - 1) stick.current = false;
+    lastTop.current = top;
   };
 
   return (
