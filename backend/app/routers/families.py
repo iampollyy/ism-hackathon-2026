@@ -12,8 +12,8 @@ from app import schemas
 from app.config import get_settings
 from app.db import get_db, now_iso, parse_time, utcnow
 from app.ids import new_family_id, new_member_id
-from app.models import Call, Consent, Family, Member, Message, ReadinessSnapshot
-from app.services import consent, limits
+from app.models import Account, Call, Consent, Family, Member, MemberJoin, Message, ReadinessSnapshot
+from app.services import accounts, consent, limits
 
 router = APIRouter(tags=["families"])
 
@@ -31,7 +31,10 @@ def phone_link(member_id: str) -> str:
 
 
 @router.post("/families", status_code=201, response_model=schemas.FamilyCreated)
-async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db)) -> schemas.FamilyCreated:
+async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db),
+                        account: Account | None = Depends(accounts.optional_account)) -> schemas.FamilyCreated:
+    """Works without a log-in; with one, the family also belongs to the
+    account (family_owners, track 1)."""
     limits.check(db, "family")
     now = now_iso()
     family = Family(id=new_family_id(), name=body.name.strip(), safe_word_set=body.safe_word_set, created_at=now)
@@ -54,6 +57,8 @@ async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db
             db.add(Consent(member_id=member.id, kind="practice", source="manual",
                            evidence="sign-up tick", created_at=now))
         links.append(schemas.MemberLink(id=member.id, name=member.name, phone_link=phone_link(member.id)))
+    if account is not None:
+        accounts.claim_family(db, account, family.id)
     db.commit()
     return schemas.FamilyCreated(family_id=family.id, members=links)
 
@@ -187,6 +192,7 @@ def member_view(db: Session, member: Member) -> schemas.MemberView:
     plan = _as_dict(_load_json(member.plan_json))
     opted_out = member.opted_out_at is not None
     voice_ready = member.voice_status == "ready" and member.voice_id is not None and not opted_out
+    joined = db.get(MemberJoin, member.id)
     return schemas.MemberView(
         id=member.id,
         name=member.name,
@@ -204,6 +210,10 @@ def member_view(db: Session, member: Member) -> schemas.MemberView:
         weak_spot=plan.get("weak_spot") or profile.get("weak_spot"),
         said=profile.get("said"),
         plan=plan_view(plan) if plan else None,
+        invite_link=f"/join/{member.id}",
+        joined=joined is not None,
+        joined_at=joined.joined_at if joined else None,
+        phone_number=joined.phone_number if joined else None,
     )
 
 

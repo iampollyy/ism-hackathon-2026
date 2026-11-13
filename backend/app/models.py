@@ -186,3 +186,62 @@ class ModelRun(Base):
     input_tokens: Mapped[int | None] = mapped_column(Integer)
     output_tokens: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+# ---------------------------------------------------------------- track 1: organiser accounts, invites and joining
+# New tables only (the server's SQLite file already exists; create_all adds
+# tables, never columns). The rules are in docs/full-app/track1.md.
+
+
+class Account(Base):
+    """An organiser's log-in. email is stored lower-cased; password_hash is
+    services/accounts.hash_password's text (scrypt with its parameters)."""
+
+    __tablename__ = "accounts"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)  # acc_...
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class AuthSession(Base):
+    """A logged-in browser. Only the sha256 of the cookie's token is kept."""
+
+    __tablename__ = "sessions"
+
+    token_hash: Mapped[str] = mapped_column(String, primary_key=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), nullable=False, index=True)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    expires_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class FamilyOwner(Base):
+    """Which account created a family (POST /api/families with a session)."""
+
+    __tablename__ = "family_owners"
+
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), primary_key=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), nullable=False, index=True)
+
+
+class LoginFailure(Base):
+    """One wrong log-in for an email (lower-cased), for the 429 after too many."""
+
+    __tablename__ = "login_failures"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class MemberJoin(Base):
+    """A member who opened their invite link (/join/{member_id}) and joined.
+    Joining again updates phone_number; joined_at stays the first join's time."""
+
+    __tablename__ = "member_joins"
+
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), primary_key=True)
+    joined_at: Mapped[str] = mapped_column(String, nullable=False)
+    phone_number: Mapped[str | None] = mapped_column(String)

@@ -3,7 +3,9 @@
 - GET /api/members/{id}/phone-state, once a second: records last_seen_at;
   incoming_call is set only while a welcome or practice call for this
   member is ringing, and never once the member has opted out; messages are
-  the unread ones.
+  the unread ones. For a member who joined by their invite link and never
+  had a welcome call, the poll first starts one (services/joining.py,
+  auto_welcome_call), so it rings on this same answer.
 - POST /api/members/{id}/messages/read: marks messages read (all, or `ids`).
 - POST /api/members/{id}/family-line: finds this member's latest practice
   that ended in the last ten minutes (404 no_recent_practice if none),
@@ -48,7 +50,7 @@ from app.ids import new_call_id
 from app.models import Call, Family, Member, Message, ReadinessSnapshot, Result
 from app.routers.calls import (DEFAULT_CALLER_LABEL, DEFAULT_CALLER_NUMBER, change_status, get_member,
                                start_after_call, start_session)
-from app.services import limits, readiness
+from app.services import joining, limits, readiness
 
 router = APIRouter(tags=["phone"])
 
@@ -92,6 +94,7 @@ async def phone_state(member_id: str, db: DbSession = Depends(get_db)) -> schema
     member = get_member(db, member_id)
     member.last_seen_at = now_iso()
     db.commit()
+    joining.auto_welcome_call(db, member)  # track 1: a joined member's first welcome call; never raises
     family = db.get(Family, member.family_id)
     return schemas.PhoneState(
         member=schemas.PhoneMember(id=member.id, name=member.name, family=family.name if family else ""),
