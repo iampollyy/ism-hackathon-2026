@@ -4,11 +4,12 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -28,6 +29,7 @@ STATUS_CODES = {
     409: "conflict",
     413: "too_large",
     415: "unsupported_media_type",
+    429: "too_many_requests",
     422: "invalid_request",
     502: "upstream_failed",
 }
@@ -115,7 +117,35 @@ def create_app() -> FastAPI:
 
     for module in (families, voice, phone, push, scenarios, calls, streams, weekly, dev):
         app.include_router(module.router, prefix="/api")
+    mount_frontend(app)
     return app
+
+
+def mount_frontend(app: FastAPI) -> None:
+    """Serve the built front end (settings.frontend_dist) at /, for a server
+    where the back end runs alone. Files that exist are served as they are
+    (hashed assets cached for a year); every other path gets index.html, so
+    the app's own routes (/phone/..., /family/...) work on reload. /api paths
+    never fall through to the front end."""
+    raw = get_settings().frontend_dist
+    if not raw:
+        return
+    dist = Path(raw).expanduser().resolve()
+    index = dist / "index.html"
+    if not index.is_file():
+        log.warning("FRONTEND_DIST %s has no index.html; not serving the front end", dist)
+        return
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def frontend(full_path: str) -> FileResponse:
+        if full_path == "api" or full_path.startswith("api/"):
+            raise StarletteHTTPException(404, "Not Found")
+        if full_path:
+            candidate = (dist / full_path).resolve()
+            if candidate.is_file() and candidate.is_relative_to(dist):
+                cache = "public, max-age=31536000, immutable" if full_path.startswith("assets/") else "no-cache"
+                return FileResponse(candidate, headers={"Cache-Control": cache})
+        return FileResponse(index, headers={"Cache-Control": "no-cache"})
 
 
 app = create_app()

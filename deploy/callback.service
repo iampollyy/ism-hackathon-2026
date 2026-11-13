@@ -1,0 +1,20 @@
+# systemd unit for the Callback back end (installed by setup-server.sh).
+# One process only: the live streams and the scheduler live in memory.
+[Unit]
+Description=Callback back end (FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=callback
+Group=callback
+WorkingDirectory=/home/callback/app/backend
+Environment=FRONTEND_DIST=/home/callback/app/frontend-dist
+ExecStart=/home/callback/app/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8090 --timeout-graceful-shutdown 3 --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=always
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

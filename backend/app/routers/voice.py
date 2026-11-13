@@ -29,7 +29,7 @@ from app.config import get_settings
 from app.db import get_db, now_iso
 from app.models import Consent, Member
 from app.services import audio as audio_service
-from app.services import elevenlabs
+from app.services import elevenlabs, limits
 
 log = logging.getLogger("app.voice")
 
@@ -173,6 +173,7 @@ async def upload_voice(member_id: str, audio: UploadFile = File(...),
     member = _member_or_404(db, member_id)
     if member.opted_out_at:
         raise schemas.ApiError(409, "opted_out", "This member has opted out.")
+    limits.check(db, "clone")
     content = await _read_upload(audio)
     extension = upload_extension(audio.filename, audio.content_type)
     original = await _save_consent_recording(db, member, content, extension)

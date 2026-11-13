@@ -47,7 +47,7 @@ from app.ids import new_call_id
 from app.models import Call, Family, Member, Message, ReadinessSnapshot, Result
 from app.routers.calls import (DEFAULT_CALLER_LABEL, DEFAULT_CALLER_NUMBER, change_status, get_member,
                                start_after_call, start_session)
-from app.services import readiness
+from app.services import limits, readiness
 
 router = APIRouter(tags=["phone"])
 
@@ -225,6 +225,7 @@ async def family_line(member_id: str, db: DbSession = Depends(get_db)) -> schema
     practice = recent_practice(db, member.id)
     if practice is None:
         raise schemas.ApiError(404, "no_recent_practice", "No practice call ended in the last ten minutes.")
+    limits.check(db, "call")
     now = now_iso()
     end_open_family_lines(db, member.id, now)
     first_tap = practice.callback_seconds is None

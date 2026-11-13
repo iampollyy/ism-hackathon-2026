@@ -62,6 +62,15 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///data/app.db"
     media_dir: str = "media"
 
+    # Daily caps for a public deployment (services/limits.py); 0 means no cap.
+    daily_family_limit: int = 0
+    daily_clone_limit: int = 0
+    daily_call_limit: int = 0
+
+    # The built front end (frontend/dist) to serve at /, when the back end runs
+    # alone on a server. Empty: the back end serves only /api (Vite serves the rest).
+    frontend_dist: str = ""
+
     # Background loop (tests switch it off)
     scheduler_enabled: bool = True
 
