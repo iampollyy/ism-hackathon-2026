@@ -7,9 +7,12 @@ with the error shape {"error": {"code", "message"}}.
 No shape here has a field for the safe word. Only `safe_word_set` exists.
 """
 
+import base64
+import re
 from typing import Annotated, Any, Literal, Union
+from urllib.parse import urlsplit
 
-from pydantic import BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field
 
 # ---------------------------------------------------------------- fixed lists
 
@@ -373,6 +376,63 @@ class PhoneState(BaseModel):
 
 class MessagesRead(BaseModel):
     ids: list[int] | None = None  # None: mark all as read
+
+
+# ---------------------------------------------------------------- web push
+
+# The push services the browsers use (Chrome and Android, Firefox, Safari and
+# iOS, Edge). We POST to the endpoint a page sends, so only these hosts are taken.
+PUSH_SERVICE_HOSTS = ("fcm.googleapis.com", "push.services.mozilla.com", "push.apple.com", "notify.windows.com")
+
+
+def _b64url_bytes(value: str) -> bytes:
+    if not re.fullmatch(r"[A-Za-z0-9_-]+={0,2}", value):
+        raise ValueError("must be URL-safe base64")
+    stripped = value.rstrip("=")
+    return base64.urlsafe_b64decode(stripped + "=" * (-len(stripped) % 4))
+
+
+def _p256dh(value: str) -> str:
+    raw = _b64url_bytes(value)
+    if len(raw) != 65 or raw[0] != 4:
+        raise ValueError("must be an uncompressed P-256 public key")
+    return value
+
+
+def _auth_secret(value: str) -> str:
+    if len(_b64url_bytes(value)) != 16:
+        raise ValueError("must be 16 bytes")
+    return value
+
+
+def _push_endpoint(value: str) -> str:
+    url = urlsplit(value)
+    host = (url.hostname or "").lower()
+    if url.scheme != "https" or not any(host == known or host.endswith("." + known)
+                                        for known in PUSH_SERVICE_HOSTS):
+        raise ValueError("must be the https address of a browser push service")
+    return value
+
+
+class PushKeys(BaseModel):
+    p256dh: Annotated[str, Field(max_length=200), AfterValidator(_p256dh)]
+    auth: Annotated[str, Field(max_length=100), AfterValidator(_auth_secret)]
+
+
+class PushSubscriptionIn(BaseModel):
+    """The browser's PushSubscription.toJSON(); expirationTime is ignored."""
+
+    endpoint: Annotated[str, Field(max_length=2048), AfterValidator(_push_endpoint)]
+    keys: PushKeys
+
+
+class PushSubscriptionRemove(BaseModel):
+    endpoint: str = Field(min_length=1, max_length=2048)  # toJSON() works here too
+
+
+class PushPublicKey(BaseModel):
+    enabled: bool  # False: push is off (no VAPID keys set); do not subscribe
+    public_key: str | None = None  # for pushManager.subscribe({applicationServerKey})
 
 
 # ---------------------------------------------------------------- scenarios

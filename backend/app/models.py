@@ -18,6 +18,8 @@ Conventions:
   - call_events.data_json: the event's fields, without seq and t.
   - readiness_snapshots.items_json: [{key, score, evidence?}] with the five
     keys from schemas.READINESS_KEYS; total is their sum, max is 10.
+
+Added after backend.md: push_subscriptions (Web Push, services/push.py).
 """
 
 from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text, UniqueConstraint
@@ -140,6 +142,23 @@ class Message(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
     read_at: Mapped[str | None] = mapped_column(String)
+
+
+class PushSubscription(Base):
+    """One browser's Web Push subscription (PushSubscription.toJSON()), for
+    one member. The endpoint is unique: subscribing again from the same
+    browser updates the row, and moves it to that member."""
+
+    __tablename__ = "push_subscriptions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), nullable=False, index=True)
+    endpoint: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    p256dh: Mapped[str] = mapped_column(String, nullable=False)
+    auth: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    last_success_at: Mapped[str | None] = mapped_column(String)
+    failure_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # in a row; a success resets it
 
 
 class Digest(Base):
