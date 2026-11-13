@@ -20,7 +20,6 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import new_session, now_iso, seconds_between
@@ -29,7 +28,8 @@ from app.models import Call, CallEvent
 # call_id -> set of (loop, queue) pairs, one per open subscriber
 _subscribers: dict[str, set[tuple[asyncio.AbstractEventLoop, asyncio.Queue]]] = {}
 _subscribers_lock = threading.Lock()
-# Serialises seq allocation, so two publishes at once never take the same seq.
+# Serialises seq allocation and fan-out, so two publishes at once never take
+# the same seq and go out in seq order.
 _seq_lock = threading.Lock()
 
 
@@ -64,22 +64,16 @@ def _insert_event(db: Session, call_id: str, type: str, data: dict[str, Any]) ->
 
 
 def _store(call_id: str, type: str, data: dict[str, Any], db: Session | None) -> dict[str, Any]:
-    with _seq_lock:
-        for attempt in range(3):
-            try:
-                if db is not None:
-                    row = _insert_event(db, call_id, type, data)
-                    return _row_to_event(row)
-                with new_session() as own_db:
-                    row = _insert_event(own_db, call_id, type, data)
-                    return _row_to_event(row)
-            except IntegrityError:
-                # Another writer took this seq; roll back and try the next one.
-                if db is not None:
-                    db.rollback()
-                if attempt == 2:
-                    raise
-    raise RuntimeError("unreachable")
+    """Insert and commit one event. Call with _seq_lock held.
+
+    No retry: inside this one process _seq_lock already serialises seq
+    allocation, so an IntegrityError means the caller's own pending writes
+    are bad. It is raised as is, and rolling back is the caller's job.
+    """
+    if db is not None:
+        return _row_to_event(_insert_event(db, call_id, type, data))
+    with new_session() as own_db:
+        return _row_to_event(_insert_event(own_db, call_id, type, data))
 
 
 def _fan_out(event: dict[str, Any]) -> None:
@@ -93,7 +87,10 @@ def _fan_out(event: dict[str, Any]) -> None:
         if loop is current_loop:
             queue.put_nowait(event)
         elif not loop.is_closed():
-            loop.call_soon_threadsafe(queue.put_nowait, event)
+            try:
+                loop.call_soon_threadsafe(queue.put_nowait, event)
+            except RuntimeError:
+                pass  # that loop closed just now; its subscriber is gone
 
 
 def publish(call_id: str, type: str, data: dict[str, Any] | None = None,
@@ -104,9 +101,12 @@ def publish(call_id: str, type: str, data: dict[str, Any] | None = None,
     `db`: pass your request's session if it has uncommitted writes; publish
     then uses it and COMMITS it. Without `db`, publish opens its own short
     session, so commit your own changes first (SQLite allows one writer).
+    If that commit fails (your own writes were bad), the error is raised and
+    nothing is stored or sent; roll your session back yourself.
     """
-    event = _store(call_id, type, dict(data or {}), db)
-    _fan_out(event)
+    with _seq_lock:
+        event = _store(call_id, type, dict(data or {}), db)
+        _fan_out(event)  # inside the lock, so events go out in seq order
     return event
 
 
@@ -139,6 +139,18 @@ def _remove_subscriber(call_id: str, entry: tuple[asyncio.AbstractEventLoop, asy
                 del _subscribers[call_id]
 
 
+def _in_order(call_id: str, last_seq: int, event: dict[str, Any]) -> list[dict[str, Any]]:
+    """The events to send after last_seq, given a live event that just came in.
+
+    An event published from another thread can arrive before an earlier one.
+    If there is a gap, read the stored events instead (every event is stored
+    before it is sent), so nothing is skipped and the order holds.
+    """
+    if event["seq"] == last_seq + 1:
+        return [event]
+    return list_events(call_id, last_seq)
+
+
 async def subscribe(call_id: str, after_seq: int = 0,
                     keepalive_seconds: float | None = None) -> AsyncIterator[dict[str, Any] | None]:
     """Yield the call's stored events after after_seq, then live ones, forever.
@@ -165,9 +177,10 @@ async def subscribe(call_id: str, after_seq: int = 0,
                 yield None
                 continue
             if event["seq"] <= last_seq:
-                continue  # already sent in the replay
-            last_seq = event["seq"]
-            yield event
+                continue  # already sent
+            for item in _in_order(call_id, last_seq, event):
+                last_seq = item["seq"]
+                yield item
     finally:
         _remove_subscriber(call_id, entry)
 

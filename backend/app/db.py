@@ -5,6 +5,13 @@
   and commit yourself.
 - Times are stored as ISO 8601 text in UTC: use now_iso() to write and
   parse_time() to read.
+
+Hard rule: commit (or roll back) before every await of network or model I/O;
+never hold uncommitted writes across an await. Every request and background
+job shares one event loop, and SQLite has one writer: a session that has
+flushed a write holds the write lock until it commits. Another coroutine that
+writes meanwhile blocks the whole loop (busy_timeout), so the holder cannot
+resume either, and the writer then fails with "database is locked".
 """
 
 from collections.abc import Iterator
@@ -41,7 +48,9 @@ def _set_sqlite_pragmas(dbapi_connection, _record) -> None:
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA journal_mode=WAL")
     cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.execute("PRAGMA busy_timeout=5000")
+    # Short on purpose: inside one event loop a wait never helps (see the rule
+    # above), so a mistake should fail fast instead of freezing the app.
+    cursor.execute("PRAGMA busy_timeout=1000")
     cursor.close()
 
 

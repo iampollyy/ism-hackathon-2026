@@ -12,6 +12,16 @@
   stream, writes a callback_notice message for the voice member ("Sara called
   the family number after a practice."), returns call_id and the session
   from sessions.build_session.
+  Readiness ("tapped within a minute", ai.md): if the practice's result
+  already exists, the pipeline has finished, so write a new
+  readiness_snapshots row for this member here: the member's latest
+  snapshot's scores through readiness.apply_callback(scores, seconds),
+  source_call_id = the practice (skip it if the member has no snapshot or
+  nothing changes). If the result does not exist yet, do nothing more: the
+  pipeline re-reads calls.callback_seconds when it inserts the result.
+  Do all these writes and commit them BEFORE awaiting
+  sessions.build_session (db.py, "Hard rule"), with no await between
+  checking for the result and the commit.
 """
 
 from fastapi import APIRouter, Body

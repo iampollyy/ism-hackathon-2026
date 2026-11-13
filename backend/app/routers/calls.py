@@ -1,14 +1,13 @@
 """Starting, answering, reporting and reading calls. OWNER: track B.
 
 Rules (docs/backend.md):
-- POST /api/practice-calls checks in order: both members exist in one family
-  (404 not_found); target consented to practice and not opted out (409
-  consent_missing); voice member consented to cloning, voice ready, not opted
-  out (409 voice_not_ready); target has no call ringing or in progress (409
-  busy); target's phone seen in the last ten seconds (409 phone_offline).
-  Then briefs.build_brief(...), store brief_json, caller_label,
-  caller_number, and set ringing (ring_at=now) or scheduled (scheduled_for).
-- answer: in_progress, answered_at=now, sessions.build_session(db, call).
+- POST /api/practice-calls is a thin wrapper around create_practice()
+  (below), which the weekly run (track C) also calls. The checks live in
+  check_practice_gate(), which the scheduler also re-runs before ringing a
+  scheduled practice.
+- answer: in_progress, answered_at=now, COMMIT, then
+  sessions.build_session(db, call). Never hold uncommitted writes across an
+  await (db.py, "Hard rule").
 - events: stamp t and seq via events.publish; tactic gets its label from
   schemas.TACTIC_LABELS; the first outcome also gets seconds_to_challenge;
   a welcome `consent` with given=true sets consent_practice_at and writes a
@@ -18,10 +17,45 @@ Rules (docs/backend.md):
 """
 
 from fastapi import APIRouter
+from sqlalchemy.orm import Session as DbSession
 
 from app import schemas
+from app.models import Call, Member
 
 router = APIRouter(tags=["calls"])
+
+
+def check_practice_gate(db: DbSession, target_member_id: str, voice_member_id: str | None,
+                        check_phone_online: bool = True) -> tuple[Member, Member | None]:
+    """The checks for a practice call, in backend.md's order, each raising
+    schemas.ApiError:
+    1. both members exist and are in one family (404 not_found);
+    2. target has consent_practice_at and has not opted out (409 consent_missing);
+    3. if a voice member is given: consent_clone_at, voice_status ready, a
+       voice_id, not opted out (409 voice_not_ready);
+    4. target has no call ringing or in progress (409 busy);
+    5. only if check_phone_online: target's last_seen_at within ten seconds
+       (409 phone_offline).
+    Returns (target, voice_member). Reads only. Used by create_practice and
+    by scheduler.tick (check_phone_online=False). OWNER: track B."""
+    raise NotImplementedError
+
+
+async def create_practice(db: DbSession, target_member_id: str, voice_member_id: str | None,
+                          scenario: str, difficulty: int, delay_seconds: int = 0,
+                          check_phone_online: bool = True) -> Call:
+    """Create one practice call; the only code that makes one (POST
+    /api/practice-calls, and the weekly run with check_phone_online=False).
+    1. check_practice_gate(db, target_member_id, voice_member_id, check_phone_online);
+    2. briefs.build_brief(db, target, voice_member, scenario, difficulty);
+       it awaits the director, so hold no uncommitted writes before it;
+    3. check busy again (another call may have started during the await);
+    4. store the call: brief_json (the variables), caller_label,
+       caller_number, and status ringing (ring_at=now) when delay_seconds is
+       0, else scheduled (scheduled_for = now + delay_seconds); commit;
+       if it rings now, publish call.status {status: ringing}.
+    Returns the stored Call. Raises schemas.ApiError. OWNER: track B."""
+    raise NotImplementedError
 
 SAMPLE_SESSION = schemas.Session(
     kind="practice",

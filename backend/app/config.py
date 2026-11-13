@@ -7,6 +7,7 @@ Every field is optional with a safe default, so the app starts with an empty
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -23,8 +24,10 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Secrets use repr=False, so repr(), logs and tracebacks never show them.
+
     # ElevenLabs
-    elevenlabs_api_key: str = ""
+    elevenlabs_api_key: str = Field(default="", repr=False)
     elevenlabs_welcome_agent_id: str = ""
     elevenlabs_practice_agent_id: str = ""
     elevenlabs_family_line_agent_id: str = ""
@@ -35,9 +38,9 @@ class Settings(BaseSettings):
     fake_elevenlabs: bool = False
 
     # Model providers
-    openai_api_key: str = ""
-    anthropic_api_key: str = ""
-    firecrawl_api_key: str = ""
+    openai_api_key: str = Field(default="", repr=False)
+    anthropic_api_key: str = Field(default="", repr=False)
+    firecrawl_api_key: str = Field(default="", repr=False)
 
     # Model per job: "first,second"
     profiler_models: str = "gpt-6-astra,claude-opus-5-5"

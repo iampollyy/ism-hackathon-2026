@@ -25,5 +25,7 @@ async def build_brief(db: DbSession, target: Member, voice_member: Member | None
     comma-separated string), difficulty, reveal_line (fixed wording, built in
     code, never by a model). Must never wait more than a few seconds and
     never fail: the template is the fallback.
+    Reads only and commits nothing. It awaits the director, so the caller
+    must hold no uncommitted writes when calling it (db.py, "Hard rule").
     OWNER: track A."""
     raise NotImplementedError

@@ -4,6 +4,14 @@ POST /api/families/{id}/weekly-run: Firecrawl fetches two or three public
 scam-warning pages, the digest job reduces them (one digest per week, shared),
 the planner picks one action per member (message, practice or reminder),
 messages go to `messages`, practices become `scheduled` calls.
+
+Create each practice with calls.create_practice(db, target_member_id,
+voice_member_id, scenario, difficulty, delay_seconds=<seconds until the
+planned time, at least 1>, check_phone_online=False), never by building a
+Call row here: it holds the consent gate. If it raises schemas.ApiError
+(no consent, voice not ready, busy), send that member a reminder message
+instead. Commit before every await of Firecrawl or a model (db.py,
+"Hard rule").
 """
 
 from fastapi import APIRouter

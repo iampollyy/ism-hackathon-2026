@@ -4,10 +4,13 @@ import asyncio
 import threading
 from contextlib import aclosing
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from app import events
 from app.db import new_session, now_iso
 from app.ids import new_call_id
-from app.models import Call
+from app.models import Call, Message
 
 
 def make_call(make_family, answered: bool = True) -> str:
@@ -81,6 +84,41 @@ async def test_subscribe_keepalive_yields_none(client, make_family):
             assert event is None
             break
     assert events.subscriber_count(call_id) == 0
+
+
+def test_publish_with_bad_caller_writes_raises_and_stores_nothing(client, make_family):
+    call_id = make_call(make_family)
+    with new_session() as db:
+        db.get(Call, call_id).status = "ended"
+        db.add(Message(member_id="mem_missing", kind="weekly", text="x", created_at=now_iso()))
+        with pytest.raises(IntegrityError):
+            events.publish(call_id, "call.status", {"status": "ended"}, db=db)
+        db.rollback()
+    assert events.list_events(call_id) == []
+    with new_session() as db:
+        assert db.get(Call, call_id).status == "in_progress"
+
+
+async def test_subscribe_fills_a_gap_in_order(client, make_family):
+    call_id = make_call(make_family)
+    received: list[int] = []
+
+    async def listen() -> None:
+        async with aclosing(events.subscribe(call_id)) as stream:
+            async for event in stream:
+                received.append(event["seq"])
+                if len(received) == 2:
+                    break
+
+    task = asyncio.create_task(listen())
+    await asyncio.sleep(0.05)
+    # Seq 1 is stored but its fan-out is late (as from another thread); seq 2 overtakes it.
+    with events._seq_lock:
+        late = events._store(call_id, "turn", {"text": "first"}, None)
+    events.publish(call_id, "turn", {"text": "second"})
+    await asyncio.wait_for(task, timeout=2)
+    events._fan_out(late)
+    assert received == [1, 2]
 
 
 def test_sse_format():
