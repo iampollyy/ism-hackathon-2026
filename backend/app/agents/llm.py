@@ -43,13 +43,14 @@ JOB_SECONDS: dict[str, float] = {
     "director": 4,
     "scorer": 8,
     "weekly_note": 15,
+    "risk": 3,
 }
 
 # Jobs without their own model setting borrow another job's models.
 MODELS_FROM: dict[str, str] = {}
 
 # The fast jobs sit where someone waits, so Claude thinks less on them.
-CLAUDE_EFFORT: dict[str, str] = {"director": "low", "scorer": "low", "weekly_note": "low"}
+CLAUDE_EFFORT: dict[str, str] = {"director": "low", "scorer": "low", "weekly_note": "low", "risk": "low"}
 
 ERROR_CHARS = 500
 

@@ -17,7 +17,9 @@ Rules (docs/backend.md):
   (time since answered_at, capped at ended_at for a batch that arrives
   after the end; later outcomes get none); a welcome
   `consent` with given=true sets consent_practice_at and writes a consents
-  row (practice, welcome_call).
+  row (practice, welcome_call). A batch for a practice call that holds a
+  caller turn (speaker "agent") starts the live risk check in the
+  background (services.live_risk); the answer does not wait for it.
 - end: status ended, ended_at, ended_by, publish call.status, answer at
   once, then services.run_in_background(pipeline.after_call(call_id), ...).
 - Every status change publishes call.status {status} on the call's stream.
@@ -36,6 +38,7 @@ from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, Depends
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
@@ -43,7 +46,7 @@ from app import events, schemas
 from app.db import get_db, now_iso, parse_time, seconds_between, to_iso, utcnow
 from app.ids import new_call_id
 from app.models import Call, CallEvent, Consent, Member, Result
-from app.services import briefs, pipeline, run_in_background, sessions
+from app.services import briefs, live_risk, pipeline, run_in_background, sessions
 
 log = logging.getLogger("app.calls")
 
@@ -377,6 +380,8 @@ async def post_events(call_id: str, body: schemas.EventsBatch,
         if item.type == "consent" and item.given and call.kind == "welcome":
             record_spoken_consent(db, call)
         events.publish(call.id, item.type, data, db=db)  # commits the consent too
+    if call.kind == "practice" and any(item.type == "turn" and item.speaker == "agent" for item in body.events):
+        live_risk.start_check(call.id)  # in the background, on the transcript so far
     return schemas.Ok()
 
 
@@ -422,6 +427,20 @@ def turns_and_tactics(stored: list[dict[str, Any]]) -> tuple[list[schemas.TurnVi
     return turns, tactics
 
 
+def risk_points(stored: list[dict[str, Any]]) -> list[schemas.RiskPointView]:
+    """The live risk check's results (`risk` events), in order, so the
+    result screen can replay the light."""
+    points: list[schemas.RiskPointView] = []
+    for event in stored:
+        if event["type"] != "risk":
+            continue
+        try:
+            points.append(schemas.RiskPointView.model_validate({**event["data"], "t": event["t"]}))
+        except ValidationError:
+            log.warning("skipping a malformed risk event on call %s", event["call_id"])
+    return points
+
+
 def tactic_list(raw: str | None) -> list[str]:
     try:
         values = json.loads(raw) if raw else []
@@ -450,7 +469,8 @@ def result_view(db: DbSession, call: Call) -> schemas.CallResultView | None:
 def call_view(db: DbSession, call: Call) -> schemas.CallView:
     target = db.get(Member, call.target_member_id)
     voice = db.get(Member, call.voice_member_id) if call.voice_member_id else None
-    turns, tactics = turns_and_tactics(events.list_events(call.id, db=db))
+    stored = events.list_events(call.id, db=db)
+    turns, tactics = turns_and_tactics(stored)
     return schemas.CallView(
         id=call.id,
         kind=call.kind,
@@ -462,6 +482,7 @@ def call_view(db: DbSession, call: Call) -> schemas.CallView:
         caller_label=call.caller_label,
         turns=turns,
         tactics=tactics,
+        risk=risk_points(stored),
         result=result_view(db, call),
         callback_seconds=call.callback_seconds,
         answered_at=call.answered_at,
