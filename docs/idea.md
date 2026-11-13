@@ -121,7 +121,7 @@ These decide the design. Not legal advice.
 | Part | Built with | Notes from the docs check |
 |---|---|---|
 | Calls | ElevenLabs agents in the browser, with the `@elevenlabs/react` library | The phone page starts the conversation with a short-lived token from our back end ([React library](https://elevenlabs.io/docs/eleven-agents/libraries/react.md)). Browser conversations use the plan's agent minutes. |
-| Voice per call | Overrides passed when the conversation starts | The voice id, the prompt and the first message. Each field must first be switched on in the agent's Security tab, or the conversation fails to start ([overrides](https://elevenlabs.io/docs/eleven-agents/customization/personalization/overrides.md)). |
+| Voice per call | A voice override, plus dynamic variables for the person and the story | The voice override must first be switched on in the agent's Security tab, or the conversation fails to start; variables need no switch ([overrides](https://elevenlabs.io/docs/eleven-agents/customization/personalization/overrides.md)). |
 | Cloning | ElevenLabs instant voice cloning | `POST /v1/voices/add` with `name` and `files`; returns `voice_id` ([docs](https://elevenlabs.io/docs/api-reference/voices/ivc/create.md)). The docs say under two minutes can give a usable clone; use one to two minutes of clean microphone audio. |
 | Live events | Client tools and the library's callbacks | The agent calls `mark_tactic` and `practice_result`, which run in the page ([client tools](https://elevenlabs.io/docs/eleven-agents/customization/tools/client-tools.md)). `onMessage` gives each line as it is spoken. |
 | The transcript after a call | `GET /v1/convai/conversations/{conversation_id}` | Each entry has `role` (`user` or `agent`), `message` and `time_in_call_secs` ([docs](https://elevenlabs.io/docs/eleven-agents/api-reference/conversations/get.md)). No webhook needed. |
@@ -151,6 +151,8 @@ Ordered by how much each one lifts the product, the video or the pitch.
 
 The ElevenLabs names below were checked against their docs on 13 Nov at about 16:20. The rest is our design; check each piece as you wire it.
 
+**The full specs are in two files:** [backend.md](backend.md) (layout, tables, every request and response, the flows, the rules enforced in code) and [ai.md](ai.md) (the three voice agents, the model jobs, all prompts, the readiness scale). This section was brought in line with them on Friday at about 17:45; if they ever differ, those two files are newer.
+
 ### Start here: stack, layout and the contract
 
 **Confirmed on Friday 13 Nov, updated at about 16:30 for the browser version:** the stack below, the contract below, and the owners. Denis owns the back end and the ElevenLabs account, including its set-up. The front-end colleague owns `frontend/`. The data scientist owns the agents' scripts, the survey, the scoring scale and the plan format.
@@ -159,7 +161,7 @@ The ElevenLabs names below were checked against their docs on 13 Nov at about 16
 - Front end: React with Vite, already set up in `frontend/`, plus `@elevenlabs/react` for the agent conversation on the phone page.
 - Back end: Python with FastAPI in `backend/`. The repo's ignore file already covers Python, audio clean-up is easy with ffmpeg, and the prompts and scoring can be written by anyone on the team.
 - Database: SQLite to start.
-- Live updates to the browser: server-sent events, one stream per call for the laptop screen and one per member for their phone page.
+- Live updates to the browser: server-sent events for the laptop's call screen, opened on `localhost`. The phone pages poll once a second instead, because Cloudflare's quick tunnels do not carry server-sent events ([Cloudflare docs](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/do-more-with-tunnels/trycloudflare/)).
 - **HTTPS for the phones.** A phone browser gives a page the microphone only over HTTPS (localhost is the one exception). Run one free tunnel, for example cloudflared, to the Vite dev server, and proxy `/api` from Vite to FastAPI, so phones and laptop share one HTTPS address. Vite 6 refuses unknown host names, so add the tunnel's host to `server.allowedHosts`. Nothing on the ElevenLabs side points at the tunnel, so a new address only changes the links.
 - Secrets in `backend/.env`, never committed. `ELEVENLABS_API_KEY` is already there. Commit a `backend/.env.example` listing the names only: `ELEVENLABS_API_KEY`, `ELEVENLABS_WELCOME_AGENT_ID`, `ELEVENLABS_PRACTICE_AGENT_ID`, `ELEVENLABS_FAMILY_LINE_AGENT_ID`, and the model provider's key. The API key never reaches the browser: the back end hands out short-lived conversation tokens instead.
 
@@ -167,20 +169,20 @@ The ElevenLabs names below were checked against their docs on 13 Nov at about 16
 
 | Call | Purpose | Returns |
 |---|---|---|
-| `POST /api/families` | Create a family: name, safe word, members (name, phone, relationship) | `family_id` |
+| `POST /api/families` | Create a family: name, a tick that a safe word is agreed (never the word itself), members (name, relationship, and their own tick agreeing to practice calls) | `family_id`, and each member's id and phone link |
 | `GET /api/families/{id}` | Everything the family page shows | The family object below |
 | `POST /api/members/{id}/voice` | Upload the one-minute microphone recording; the back end clones it | `voice_ready` |
 | `POST /api/members/{id}/welcome-call` | Ring that member's phone page with the welcome agent | `call_id` |
 | `POST /api/practice-calls` | Start a practice: `target_member_id`, `voice_member_id` or none, `scenario`. Rings the target's phone page | `call_id` |
 | `POST /api/calls/{id}/answer` | The phone page answers | The session object below |
 | `POST /api/calls/{id}/events` | The phone page reports what happens: turns, tactics, the outcome, the reveal | `ok` |
-| `POST /api/calls/{id}/end` | The phone page reports the end, with the ElevenLabs `conversation_id`. The back end fetches the transcript, scores it and writes the lesson | `ok` |
+| `POST /api/calls/{id}/end` | The phone page reports the end and who ended it. The back end scores the call and writes the lesson | `ok` |
 | `POST /api/members/{id}/family-line` | The person taps the family number after a practice | `call_id` and the session object |
 | `GET /api/calls/{id}` | A finished call: turns, tactics, result, lesson | The call object below |
 | `GET /api/calls/{id}/events` | Live stream for the laptop's call screen | Call events below |
-| `GET /api/members/{id}/phone-events` | Live stream for that member's phone page | Phone events below |
+| `GET /api/members/{id}/phone-state` | What that member's phone page should show now; the page asks once a second | An incoming call or none, and unread messages. Shape in backend.md |
 
-*Session object,* what the phone page needs to start the conversation: `conversation_token`, `overrides`, `dynamic_variables`. The back end gets the token from `GET /v1/convai/conversation/token?agent_id=...` ([docs](https://elevenlabs.io/docs/eleven-agents/api-reference/conversations/get-webrtc-token.md)). `overrides` is shaped as the library expects: `{ agent: { prompt: { prompt }, firstMessage }, tts: { voiceId } }`. The page then calls `startSession({ conversationToken, connectionType: 'webrtc', overrides, dynamicVariables, clientTools })`. The practice prompt reaches the browser this way; that is fine, because it never contains the safe word.
+*Session object,* what the phone page needs to start the conversation: `conversation_token`, `overrides`, `dynamic_variables`. The back end gets the token from `GET /v1/convai/conversation/token?agent_id=...` ([docs](https://elevenlabs.io/docs/eleven-agents/api-reference/conversations/get-webrtc-token.md)). That call also returns the `conversation_id`, which the back end stores on Answer. `overrides` carries only the voice, `{ tts: { voiceId } }`. Everything personal (names, the story, the ask, the first sentence) travels as `dynamic_variables`, and the prompts stay in the agents' own settings, so no prompt passes through the browser. The page then calls `startSession({ conversationToken, connectionType: 'webrtc', overrides, dynamicVariables, clientTools })`. A full example is in backend.md.
 
 *Member, inside the family object:* `id`, `name`, `relationship`, `consent` (clone, practice), `voice_ready`, `readiness` (`before`, `now`, and `items` each with `label`, `before`, `now`, `max`), `weak_spot`, `said` (their quote from the welcome call), `plan` (`this_week`, and `steps` each with `when`, `scenario`, `why`, `status`).
 
@@ -196,7 +198,7 @@ The ElevenLabs names below were checked against their docs on 13 Nov at about 16
 - `revealed`
 - `callback.connected`: `seconds`, from the end of the practice to tapping the family number
 
-*Phone events, for one member's phone page:*
+*Phone state, for one member's phone page (returned by `phone-state`, not streamed):*
 - `incoming_call`: `call_id`, `kind` (`welcome` or `practice`), `caller` (what the screen shows: "Unknown number" and a made-up number)
 - `message`: `text` (for example the weekly message, or "Mum called the family number after a practice")
 
@@ -247,10 +249,10 @@ Written so that a person or a coding agent can follow it. Steps marked "check" w
 ```
 
 - **Phone page:** one link per member: waiting, ringing, in call, reveal, family number. It starts the agent conversation itself, runs the agent's tools and forwards everything to the back end.
-- **Laptop:** sign-up (family name, each member's name and relationship, the safe word, the one-minute voice recording), the family page, and the live call screen for the demo.
+- **Laptop:** sign-up (family name, each member's name and relationship, a tick that the family has agreed a safe word, each member's own tick agreeing to practice calls, the one-minute voice recording), the family page, and the live call screen for the demo.
 - **Backend:** one small server. It hands out conversation tokens with the right overrides, makes clones, rings phone pages, fetches transcripts, scores calls and pushes live updates. No provider calls it back.
 - **Database:** five tables.
-  - *families:* name, safe word
+  - *families:* name, whether a safe word is agreed (the word itself is never collected)
   - *members:* name, phone, relationship, consent times, voice id, readiness profile, plan
   - *calls:* kind (welcome, practice, family line), who, ElevenLabs conversation id, status
   - *events:* call, time, kind (tactic, outcome), detail
@@ -265,17 +267,18 @@ Written so that a person or a coding agent can follow it. Steps marked "check" w
 **1. Voice sample and welcome call**
 1. On the sign-up page, each member reads a short text aloud for about a minute. It opens with their consent: "I'm [name], and I agree to Callback cloning my voice for practice calls inside my family." The page records it with the microphone and uploads it.
 2. The back end cuts the silence, evens out the loudness, sends the audio to instant cloning, and stores the returned `voice_id` on the member.
-3. The welcome call rings the member's phone page. The agent explains the service, asks for consent to receive practice calls, and runs the five-question survey (flow 4).
-4. When it ends, the page sends the conversation id; the back end fetches the transcript, checks for a clear "yes", and fills the readiness profile.
+3. On the same page each member ticks "I agree to receive practice calls without knowing when". That tick is enough for a practice call, so practice calls work on Friday, before the welcome call exists.
+4. The welcome call rings the member's phone page. The agent explains the service, asks again for consent to receive practice calls, and runs the five-question survey (flow 4).
+5. When it ends, the back end reads the conversation, records a clear "yes", and fills the readiness profile.
 
 Later, in the product, the voice sample comes from the welcome call itself, as in "The path".
 
 **2. Practice call**
 1. The back end picks the target and the voice (another member's clone), fills the scenario (who the caller claims to be, the story, the ask), creates the call as `ringing` and sends `incoming_call` to the target's phone page.
-2. The page rings. On Answer it calls `POST /api/calls/{id}/answer` and gets a token and the overrides: the voice id, the prompt and the first sentence.
+2. The page rings. On Answer it calls `POST /api/calls/{id}/answer` and gets a token, the voice override and the call's variables (names, the story, the ask, the first sentence).
 3. The page starts the conversation. Each line from `onMessage`, and each call of `mark_tactic` or `practice_result`, goes to `POST /api/calls/{id}/events`; the back end pushes it to the laptop's call screen.
 4. The agent reveals the practice, gives the one-line lesson, and ends the call with `end_call`. If the person taps End first, that counts as hanging up.
-5. The page sends `POST /api/calls/{id}/end` with the conversation id. The back end fetches the transcript; Claude scores it and writes the short debrief.
+5. The page sends `POST /api/calls/{id}/end`. The back end decides the outcome from the lines and tool calls it already has, a model writes the short debrief, and the ElevenLabs transcript is fetched afterwards as the record.
 
 **3. The family number**
 1. After the reveal, the phone page shows the family number with a call button.
@@ -326,13 +329,13 @@ This weekend, messages appear on the person's phone page as a `message` event. A
 
 For the weekend: generate one real weekly digest from live sources, send one real message to a teammate, and show the schedule on the family page. Nobody can demo weeks passing, so say plainly that the loop is shown once.
 
-**Which models.** Keep model calls behind one function so the provider can be swapped. The scoring, the profile and the plan can run on OpenAI's API or on Claude; use whichever account has credits. One thing to check: the hackathon's Codex perk is credit for the Codex coding agent, and its card says it is not API credit, so API calls need a separate OpenAI API balance. The language model inside the voice agents is chosen in ElevenLabs' own settings.
+**Which models.** Keep model calls behind one function so the provider can be swapped. The scoring, the profile and the plan can run on OpenAI's API or on Claude; use whichever account has credits. Both are available: Denis has a separate OpenAI API balance, apart from the hackathon's Codex perk, which is credit for the Codex coding agent only. Which job runs on which model is in ai.md. The language model inside the voice agents is chosen in ElevenLabs' own settings.
 
 ### The logic that is ours
 
 - **The welcome call does three jobs at once:** consent, a voice sample, and a readiness survey. One two-minute call replaces a sign-up form, a recording step and a questionnaire.
 - **A readiness profile per person,** scored the same way before and after practice, so the family page can show a change.
-- **The practice agent never knows the safe word.** It is not in its prompt, so when the person asks for it, the voice truly cannot answer. That is the mechanism, not an act.
+- **The practice agent never knows the safe word.** We never collect it: sign-up asks only whether the family has agreed one. So when the person asks for it, the voice truly cannot answer. That is the mechanism, not an act.
 - **A scam is a sequence of stages:** hook, story, urgency, the ask, pressure, fallback. The practice prompt walks through them using the family's own names and relationships.
 - **A fixed list of tactics:** new number, urgency, secrecy, authority, emotional appeal, a small ask first, isolation ("don't call anyone"), and payment by an unusual route. The on-screen labels and the debrief both use this list.
 - **Scoring what the person did:**
@@ -371,7 +374,7 @@ For the weekend: generate one real weekly digest from live sources, send one rea
 | Time | On screen |
 |---|---|
 | 0:00–0:20 | A phone rings. "Mum, it's me, I lost my phone." Caption: this voice is artificial. Then the fact: in a 2025 study, listeners took a cloned voice for the real person about 80% of the time ([Scientific Reports](https://www.nature.com/articles/s41598-025-94170-3)). |
-| 0:20–0:50 | Sign-up: the family, the safe word, and a one-minute voice recording that opens with spoken consent. The welcome agent talks to a teammate and asks the five questions. |
+| 0:20–0:50 | Sign-up: the family, a tick that they have agreed a safe word (we never ask for the word), and a one-minute voice recording that opens with spoken consent. The welcome agent talks to a teammate and asks the five questions. |
 | 0:50–1:40 | The practice call. The cloned voice asks for an urgent transfer, while the screen labels each pressure tactic as it is used (new number, urgency, secrecy). The parent asks for the safe word, and the call ends with the reveal and the one-line lesson. Then ten seconds of a second call, a "police officer" in a ready-made voice, to show it covers more than family. |
 | 1:40–2:00 | The family page: each person's readiness before and after, and their personal plan with the next practice. |
 | 2:00–2:25 | The rules on screen: consent from both sides, a reveal in every call, no money, clones locked and deletable. One line: this weekend the call runs in a web page; the product rings the real phone. |
