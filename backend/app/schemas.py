@@ -512,3 +512,44 @@ class WeeklyRunResult(BaseModel):
 class Health(BaseModel):
     ok: bool = True
     fake_elevenlabs: bool
+
+
+# ---------------------------------------------------------------- billing (Saturday, demo mode)
+
+PlanKey = Literal["trial", "family_monthly", "family_yearly", "bank"]
+TRIAL_DAYS = 30
+
+
+class PricePlan(BaseModel):
+    key: str  # family_monthly | family_yearly | bank | partner
+    name: str
+    price: str  # shown as is, e.g. "€4.99 a month"
+    price_eur: float | None  # None: free or on request
+    period: Literal["month", "year"] | None
+    note: str
+    features: list[str]
+    cta: str
+    choosable: bool  # false: "Talk to us" (for banks)
+
+
+class Pricing(BaseModel):
+    trial_days: int
+    currency: str
+    plans: list[PricePlan]
+    demo_note: str
+
+
+class FamilyPlanView(BaseModel):
+    plan: PlanKey
+    plan_name: str
+    status: Literal["trialing", "active", "canceled"]
+    price: str | None
+    trial_ends_at: str | None  # while trialing
+    started_at: str
+    bank_code: str | None
+    demo: bool = True  # no payment is ever taken
+
+
+class PlanChoice(BaseModel):
+    plan: Literal["family_monthly", "family_yearly", "bank"]
+    bank_code: str | None = Field(default=None, max_length=40)
