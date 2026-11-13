@@ -1,0 +1,115 @@
+// Small pieces shared by the sign-up and the family page, scoped to those two
+// pages so they cannot clash with the other screens' class names.
+
+.signup-flow,
+.family-live {
+  input::placeholder {
+    color: rgba(18, 33, 47, 0.32);
+    font-weight: 500;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--good);
+  }
+
+  .member-card-head h4 {
+    font-weight: 700;
+  }
+
+  .field-error {
+    color: #b5452f;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .input-stack input[aria-invalid='true'],
+  .input-stack select[aria-invalid='true'] {
+    border-color: rgba(231, 109, 82, 0.7);
+  }
+
+  .form-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--accent-soft);
+    color: #a3412c;
+    font-weight: 600;
+    line-height: 1.5;
+
+    svg { flex-shrink: 0; margin-top: 3px; }
+  }
+
+  .text-button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 4px 0;
+    color: var(--accent);
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover:not(:disabled) { text-decoration: underline; }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  .button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .copy-button {
+    gap: 8px;
+    padding: 0.6rem 0.9rem;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    white-space: nowrap;
+  }
+
+  .phone-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--muted);
+
+    &::before {
+      content: '';
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: rgba(17, 34, 49, 0.2);
+    }
+
+    &.on { color: var(--good); }
+
+    &.on::before {
+      background: #22b07d;
+      box-shadow: 0 0 0 4px rgba(34, 176, 125, 0.18);
+    }
+  }
+
+  .phone-address-note {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(245, 185, 77, 0.5);
+    background: rgba(245, 185, 77, 0.12);
+    display: grid;
+    gap: 8px;
+
+    p { margin: 0; color: var(--ink); line-height: 1.5; font-size: 0.92rem; }
+    .input-stack { max-width: 520px; }
+  }
+
+  .spin { animation: family-spin 0.9s linear infinite; }
+
+}
+
+@keyframes family-spin {
+  to { transform: rotate(360deg); }
+}
