@@ -35,6 +35,7 @@ Three screens (home, family page, live practice call), light mode, sample data: 
 - **Who it's for:** an adult child who signs up their parents. The parents never install anything; everything happens by phone.
 - **It is not new.** TrustboxAI sells one-off calls like this in the US and Canada, and Kinword is about to launch. Our difference is below.
 - **It is buildable this weekend.** The calls, the cloning and the per-call voice switch are all documented features of ElevenLabs with Twilio.
+- **Who pays:** banks first, because they are being made liable for scam losses. See "Impact and who pays" below.
 
 ## What already exists, and what is ours
 
@@ -50,6 +51,28 @@ Three screens (home, family page, live practice call), light mode, sample data: 
 2. **A recurring agent, not a one-off call.** It owns a job: keep one habit alive in this family, with short practices over months and a record of whether the habit holds.
 3. **Consented by design.** Everyone agrees beforehand to be cloned and to receive practice calls, and every call ends by revealing itself.
 4. **Everything by phone.** Parents are enrolled, consent and practise without an app.
+
+## Impact and who pays
+
+**The problem is large and growing**
+- Lithuanian residents lose about €20 million a year to phone scams ([LRT, Feb 2026](https://lrt.lt/en/news-in-english/19/2852348/twenty-million-euros-15-million-calls-lithuanian-authorities-tackle-phone-swindlers); [national cyber report, May 2026](https://www.lrt.lt/en/news-in-english/19/2941159/lithuania-cyber-attacks-fall-overall-but-breaches-in-organisations-nearly-double)). AI-generated voices are already used in them ([OECD incident record, Mar 2026](https://oecd.ai/en/incidents/2026-03-27-e138)).
+- In the US, people over 60 reported $7.7 billion in losses in 2025, up 59% in a year ([AARP](https://www.aarp.org/money/scams-fraud/fbi-ftc-report-2025-losses), [HousingWire](https://www.housingwire.com/articles/fbi-seniors-cybercrime-2025/)).
+
+**Who pays, in order**
+1. **Banks.** They are being made to carry these losses, so prevention has a budget. A bank pays per enrolled family and gives the product to its customers for free.
+   - In February 2026 the Bank of Lithuania proposed that banks compensate customers when they fail to stop a suspicious payment ([LRT](https://lrt.lt/en/news-in-english/19/2852348/twenty-million-euros-15-million-calls-lithuanian-authorities-tackle-phone-swindlers)).
+   - The EU's new payment rules add a refund right for bank-impersonation scams. The final text is not confirmed here ([PwC](https://www.pwc.com/cz/cs/blog/rizeni-rizik/psd-3-the-psr-payments-reform.html), [The Register](https://www.theregister.com/2026/03/11/eu_psd2_compensation/)).
+   - The UK has required refunds since October 2024.
+2. **Security and telecom subscriptions** that bundle it as a family feature.
+3. **Families directly.** Comparable plans cost $47 to $84 a year. That market is small; it mostly proves that people want this.
+
+**What the bank gets:** a prevention step it can show to customers and to the regulator, and a count of how many enrolled families practised and kept the habit.
+
+**The category already sells to companies.** Doppel runs deepfake attack simulations for employers and raised $70 million at a valuation above $600 million in November 2025 ([Fortune](https://fortune.com/2025/11/19/exclusive-doppel-raises-70-million-series-c-at-more-than-600-million-valuation-to-fight-ai-powered-social-engineering-attacks)). The family version is still only small players such as TrustboxAI and Kinword.
+
+**What we don't claim:** that practice calls reduce real losses. Nobody has shown that for families. We claim one habit that can be measured, call by call.
+
+**The line for the pitch:** "Banks are being made liable for these losses. This is the practice they give their customers' families."
 
 ## The rules we build to
 
@@ -96,16 +119,21 @@ These decide the design. Not legal advice.
 
 ### How each hackathon tool is used
 
-| Tool | Use |
-|---|---|
-| ElevenLabs | The core: agents on the phone, voice cloning, speech both ways. Each teammate's plan has its own call minutes. |
-| Claude API credits | The agent's reasoning, scoring what the person did, writing lessons and new practices. |
-| Firecrawl | Reads current scam warnings from police, banks and news, so the monthly practice matches what is going around. |
-| Lovable | Sign-up flow and family page. |
-| HeyGen | Optional: a short explainer for the family in their language, or scenes for the demo video. |
-| Screen Studio | The demo video. |
-| Codex and Claude Code credits | Building. |
-| condense | Optional: route the Claude calls through it for the tokens-saved prize. |
+Ordered by how much each one lifts the product, the video or the pitch.
+
+| Tool | What to do with it | Lifts | Effort |
+|---|---|---|---|
+| **ElevenLabs** | The whole product runs on it: three phone agents, voice cloning, tools the agent calls mid-conversation. Say this in the Devpost text, because their hacker guide leads with the agents platform. | Product, and their prize | Core work |
+| **ElevenLabs, for the pitch** | Open with two clips of the same sentence, one in a teammate's real voice and one in the clone: "Which one is real?" Let the room vote by hand, then reveal. | The first 20 seconds | 15 minutes |
+| **ElevenLabs, for realism** | Give the practice voice urgency and stress if the agent's voice model supports expression controls (check), and generate a ringtone and call sounds for the video. | Demo feel | 30 minutes |
+| **Screen Studio** | Record the live call screen with automatic zoom on each tactic label as it appears, next to a screen recording of the phone ringing. Their best-demo prize is judged on the video. | Video, and their prize | Saturday afternoon |
+| **Firecrawl** | One real "scam of the week": fetch a current warning from a public consumer-protection source, and show the note and the practice story built from it. It makes the agent visibly do something on its own. | The recurring-agent claim, and the Kilo track | 1 to 2 hours |
+| **Lovable** | A public landing page at a real address with a waiting list, built from the home screen of the mockup. Put its QR code on the last slide. Keep the app itself in `frontend/`, since Lovable works in its own repo. | Product feel, public vote | 1 hour |
+| **Claude or OpenAI API credits** | Scoring, readiness profiles, plans and lessons. | Product | Core work |
+| **Codex and Claude Code credits** | Building. | Speed | Ongoing |
+| **HeyGen** | Optional, one clip only: a ten-second "next: video calls" teaser for the end of the video, using a teammate's own consented avatar. Rendering takes about ten minutes per minute of video. | The "where it goes" beat | 30 minutes plus rendering |
+| **condense** | Optional: run the team's coding agents through it all weekend. The tokens-saved prize is a leaderboard, so it can be won without touching the product. Drop it at the first sign it slows anyone down. | Their prize | 10 minutes to set up |
+| NordVPN | Nothing to build. Mention consumer-security bundles as a route to customers. | Pitch only | None |
 
 ## Technical design
 
@@ -339,7 +367,7 @@ For the weekend: generate one real weekly digest from live sources, send one rea
 | 1:40–2:00 | The family page: each person's readiness before and after, and their personal plan with the next practice. |
 | 2:00–2:25 | The rules on screen: consent from both sides, a reveal in every call, no money, clones locked and deletable. |
 | 2:25–2:45 | What happened this weekend: how many pairs practised, how many did the safe thing the first and the second time. |
-| 2:45–3:00 | Who pays, and the close. |
+| 2:45–3:00 | Who pays: "Banks are being made liable for these losses. This is the practice they give their customers' families." Then the close. |
 
 **On stage:** a teammate's phone rings on speaker, with a practice call in another teammate's voice, cloned beforehand. The teammate asks for the safe word, hangs up and taps the family number. Keep a recording ready.
 
@@ -347,7 +375,7 @@ For the weekend: generate one real weekly digest from live sources, send one rea
 
 - **The three teammates,** as the family in the demo. This is the minimum, and it is enough to ship.
 - **Pairs at the venue, if time allows:** friends who both agree. Practice 1 on Friday evening, a short lesson, practice 2 on Saturday with a different story. Report how many asked for the safe word or hung up each time. This needs a paid Twilio account, because their numbers are not verified.
-- **Mentors today (carousel, 15:00 to 17:00):** ask the consumer-security and Kilo product mentors whether a family would pay, and what would make them trust it.
+- **Mentors today (carousel, 15:00 to 17:00):** ask the consumer-security and Kilo product mentors whether a family would pay, and what would make them trust it. Also ask whether a bank's fraud team would buy this for its customers, and what it would need to see first.
 
 ## Schedule
 
@@ -383,4 +411,4 @@ Not built this weekend. It belongs in the pitch as where the product goes.
 3. **Training evidence is weak.** Promise rehearsal of one habit, not fewer losses.
 4. **Phone set-up** can eat hours: account upgrade, number, permissions.
 5. **We hold family voice clones.** That is the most sensitive data a product like this can hold; the deletion and lock rules have to be real.
-6. **Low prices.** Comparable family plans cost $47 to $84 a year. The larger buyer may be a security subscription that bundles it.
+6. **Low prices.** Comparable family plans cost $47 to $84 a year, so families alone are a small market. The larger buyer is a bank, or a security subscription that bundles it. See "Impact and who pays".
