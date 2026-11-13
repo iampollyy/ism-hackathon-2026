@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import mimetypes
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -119,6 +120,9 @@ def create_app() -> FastAPI:
         app.include_router(module.router, prefix="/api")
     mount_frontend(app)
     return app
+
+
+mimetypes.add_type("application/manifest+json", ".webmanifest")
 
 
 def mount_frontend(app: FastAPI) -> None:

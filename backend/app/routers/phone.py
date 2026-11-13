@@ -38,6 +38,7 @@ from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
@@ -98,6 +99,31 @@ async def phone_state(member_id: str, db: DbSession = Depends(get_db)) -> schema
         messages=unread_messages(db, member.id),
         family_number=schemas.FamilyNumber(enabled=True),
     )
+
+
+@router.get("/members/{member_id}/manifest.webmanifest", include_in_schema=False)
+async def member_manifest(member_id: str, db: DbSession = Depends(get_db)) -> JSONResponse:
+    """The web app manifest for one member's phone page, so the app installed
+    from it opens that member's phone page (frontend/index.html points the
+    manifest link here on /phone/{id}). Added after backend.md."""
+    member = get_member(db, member_id)
+    start = f"/phone/{member.id}"
+    return JSONResponse({
+        "id": start,
+        "name": "Callback",
+        "short_name": "Callback",
+        "description": f"{member.name}'s Callback phone",
+        "start_url": start,
+        "scope": "/",
+        "display": "standalone",
+        "background_color": "#eef3f0",
+        "theme_color": "#eef3f0",
+        "icons": [
+            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"},
+            {"src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        ],
+    }, media_type="application/manifest+json", headers={"Cache-Control": "no-cache"})
 
 
 @router.post("/members/{member_id}/messages/read", response_model=schemas.Ok)
