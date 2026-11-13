@@ -12,9 +12,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
-# The five model jobs (ai.md, "The model jobs"). Each setting is a
+# The five model jobs (ai.md, "The model jobs"), plus the weekly note. Each setting is a
 # comma-separated list: first choice, then the second choice at the other provider.
-MODEL_JOBS = ("profiler", "planner", "digest", "director", "scorer")
+MODEL_JOBS = ("profiler", "planner", "digest", "director", "scorer", "weekly_note")
 
 
 class Settings(BaseSettings):
@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     digest_models: str = "gpt-6-astra,claude-opus-5-5"
     director_models: str = "claude-haiku-5-5,gpt-6-luna"
     scorer_models: str = "claude-haiku-5-5,gpt-6-luna"
+    weekly_note_models: str = "claude-haiku-5-5,gpt-6-luna"
 
     # Storage
     database_url: str = "sqlite:///data/app.db"

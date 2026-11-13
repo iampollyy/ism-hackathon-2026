@@ -1084,6 +1084,7 @@ def test_answer_library_voice_session(client, make_family, scenario: str) -> Non
 def test_answer_welcome_session(client, make_family) -> None:
     family = make_family()
     sara_id, _ = sara_and_jon(family)
+    client.get(f"/api/members/{sara_id}/phone-state")  # the welcome call rings only an open phone page
     created = client.post(f"/api/members/{sara_id}/welcome-call")
     assert created.status_code in (200, 201), created.text
     call_id = created.json()["call_id"]

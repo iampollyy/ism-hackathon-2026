@@ -128,7 +128,11 @@ async def start_session(db: DbSession, call: Call) -> schemas.Session:
     try:
         return await sessions.build_session(db, call)
     except Exception as error:
-        log.exception("could not build the session for call %s", call.id)
+        if isinstance(error, schemas.ApiError):  # expected, e.g. no agent id set: one line is enough
+            log.warning("could not build the session for call %s: %s %s",
+                        call.id, error.code, error.message)
+        else:
+            log.exception("could not build the session for call %s", call.id)
         db.rollback()
         change_status(db, call, "failed", ended_at=now_iso(), ended_by="error")
         if isinstance(error, schemas.ApiError):

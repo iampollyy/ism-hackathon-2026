@@ -30,6 +30,9 @@ from app.services import scenarios as scenario_files
 
 log = logging.getLogger("app.briefs")
 
+# The phone rings only after the brief, so the whole director job gets 4 s.
+# The second-choice model is tried only if the first fails within that time;
+# a slow first model leaves the template, which is a complete call.
 DIRECTOR_TIMEOUT_SECONDS = 4.0
 FALLBACK_SCENARIO = "relative_new_number"
 
