@@ -151,7 +151,7 @@ export function PracticeForm({ familyId, members, week, scenarios, scenariosErro
             onChange={(event) => setScenarioKey(event.target.value as ScenarioKey)}
             disabled={scenarios.length === 0}
           >
-            {scenarios.length === 0 ? <option value="">{scenariosError ? 'Could not load the stories' : 'Loading…'}</option> : null}
+            {scenarios.length === 0 ? <option value="">{scenariosError ? 'Stories not loaded yet' : 'Loading…'}</option> : null}
             {VOICE_GROUPS.map(({ voice, label }) => {
               const group = scenarios.filter((item) => item.voice === voice);
               return group.length > 0 ? (

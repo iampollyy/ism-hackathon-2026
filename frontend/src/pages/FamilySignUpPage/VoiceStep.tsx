@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, CircleAlert, LoaderCircle, Mic, RotateCcw, SkipF
 import { api, ApiError } from '../../api/client';
 import { Avatar } from '../../components/atoms/Avatar';
 import { Badge } from '../../components/atoms/Badge';
-import { canRecord, MAX_SECONDS, MIN_SECONDS, useVoiceRecorder, type Recording } from './useVoiceRecorder';
+import { MAX_SECONDS, MIN_SECONDS, recordingProblem, useVoiceRecorder, type Recording } from './useVoiceRecorder';
 import { avatarColor, initials, type SignUpMember } from './signUpTypes';
 
 type VoiceState =
@@ -112,7 +112,8 @@ export function VoiceStep({ members, onNext, onBack, onReady }: Props) {
 
   const busy = recorder.phase !== 'idle' || Object.values(states).some((state) => state.kind === 'uploading');
   const readyCount = members.filter((member) => states[member.id]?.kind === 'ready').length;
-  const recordingSupported = canRecord();
+  const cannotRecord = recordingProblem();
+  const recordingSupported = cannotRecord === null;
 
   return (
     <div className="voice-step">
@@ -130,9 +131,9 @@ export function VoiceStep({ members, onNext, onBack, onReady }: Props) {
           Hand the laptop to each person in turn. They read the text out loud for one minute, in a quiet room. The first
           sentence is their consent, so only they may record it. You can skip someone and record them later.
         </p>
-        {!recordingSupported ? (
+        {cannotRecord ? (
           <div className="form-alert" role="alert">
-            This browser cannot record audio. Open this page in Chrome, Edge or Safari to record.
+            {cannotRecord}
           </div>
         ) : null}
       </div>

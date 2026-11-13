@@ -28,8 +28,19 @@ function pickFormat(): Format | null {
   return { mimeType: undefined, extension: 'webm' }; // the browser's own default
 }
 
-export function canRecord(): boolean {
-  return pickFormat() !== null && Boolean(navigator.mediaDevices?.getUserMedia);
+/**
+ * Why this page cannot record, in plain words, or null when it can. Browsers
+ * only give the microphone to https:// pages and localhost, so an http:// LAN
+ * address needs a different fix from an old browser.
+ */
+export function recordingProblem(): string | null {
+  if (typeof window !== 'undefined' && window.isSecureContext === false) {
+    return 'The browser only allows the microphone on a secure address. Open this page on localhost or its https:// address to record.';
+  }
+  if (pickFormat() === null || !navigator.mediaDevices?.getUserMedia) {
+    return 'This browser cannot record audio. Open this page in Chrome, Edge or Safari to record.';
+  }
+  return null;
 }
 
 function microphoneError(error: unknown): string {
@@ -87,8 +98,9 @@ export function useVoiceRecorder(handlers: Handlers) {
   const start = useCallback(async (id: string) => {
     if (recorderRef.current && recorderRef.current.state !== 'inactive') return;
     const format = pickFormat();
-    if (!format || !navigator.mediaDevices?.getUserMedia) {
-      handlersRef.current.onError(id, 'This browser cannot record audio. Try Chrome, Edge or Safari.');
+    const problem = recordingProblem();
+    if (!format || problem) {
+      handlersRef.current.onError(id, problem ?? 'This browser cannot record audio. Try Chrome, Edge or Safari.');
       return;
     }
     setMemberId(id);
@@ -97,8 +109,12 @@ export function useVoiceRecorder(handlers: Handlers) {
 
     let stream: MediaStream;
     try {
+      // The raw voice, without the browser's call processing: echo
+      // cancellation, noise suppression and automatic gain add artefacts and
+      // pumping to what becomes the cloned voice. The back end trims silence
+      // and evens out the loudness, and the page asks for a quiet room.
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
       });
     } catch (error) {
       setPhase('idle');

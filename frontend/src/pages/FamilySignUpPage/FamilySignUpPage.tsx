@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Check } from 'lucide-react';
+import { Check, RotateCcw } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
 import type { FamilyCreated } from '../../api/types';
 import { FamilyStep } from './FamilyStep';
@@ -25,6 +25,10 @@ const STEPS: { key: Step; label: string }[] = [
 
 type Loaded = { familyId: string; familyName: string; members: SignUpMember[] };
 
+type LoadError = { notFound: boolean; message: string };
+
+const RETRY_MS = 3000;
+
 export function FamilySignUpPage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -33,9 +37,12 @@ export function FamilySignUpPage() {
   const storedFamily = useStoredFamilyId();
 
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<LoadError | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
-  // Resumed from the address: load the family's members.
+  // Resumed from the address: load the family's members. A family that does
+  // not exist is an answer; anything else (a network blip, a restarting back
+  // end) is retried every few seconds, so nobody starts a duplicate family.
   useEffect(() => {
     if (!familyParam) {
       setLoaded(null);
@@ -43,10 +50,12 @@ export function FamilySignUpPage() {
       return;
     }
     let live = true;
+    let retry: number | undefined;
     setLoadError(null);
-    api.getFamily(familyParam).then(
+    const load = () => api.getFamily(familyParam).then(
       (family) => {
         if (!live) return;
+        setLoadError(null);
         setLoaded({
           familyId: family.id,
           familyName: family.name,
@@ -62,19 +71,24 @@ export function FamilySignUpPage() {
       },
       (error) => {
         if (!live) return;
-        setLoadError(
-          error instanceof ApiError && error.status === 404
+        const notFound = error instanceof ApiError && error.status === 404;
+        setLoadError({
+          notFound,
+          message: notFound
             ? 'We could not find this family. It may have been set up on another server.'
             : error instanceof ApiError
               ? error.message
-              : 'The family could not be loaded. Please try again.',
-        );
+              : 'Callback could not be reached.',
+        });
+        if (!notFound) retry = window.setTimeout(() => void load(), RETRY_MS);
       },
     );
+    void load();
     return () => {
       live = false;
+      window.clearTimeout(retry);
     };
-  }, [familyParam]);
+  }, [familyParam, attempt]);
 
   const created = (result: FamilyCreated, familyName: string, relationships: string[]) => {
     saveFamilyId(result.family_id);
@@ -135,13 +149,25 @@ export function FamilySignUpPage() {
           ) : null}
           <FamilyStep onCreated={(result, name, relationships) => created(result, name, relationships)} />
         </>
-      ) : loadError ? (
+      ) : !ready && loadError?.notFound ? (
         <div className="auth-card signup-card">
-          <div className="form-alert" role="alert">{loadError}</div>
+          <div className="form-alert" role="alert">{loadError.message}</div>
           <div className="step-footer">
             <Link to="/signup" className="button button-primary">
               Start a new family
             </Link>
+          </div>
+        </div>
+      ) : !ready && loadError ? (
+        <div className="auth-card signup-card">
+          <div className="form-alert" role="alert">
+            {loadError.message} Trying again every few seconds.
+          </div>
+          <div className="step-footer">
+            <span>No need to set the family up again.</span>
+            <button type="button" className="button button-primary" onClick={() => setAttempt((count) => count + 1)}>
+              <RotateCcw size={16} /> Try again now
+            </button>
           </div>
         </div>
       ) : !ready ? (

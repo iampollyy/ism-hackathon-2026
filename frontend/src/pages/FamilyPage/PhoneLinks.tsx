@@ -1,10 +1,9 @@
 // Each member's phone link, to copy or scan again (for re-opening a phone).
 
 import { useState } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { QrCode } from 'lucide-react';
 import type { MemberView } from '../../api/types';
-import { CopyButton, PhoneAddressNote, phoneUrl, usePhoneAddress } from '../FamilySignUpPage/phoneLinks';
+import { CopyButton, PhoneAddressNote, PhoneQrCode, phoneUrl, usePhoneAddress } from '../FamilySignUpPage/phoneLinks';
 
 export function PhoneLinks({ members }: { members: MemberView[] }) {
   const [base, setBase] = usePhoneAddress();
@@ -34,19 +33,20 @@ export function PhoneLinks({ members }: { members: MemberView[] }) {
               </div>
               <code className="link-text">{url}</code>
               <div className="phone-link-actions">
-                <CopyButton text={url} />
+                <CopyButton text={url} owner={member.name} />
                 <button
                   type="button"
                   className="button button-ghost copy-button"
                   onClick={() => setShownQr(open ? null : member.id)}
                   aria-expanded={open}
+                  aria-label={open ? `Hide ${member.name}'s QR code` : `Show ${member.name}'s QR code`}
                 >
                   <QrCode size={15} /> {open ? 'Hide code' : 'QR code'}
                 </button>
               </div>
               {open ? (
                 <div className="qr-frame">
-                  <QRCodeSVG value={url} size={156} level="M" marginSize={1} title={`${member.name}'s phone link`} />
+                  <PhoneQrCode url={url} owner={member.name} size={156} />
                 </div>
               ) : null}
             </li>

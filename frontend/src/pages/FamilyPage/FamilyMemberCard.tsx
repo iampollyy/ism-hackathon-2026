@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, PhoneIncoming } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
-import type { MemberView, ScenarioView } from '../../api/types';
+import type { MemberView, ScenarioView, WeekItem } from '../../api/types';
 import { Avatar } from '../../components/atoms/Avatar';
 import { avatarColor, initials } from '../FamilySignUpPage/signUpTypes';
 import { callErrorText, capitalise, scenarioTitle } from './words';
@@ -17,6 +17,7 @@ type Props = {
   familyId: string;
   safeWordSet: boolean;
   scenarios: ScenarioView[];
+  week: WeekItem[];
   selected: boolean;
   onSelect: () => void;
   onChanged: () => void;
@@ -24,16 +25,22 @@ type Props = {
 
 type Notice = { tone: 'good' | 'bad'; text: string; callId?: string };
 
-function voiceWords(member: MemberView): { text: string; good: boolean } {
+/** How long "Ringing on …" stays when the week never shows the call answered. */
+const RINGING_NOTICE_MS = 45_000;
+
+function voiceWords(member: MemberView): { text: string; good: boolean; record: boolean } {
+  // voice_ready, not voice_status: a member who left Callback keeps the status
+  // "ready", but their voice can no longer be used (and is not offered to record).
+  if (member.voice_ready) return { text: 'Ready', good: true, record: false };
   switch (member.voice_status) {
-    case 'ready': return { text: 'Ready', good: true };
-    case 'failed': return { text: 'Recording failed', good: false };
-    case 'deleted': return { text: 'Deleted', good: false };
-    default: return { text: 'Not yet', good: false };
+    case 'ready': return { text: 'Not in use', good: false, record: false };
+    case 'failed': return { text: 'Recording failed', good: false, record: true };
+    case 'deleted': return { text: 'Deleted', good: false, record: true };
+    default: return { text: 'Not yet', good: false, record: true };
   }
 }
 
-export function FamilyMemberCard({ member, index, familyId, safeWordSet, scenarios, selected, onSelect, onChanged }: Props) {
+export function FamilyMemberCard({ member, index, familyId, safeWordSet, scenarios, week, selected, onSelect, onChanged }: Props) {
   const [consentBusy, setConsentBusy] = useState(false);
   // The answer we just sent, shown until the next refresh of the family agrees.
   const [consentSent, setConsentSent] = useState<boolean | null>(null);
@@ -43,6 +50,25 @@ export function FamilyMemberCard({ member, index, familyId, safeWordSet, scenari
   useEffect(() => {
     if (consentSent !== null && member.consent.practice === consentSent) setConsentSent(null);
   }, [member.consent.practice, consentSent]);
+
+  // An error goes once what it was about changes (the phone opens, consent, a voice).
+  useEffect(() => {
+    setNotice((current) => (current?.tone === 'bad' ? null : current));
+  }, [member.phone_online, member.consent.practice, member.voice_ready]);
+
+  // "Ringing on …" follows the welcome call: it stays while the call rings or
+  // goes on, and goes when the call ends, is missed or declined, or after 45 s
+  // if the call never shows as answered.
+  const noticeCallStatus = notice?.callId ? week.find((item) => item.call_id === notice.callId)?.status : undefined;
+  useEffect(() => {
+    if (!notice?.callId || noticeCallStatus === 'in_progress') return;
+    if (noticeCallStatus && noticeCallStatus !== 'ringing') {
+      setNotice(null);
+      return;
+    }
+    const timer = window.setTimeout(() => setNotice(null), RINGING_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [notice, noticeCallStatus]);
 
   const consent = consentSent ?? member.consent.practice;
   const voice = voiceWords(member);
@@ -113,7 +139,7 @@ export function FamilyMemberCard({ member, index, familyId, safeWordSet, scenari
           <dt>Voice</dt>
           <dd className={voice.good ? 'good' : undefined}>
             {voice.text}
-            {!voice.good ? (
+            {voice.record ? (
               <Link to={`/signup?family=${familyId}&step=voices`} className="text-button">
                 Record
               </Link>
@@ -162,7 +188,9 @@ export function FamilyMemberCard({ member, index, familyId, safeWordSet, scenari
 
       {notice ? (
         <div className={`card-notice ${notice.tone}`} role={notice.tone === 'bad' ? 'alert' : 'status'}>
-          <span>{notice.text}</span>
+          <span>
+            {notice.callId && noticeCallStatus === 'in_progress' ? `${member.name} answered the welcome call` : notice.text}
+          </span>
           {notice.callId ? (
             <Link to={`/calls/${notice.callId}`} className="text-link">
               Watch the call

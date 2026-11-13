@@ -2,12 +2,11 @@
 // Watches the family every 3 s, so a card shows when that phone is open.
 
 import { useEffect, useState } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { api } from '../../api/client';
 import { Avatar } from '../../components/atoms/Avatar';
 import { avatarColor, initials, type SignUpMember } from './signUpTypes';
-import { CopyButton, PhoneAddressNote, phoneUrl, usePhoneAddress } from './phoneLinks';
+import { CopyButton, PhoneAddressNote, PhoneQrCode, phoneUrl, usePhoneAddress } from './phoneLinks';
 
 type Props = {
   familyId: string;
@@ -70,13 +69,13 @@ export function LinksStep({ familyId, members, onBack, onDone }: Props) {
                 </div>
               </header>
               <div className="qr-frame">
-                <QRCodeSVG value={url} size={176} level="M" marginSize={1} title={`${member.name}'s phone link`} />
+                <PhoneQrCode url={url} owner={member.name} size={176} />
               </div>
               <span className={`phone-dot${isOnline ? ' on' : ''}`}>
                 {isOnline ? 'Phone open' : 'Not opened yet'}
               </span>
               <code className="link-text">{url}</code>
-              <CopyButton text={url} label="Copy link" />
+              <CopyButton text={url} label="Copy link" owner={member.name} />
             </section>
           );
         })}

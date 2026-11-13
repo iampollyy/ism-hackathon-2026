@@ -68,14 +68,29 @@ export function FamilyPage() {
   }, [familyId]);
   const refresh = useCallback(() => refreshRef.current(), []);
 
+  // The stories for the practice form: retried every few seconds until they
+  // load, so a back end that restarts does not leave the form dead.
   useEffect(() => {
     let live = true;
-    api.scenarios().then(
-      (list) => live && setScenarios(list),
-      (error) => live && setScenariosError(error instanceof ApiError ? error.message : 'The stories could not be loaded.'),
-    );
+    let retry: number | undefined;
+    const load = async () => {
+      try {
+        const list = await api.scenarios();
+        if (!live) return;
+        setScenarios(list);
+        setScenariosError(null);
+      } catch (error) {
+        if (!live) return;
+        setScenariosError(
+          `${error instanceof ApiError ? error.message : 'The stories could not be loaded.'} Trying again…`,
+        );
+        retry = window.setTimeout(() => void load(), REFRESH_MS);
+      }
+    };
+    void load();
     return () => {
       live = false;
+      window.clearTimeout(retry);
     };
   }, []);
 
@@ -88,11 +103,17 @@ export function FamilyPage() {
     if (loadError?.notFound) forgetFamilyId(familyId);
   }, [loadError, familyId]);
 
-  // Sidebar links like /family/x#practice: scroll there once the page has content.
+  // Sidebar links like /family/x#practice: scroll there once the page has
+  // content, and again when the same link is clicked twice (a new location
+  // key). A link without a hash (Overview) goes back to the top.
   useEffect(() => {
-    if (!loadedId || !location.hash) return;
+    if (!loadedId) return;
+    if (!location.hash) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [loadedId, location.hash]);
+  }, [loadedId, location.hash, location.key]);
 
   if (!family) {
     return (
@@ -224,6 +245,7 @@ export function FamilyPage() {
                   familyId={family.id}
                   safeWordSet={family.safe_word_set}
                   scenarios={scenarios}
+                  week={family.week}
                   selected={member.id === selected?.id}
                   onSelect={() => select(member.id)}
                   onChanged={refresh}

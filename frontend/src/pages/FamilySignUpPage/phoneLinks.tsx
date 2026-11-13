@@ -4,7 +4,8 @@
 // HTTPS address phones reach (the tunnel) and the links use that instead.
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { publicUrl } from '../../api/client';
 
 const BASE_KEY = 'callback.phoneAddress';
@@ -18,9 +19,18 @@ export function linksAreLocal(): boolean {
   return isLocalAddress(publicUrl('/'));
 }
 
+/**
+ * The pasted address reduced to its origin (https://host[:port]), or '' when
+ * it is not an https:// address. Phones block the microphone on http://, and a
+ * pasted phone link (…/phone/mem_a) must not end up inside every link.
+ */
 function cleanBase(value: string): string {
-  const trimmed = value.trim().replace(/\/+$/, '');
-  return /^https?:\/\/[^\s/]+/i.test(trimmed) ? trimmed : '';
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'https:' && url.hostname ? url.origin : '';
+  } catch {
+    return '';
+  }
 }
 
 /** The full address of a phone link: the pasted address when publicUrl() is local. */
@@ -109,7 +119,14 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
+type CopyProps = {
+  text: string;
+  label?: string;
+  /** Whose link this is, so a screen reader can tell the buttons apart. */
+  owner?: string;
+};
+
+export function CopyButton({ text, label = 'Copy', owner }: CopyProps) {
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const timer = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(timer.current), []);
@@ -121,10 +138,36 @@ export function CopyButton({ text, label = 'Copy' }: { text: string; label?: str
     timer.current = window.setTimeout(() => setState('idle'), 2000);
   };
 
+  const shown = state === 'copied' ? 'Copied' : state === 'failed' ? 'Select and copy' : label;
+  const spoken = owner
+    ? state === 'copied'
+      ? `Copied ${owner}'s link`
+      : state === 'failed'
+        ? `Could not copy ${owner}'s link. Select it and copy`
+        : `Copy ${owner}'s link`
+    : undefined;
+
   return (
-    <button type="button" className="button button-secondary copy-button" onClick={copy}>
+    <button type="button" className="button button-secondary copy-button" onClick={copy} aria-label={spoken}>
       {state === 'copied' ? <Check size={15} /> : <Copy size={15} />}
-      <span>{state === 'copied' ? 'Copied' : state === 'failed' ? 'Select and copy' : label}</span>
+      <span>{shown}</span>
     </button>
   );
+}
+
+/**
+ * A phone link's QR code. While the link still points at this laptop
+ * (localhost), a phone could not open it, so a note stands in for the code
+ * until an address phones can reach is pasted.
+ */
+export function PhoneQrCode({ url, owner, size }: { url: string; owner: string; size: number }) {
+  if (isLocalAddress(url)) {
+    return (
+      <div className="qr-placeholder" style={{ width: size, height: size }} role="note">
+        <QrCode size={28} aria-hidden="true" />
+        <span>Paste the address for phones above to get {owner}'s code.</span>
+      </div>
+    );
+  }
+  return <QRCodeSVG value={url} size={size} level="M" marginSize={1} title={`${owner}'s phone link`} />;
 }
