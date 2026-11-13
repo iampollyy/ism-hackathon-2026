@@ -16,6 +16,9 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 # comma-separated list: first choice, then the second choice at the other provider.
 MODEL_JOBS = ("profiler", "planner", "digest", "director", "scorer", "weekly_note")
 
+# The VAPID `sub` claim when VAPID_SUBJECT is empty. Set a real contact for a live demo.
+DEFAULT_VAPID_SUBJECT = "mailto:callback@example.com"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -56,6 +59,17 @@ class Settings(BaseSettings):
 
     # Background loop (tests switch it off)
     scheduler_enabled: bool = True
+
+    # Web Push (VAPID). Push is off while either key is empty; make a pair with
+    # scripts/make_vapid_keys.py. The public key is the URL-safe base64 form the
+    # browser's applicationServerKey takes; the private key is its raw 32 bytes.
+    vapid_public_key: str = ""
+    vapid_private_key: str = Field(default="", repr=False)
+    vapid_subject: str = DEFAULT_VAPID_SUBJECT  # a contact the push services can reach
+
+    @property
+    def push_enabled(self) -> bool:
+        return bool(self.vapid_public_key and self.vapid_private_key)
 
     def job_models(self, job: str) -> list[str]:
         """The models for one job, first choice first."""

@@ -54,6 +54,19 @@ FAKE_ELEVENLABS=true .venv/bin/uvicorn app.main:app --timeout-graceful-shutdown 
 It prints PASS or FAIL per step. It fails against the stubs until tracks A,
 B and C are done.
 
+### Web Push
+
+Off until both VAPID keys are set. To turn it on, print a pair and paste the
+two lines into `.env` yourself (the script writes no file):
+
+```bash
+.venv/bin/python scripts/make_vapid_keys.py
+```
+
+A new pair makes every stored subscription useless; the phones subscribe
+again. The endpoints, the payload and the front-end recipe are in
+`docs/backend.md`, "Waking the phone: Web Push".
+
 ## Tests
 
 ```bash
@@ -84,6 +97,7 @@ Paths under `backend/`. Edit only files you own; ask for changes elsewhere.
 | Track A (ElevenLabs, voice, sessions) | `app/services/elevenlabs.py`, `app/services/audio.py`, `app/services/sessions.py`, `app/services/briefs.py`, `app/services/scenarios.py`, `app/scenarios/*.json`, `app/routers/voice.py`, `app/routers/scenarios.py`, `voice_agents/*`, `tests/test_elevenlabs.py`, `tests/test_voice.py`, `tests/test_sessions.py`, `tests/test_briefs.py` |
 | Track B (calls and phones) | `app/routers/calls.py`, `app/routers/streams.py`, `app/routers/phone.py`, `app/services/scheduler.py`, `tests/test_calls.py`, `tests/test_phone.py`, `tests/test_stream.py`, `tests/test_scheduler.py` |
 | Track C (AI and rules) | `app/agents/*` (except `__init__.py`), `app/services/outcome.py`, `app/services/readiness.py`, `app/services/pipeline.py`, `app/services/firecrawl.py`, `app/routers/weekly.py`, `tests/test_outcome.py`, `tests/test_readiness.py`, `tests/test_pipeline.py`, `tests/test_agents.py`, `tests/fixtures/*`, `scripts/eval_scorer.py` |
+| Web Push | `app/routers/push.py`, `app/services/push.py`, `scripts/make_vapid_keys.py`, `tests/test_push.py` |
 | Spec tests (independent writers) | `tests/spec/test_track_a.py`, `tests/spec/test_track_b.py`, `tests/spec/test_track_c.py` |
 
 ## Where endpoints live
@@ -97,6 +111,7 @@ Paths under `backend/`. Edit only files you own; ask for changes elsewhere.
 | `POST /api/members/{id}/welcome-call`, `POST /api/practice-calls`, `POST /api/calls/{id}/answer`, `/decline`, `/events`, `/end`, `GET /api/calls/{id}` | `calls.py` | B |
 | `GET /api/calls/{id}/events` (stream) | `streams.py` | B |
 | `GET /api/members/{id}/phone-state`, `POST /api/members/{id}/messages/read`, `POST /api/members/{id}/family-line` | `phone.py` | B |
+| `GET /api/push/public-key`, `POST`/`DELETE /api/members/{id}/push-subscription` | `push.py` (sending: `services/push.py`) | shared |
 
 ## Conventions
 

@@ -71,6 +71,7 @@ backend/
       readiness.py     the scale and its update rules
       scheduler.py     rings due calls, marks missed ones
       firecrawl.py     this week's scam warnings
+      push.py          Web Push to the phones (routers/push.py takes the subscriptions)
     agents/            model jobs; see ai.md
       llm.py  profiler.py  planner.py  director.py  scorer.py  digest.py
       prompts/         one file per job and version
@@ -94,6 +95,8 @@ Add `backend/data/` and `backend/media/` to `.gitignore` before the first record
 | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | The model jobs. Each job has a first choice at one provider and a second choice at the other; the table is in ai.md. |
 | `FIRECRAWL_API_KEY` | Optional, for the weekly run. |
 | `DATABASE_URL` | Default `sqlite:///data/app.db`. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Web Push to the phones; push is off while either is empty. Make a pair with `.venv/bin/python scripts/make_vapid_keys.py`, which only prints the two lines. |
+| `VAPID_SUBJECT` | A contact for the push services, `mailto:` or `https:`. Empty: a `mailto:` placeholder. |
 
 **Run:** `uvicorn app.main:app --reload --port 8000` from `backend/`. Vite proxies `/api` to port 8000, and the tunnel points at Vite, as idea.md describes.
 
@@ -202,6 +205,17 @@ CREATE TABLE messages (
   read_at    TEXT
 );
 
+CREATE TABLE push_subscriptions (             -- one browser's Web Push subscription; see "Waking the phone"
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id       TEXT NOT NULL REFERENCES members(id),
+  endpoint        TEXT NOT NULL UNIQUE,        -- the push service's address for this browser
+  p256dh          TEXT NOT NULL,               -- the browser's keys, from PushSubscription.toJSON()
+  auth            TEXT NOT NULL,
+  created_at      TEXT NOT NULL,
+  last_success_at TEXT,
+  failure_count   INTEGER NOT NULL DEFAULT 0   -- failures in a row; a success resets it
+);
+
 CREATE TABLE digests (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   week TEXT NOT NULL, sources_json TEXT NOT NULL, tactics_json TEXT NOT NULL, created_at TEXT NOT NULL
@@ -244,6 +258,9 @@ any state ──► failed            (token or connection error)
 | `GET /api/members/{id}/phone-state` | What the phone page should show now; asked each second | Phone state |
 | `POST /api/members/{id}/messages/read` | Mark messages as seen | `ok` |
 | `POST /api/members/{id}/family-line` | They tapped the family number | `call_id` and a session |
+| `GET /api/push/public-key` | The key the phone subscribes to Web Push with | `enabled`, `public_key` |
+| `POST /api/members/{id}/push-subscription` | Store this phone's push subscription | `ok` |
+| `DELETE /api/members/{id}/push-subscription` | Remove it | `ok` |
 | `GET /api/scenarios` | The scenarios, for the picker | List |
 | `POST /api/practice-calls` | Start or schedule a practice | `call_id` |
 | `POST /api/calls/{id}/answer` | The phone answers | Session object |
@@ -384,6 +401,109 @@ Returns `201` with `{ "call_id": "call_9f3k", "status": "ringing" }`.
 - Headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `X-Accel-Buffering: no`.
 
 Event types are the ones in idea.md: `call.status`, `turn`, `tactic`, `outcome`, `revealed`, `callback.connected`. One is added when scoring finishes: `result`, carrying the lesson and the debrief.
+
+### Waking the phone: Web Push
+
+Polling only works while the phone page is open. With Web Push (VAPID) the back end also tells a phone whose page is closed. **Push is only a wake-up:** it shows a notification, a tap opens the phone page, and the page then polls `phone-state` exactly as before. Nothing about polling changes, and the page must work the same without push. Push changes no rule either: a call started now still needs the page open (`phone_offline`), but a scheduled call (a delay, or the weekly run) rings whether or not the page is open, and push is how a closed phone learns of it.
+
+Push is off while `VAPID_PUBLIC_KEY` or `VAPID_PRIVATE_KEY` is empty. It does not depend on `FAKE_ELEVENLABS`.
+
+`GET /api/push/public-key` returns `{ "enabled": true, "public_key": "BN…" }`, or `{ "enabled": false, "public_key": null }` while push is off. When it is off, the page does not subscribe.
+
+`POST /api/members/{id}/push-subscription` takes the browser's `PushSubscription.toJSON()` as it is:
+
+```json
+{ "endpoint": "https://fcm.googleapis.com/fcm/send/…", "expirationTime": null,
+  "keys": { "p256dh": "BOr…", "auth": "k2…" } }
+```
+
+- It stores the subscription for this member, or updates the row with the same `endpoint` (new keys, failure count back to 0). The same browser subscribing on another member's page moves the row to that member: one browser, one member.
+- `endpoint` must be `https` on a browser push service (Google's for Chrome and Android, Apple's for Safari and iOS, Mozilla's, Microsoft's); `p256dh` must be a 65-byte P-256 key and `auth` 16 bytes, both URL-safe base64. Anything else is `422 invalid_request`. An unknown member is `404`.
+- Returns `{ "ok": true }`.
+
+`DELETE /api/members/{id}/push-subscription` with `{ "endpoint": "…" }` (`toJSON()` works too) removes that subscription of this member; with no body it removes all of the member's. Returns `{ "ok": true }`, also when there was nothing to remove.
+
+**When a push is sent.** Once, when a welcome or practice call starts ringing for the member (the welcome call, a practice started now, the scheduler ringing a scheduled one), and once for each message written for them (`callback_notice`, the weekly run's `weekly` and `reminder`). The hook is in `services/push.py` and catches these rows as they are committed, so the push goes out exactly when `phone-state` can first see them, whoever wrote them. Every subscription of the member gets one. Nobody is pushed to after they opt out.
+
+**What it carries.** Small JSON, encrypted for the browser. For a call it shows no more than the ringing screen: the same caller label and number as `incoming_call`, and never that it is a practice or which scenario.
+
+```json
+{ "type": "incoming_call", "call_id": "call_9f3k", "title": "Unknown number",
+  "body": "Incoming call · +00 600 555 0142", "url": "/phone/mem_Qz81hT0a", "tag": "call_9f3k" }
+
+{ "type": "message", "message_id": 12, "kind": "callback_notice", "title": "Family number",
+  "body": "Sara called the family number after a practice.", "url": "/phone/mem_7Lr2pWcd", "tag": "message_12" }
+```
+
+`title` is the caller label for a call (`Callback` for the welcome call); for a message it is `Family number`, `This week` or `Reminder`. `body` is the message text, cut at 180 characters. A call push lives 45 seconds (TTL, the ring time) with `Urgency: high`; a message push lives a day.
+
+**Sending.** In the background, on a small thread pool: it never slows down or fails the request that caused it. Just before sending, the back end reads the row again and skips it if the call stopped ringing or the message was read. A `404` or `410` from the push service means the browser unsubscribed: the row is deleted. Any other failure adds one to `failure_count`; a success sets `last_success_at` and resets it. Tests replace `push.send`, so they never reach the network.
+
+**Front-end recipe.** Web Push needs HTTPS (the tunnel) or `localhost`. On iPhone it works only in the installed web app (Add to Home Screen, iOS 16.4 or later), never in a Safari tab, and the web app manifest needs `"display": "standalone"`. Leave `start_url` out of the manifest, or make it the member's own link, so the home-screen icon opens `/phone/{id}`. A subscription belongs to one web address: a quick tunnel gets a new address each time it starts, so install the app from the address the demo will use.
+
+On the phone page:
+
+```js
+const fromB64url = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+const toB64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)))
+  .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+// On load. Offer an "Alert me when a call comes" button only when push can work here
+// (on iPhone that means inside the installed app) and the person has not refused.
+const canPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const swReady = canPush ? navigator.serviceWorker.register('/sw.js') : null;
+const pushKey = fetch('/api/push/public-key').then((r) => r.json());
+const showAlertButton = canPush && Notification.permission === 'default';
+
+async function subscribe(memberId) {
+  const { enabled, public_key } = await pushKey;
+  if (!enabled) return;                                    // push is off on the back end
+  const reg = await swReady;
+  let sub = await reg.pushManager.getSubscription();
+  if (sub && toB64url(sub.options.applicationServerKey) !== public_key) {
+    await sub.unsubscribe();                               // the back end has new keys
+    sub = null;
+  }
+  sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromB64url(public_key) });
+  await fetch(`/api/members/${memberId}/push-subscription`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()),
+  });
+}
+
+// The button's click handler. Ask for permission first, straight from the tap:
+// iOS refuses a request that does not come from one.
+async function onAlertButtonTap(memberId) {
+  if (await Notification.requestPermission() === 'granted') await subscribe(memberId);
+}
+
+// On every later load, keep the back end's copy fresh without asking again.
+if (canPush && Notification.permission === 'granted') subscribe(memberId);
+```
+
+The service worker, served at the site root as `/sw.js` (in Vite, `frontend/public/sw.js`). It must show a notification for every push: iOS and Chrome expect one, and Safari stops delivering to a site that pushes silently.
+
+```js
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {};
+  event.waitUntil(self.registration.showNotification(data.title || 'Callback', {
+    body: data.body || '',
+    tag: data.tag,                                      // one notification per call or message
+    data: { url: data.url || '/' },
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data.url, self.location.origin);
+  event.waitUntil((async () => {
+    const pages = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const open = pages.find((page) => new URL(page.url).pathname === url.pathname);
+    return open ? open.focus() : clients.openWindow(url.href);
+  })());
+});
+```
+
+Show only `title` and `body`; do not add words such as "practice". When the page opens it polls as usual, and rings only if `incoming_call` is still set: a call missed while the phone slept is gone. An open page gets the notification too; when it shows the ringing screen it can close it with `(await navigator.serviceWorker.ready).getNotifications({ tag: callId })`, then `close()` on each.
 
 ## Live updates inside the back end
 
