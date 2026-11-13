@@ -1,4 +1,4 @@
-import { ArrowRight, Family, Phone, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Phone, ShieldCheck, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../../components/atoms/Badge';
 import { Button } from '../../components/atoms/Button';
