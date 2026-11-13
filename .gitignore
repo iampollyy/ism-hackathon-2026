@@ -13,3 +13,7 @@ __pycache__/
 .mypy_cache/
 # Internal brainstorm notes: kept locally, not published
 archive/
+
+# Back end: database file and voice recordings, never published
+backend/data/
+backend/media/
