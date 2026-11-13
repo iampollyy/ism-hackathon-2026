@@ -93,7 +93,8 @@ cd backend
 ```
 
 Each test gets a fresh SQLite file, `FAKE_ELEVENLABS=true`, the scheduler
-off and all outside API keys blanked (`tests/conftest.py`). Fixtures:
+and the live risk check off (`tests/test_risk.py` turns the check back on)
+and all outside API keys blanked (`tests/conftest.py`). Fixtures:
 `client` (TestClient), `db` (a session on the same database), `make_family`.
 Spec tests from the independent test writers live in `tests/spec/`.
 
@@ -114,7 +115,7 @@ Paths under `backend/`. Edit only files you own; ask for changes elsewhere.
 | Shared (foundation, frozen) | `app/main.py`, `app/config.py`, `app/db.py`, `app/models.py`, `app/schemas.py`, `app/ids.py`, `app/events.py`, `app/routers/families.py`, `app/routers/__init__.py`, `app/services/__init__.py`, `app/agents/__init__.py`, `tests/conftest.py`, `tests/test_families.py`, `tests/test_health.py`, `tests/test_events.py`, `tests/test_config.py`, `tests/spec/__init__.py`, `scripts/fake_phone.py`, `requirements.txt`, `pytest.ini`, `.env.example`, `README.md` |
 | Track A (ElevenLabs, voice, sessions) | `app/services/elevenlabs.py`, `app/services/audio.py`, `app/services/sessions.py`, `app/services/briefs.py`, `app/services/scenarios.py`, `app/scenarios/*.json`, `app/routers/voice.py`, `app/routers/scenarios.py`, `voice_agents/*`, `tests/test_elevenlabs.py`, `tests/test_voice.py`, `tests/test_sessions.py`, `tests/test_briefs.py` |
 | Track B (calls and phones) | `app/routers/calls.py`, `app/routers/streams.py`, `app/routers/phone.py`, `app/services/scheduler.py`, `tests/test_calls.py`, `tests/test_phone.py`, `tests/test_stream.py`, `tests/test_scheduler.py` |
-| Track C (AI and rules) | `app/agents/*` (except `__init__.py`), `app/services/outcome.py`, `app/services/readiness.py`, `app/services/pipeline.py`, `app/services/firecrawl.py`, `app/routers/weekly.py`, `tests/test_outcome.py`, `tests/test_readiness.py`, `tests/test_pipeline.py`, `tests/test_agents.py`, `tests/fixtures/*`, `scripts/eval_scorer.py` |
+| Track C (AI and rules) | `app/agents/*` (except `__init__.py`), `app/services/outcome.py`, `app/services/readiness.py`, `app/services/pipeline.py`, `app/services/firecrawl.py`, `app/services/live_risk.py`, `app/routers/weekly.py`, `tests/test_outcome.py`, `tests/test_readiness.py`, `tests/test_pipeline.py`, `tests/test_agents.py`, `tests/test_risk.py`, `tests/fixtures/*`, `scripts/eval_scorer.py`, `scripts/eval_risk.py` |
 | Web Push | `app/routers/push.py`, `app/services/push.py`, `scripts/make_vapid_keys.py`, `tests/test_push.py` |
 | Spec tests (independent writers) | `tests/spec/test_track_a.py`, `tests/spec/test_track_b.py`, `tests/spec/test_track_c.py` |
 

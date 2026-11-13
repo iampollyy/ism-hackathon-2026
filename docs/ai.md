@@ -14,6 +14,7 @@ Written on Friday 13 Nov at about 17:15, to go with [backend.md](backend.md) and
 | **Director** | Model job | Our back end | Scenario plus person to the brief for one call | When a practice is created |
 | **Scorer** | Model job | Our back end | Practice transcript to outcome check, lesson, debrief | After each practice |
 | **Digest** | Model job | Our back end | This week's scam warnings to tactics and one note per person | Weekly run |
+| **Risk** | Model job | Our back end | The caller's words so far to warning signals; code sets the laptop's traffic light | During each practice, after each caller line |
 
 The voice agents talk in real time and are configured on ElevenLabs. The model jobs are single calls from our back end, each with one task, a typed input and a typed output. None of them is a loop that runs on its own; the order they run in is fixed in `services/pipeline.py`.
 
@@ -306,9 +307,11 @@ Both calls follow the providers' own examples: `messages.parse` with `output_for
 | Digest | `gpt-6-astra` | `claude-opus-5-5` | 60 s | Last week's digest |
 | Director | `claude-haiku-5-5` | `gpt-6-luna` | 4 s | The scenario's template with names filled in |
 | Scorer | `claude-haiku-5-5` | `gpt-6-luna` | 8 s | The rule's outcome with a fixed lesson per outcome |
+| Risk | `claude-haiku-5-5` | `gpt-6-luna` | 3 s (5 s for both) | Keywords and phrases in code |
 
 - The three careful jobs are not timed by anyone waiting, and they read the most text, so they go to the flagship model on the account with the most credit.
 - The two fast jobs sit where someone is waiting: the director before the phone rings, the scorer before the debrief appears. Time both providers on the first evening and put the faster one first.
+- The risk check is faster still: it runs while the call goes on, so a slow answer is a stale light. It has the shortest limit and low effort on Claude, like the other fast jobs.
 - The model names are in `config.py`, one line per job, so swapping is a one-line change.
 
 ### Prompt conventions
@@ -380,6 +383,12 @@ class Pattern(BaseModel):
 
 class Digest(BaseModel):        # Digest
     patterns: list[Pattern]
+
+RiskSignal = Literal[Tactic, "money_request", "asks_for_code", "refuses_callback"]
+
+class RiskCheck(BaseModel):     # Risk; code turns the signals into the level
+    signals: list[RiskSignal]
+    reason: str                 # a few plain words for the laptop screen
 ```
 
 ### The job prompts
@@ -522,6 +531,79 @@ the summary; say "a bank" or "a delivery firm".
 
 The weekly note for each person is a sixth small job with the same pattern: one digest pattern plus the person's weak spot in, a message of at most 40 words out.
 
+**Risk** (`agents/prompts/risk.v1.md`)
+
+```text
+You watch a practice call from Callback, a service that helps families practise
+spotting phone scams. A rehearsal agent plays a scam caller; the person agreed
+to receive practice calls, and every call ends by saying it was a practice.
+While the call goes on, a screen shows how risky the call has become. You read
+what has been said so far and name the warning signs in the caller's words.
+
+Judge only what the caller says: never how they sound, and never who they claim
+to be. Read the person's lines only to understand the caller's. List every sign
+the caller has shown at any point so far, not only in the last line.
+
+signals, from this list only:
+- new_number: says they have a new or borrowed phone, or that their usual
+  number does not work.
+- urgency: says it has to happen today, now, or before something happens.
+- secrecy: asks them to keep it quiet, or not to tell a particular person.
+- authority: claims to be the police, a bank's security or fraud team, or
+  another official.
+- emotional_appeal: plays on feelings: distress, fear, guilt or love.
+- small_ask_first: asks for something small or harmless first, such as a quick
+  check that it is them.
+- isolation: tells them not to call, check with or talk to anyone else, such
+  as their bank or their family.
+- unusual_payment: asks for an unusual way to pay: gift cards, vouchers,
+  crypto, cash collected by a courier, or someone else's account.
+- money_request: asks for money or a payment, or says they need money they
+  cannot get themselves.
+- asks_for_code: asks for a code, a PIN, a password, or card or account details.
+- refuses_callback: discourages hanging up or calling back, or brushes off the
+  family word or a question that would check who they are.
+
+If the caller has said nothing worrying yet, return no signals. A line in which
+the caller says the call was a practice adds no signal.
+
+reason: at most eight plain words for the screen, naming the strongest sign so
+far, such as "Asks for money and to keep it quiet". With no signals, write
+"Nothing worrying yet".
+```
+
+### The live risk check
+
+"Judge what the caller says, not how they sound." During a practice call the laptop shows a traffic light (green, yellow, red) that turns red as the scam builds. It is a real, independent classifier: the model reads only the turn texts, never the practice agent's `mark_tactic` events, so how often it agrees with those marks is a fair measure.
+
+| | |
+|---|---|
+| Code | `agents/risk.py` (the job and its fallback), `services/live_risk.py` (when it runs; the `risk` event), prompt `agents/prompts/risk.v1.md` |
+| When | After each events batch for a practice call that holds a caller line (`speaker: "agent"`), in the background, so `POST /events` never waits. One check per call at a time; lines that arrive meanwhile get one more check, on the latest transcript, when it finishes. Checks stop at the call's first `outcome` event, after which the agent reveals. Welcome and family-line calls are never checked. |
+| Input | The turns so far, up to the first `outcome`, as `Caller:` and `Person:` lines inside `<transcript>`. No tactic events, names or scenario. |
+| Output | `RiskCheck`: `signals` from the fixed list below, and `reason`, at most eight plain words for the screen. |
+| Time limit | 3 s per model, 5 s for both together; then the fallback. |
+| Fallback | Keywords and phrases in code, over the caller's lines only: a new or borrowed phone; today, right now, no time; don't tell, keep it quiet; police, a bank's security or fraud team; distress, "I need your help"; "I just need to confirm it's you"; don't call or contact anyone; gift cards, crypto, a courier, a friend's account; "could you send", "I need to pay"; a code, PIN, password or card details; don't hang up, don't call me back, "no time for that". The reason is then built from fixed phrases, such as "Caller asks for money and wants it kept secret", and `source` is `fallback`. It is used when no model key is set (so FAKE mode and the tests have a working light), on a timeout and on a refusal. |
+| Result | A stored and streamed `risk` event: `level`, `signals`, `labels`, `reason`, `turn_index`, `source` (backend.md, "Reading a call", has the exact payload). `GET /api/calls/{id}` replays them as `risk`. |
+
+| Signal | The caller… | Level |
+|---|---|---|
+| `new_number` | says they have a new or borrowed phone | yellow |
+| `urgency` | says it has to happen today or now | yellow |
+| `authority` | claims to be the police, a bank's security team or an official | yellow |
+| `emotional_appeal` | plays on distress, fear, guilt or love | yellow |
+| `small_ask_first` | asks for something small first, such as a quick check that it is them | yellow |
+| `secrecy` | asks them to keep it quiet | red |
+| `isolation` | tells them not to call or check with anyone | red |
+| `unusual_payment` | asks for gift cards, crypto, a courier or someone else's account | red |
+| `money_request` | asks for money or a payment | red |
+| `asks_for_code` | asks for a code, PIN, password or card details | red |
+| `refuses_callback` | discourages hanging up or calling back, or brushes off the family word | red |
+
+- **Numbers from code.** The level is a rule over the signals: none is green, only yellow ones is yellow, any red one is red. The model never picks a colour.
+- **Nothing is taken back within a call.** Each check's signals are added to the last stored check's (first seen first), and the level never goes below the last one. The model's reason is kept only when its own signals reach the level shown; otherwise the earlier reason stays, so the words always explain the colour.
+- **Settings.** `RISK_MODELS` (first choice, then the other provider) and `RISK_CHECK_ENABLED` (on by default; the test suite turns it off, because background `risk` events would interleave with the events other tests compare).
+
 ## How one person's answers shape their calls
 
 This chain is what the family page and the pitch should make visible.
@@ -603,3 +685,4 @@ One JSON file per scenario in `app/scenarios/`. Adding a scenario is adding a fi
 - **Director:** twenty generated briefs through the code checks; none may contain a digit run or a listed institution.
 - **Practice agent:** role-play each of the five endings by voice and confirm that it calls `practice_result` with the right value, reveals, and hangs up. `backend/voice_agents/agent_tests.py` runs this as ElevenLabs simulation tests for the safe-word, hang-up and agree endings and for the welcome yes and no (5/5 on 13 Nov 2026); the other endings still need a voice check.
 - **Profiler:** three recorded welcome calls scored by hand by two of us, compared with the job.
+- **Risk check:** `scripts/eval_risk.py` replays the ten written practice calls line by line, as in a live call, up to the reveal. It reports precision and recall per tactic (the signals found by the end against the tactics the agent marked), how often the three non-tactic signals fired, the light at the reveal, the fallback count and the latency per check. `--fallback` runs the keywords alone, with no API calls. The marks are what the agent chose to label, not a full answer key. The fallback's keywords were written with these ten calls in view, so its score on them (precision 0.92, recall 1.00) flatters it; the model's run is the honest number.

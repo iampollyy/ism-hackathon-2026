@@ -68,12 +68,13 @@ backend/
       audio.py         ffmpeg clean-up of the recording
       sessions.py      builds the session object for a call
       pipeline.py      what happens after a call ends
+      live_risk.py     runs the live risk check during a practice, publishes `risk`
       readiness.py     the scale and its update rules
       scheduler.py     rings due calls, marks missed ones
       firecrawl.py     this week's scam warnings
       push.py          Web Push to the phones (routers/push.py takes the subscriptions)
     agents/            model jobs; see ai.md
-      llm.py  profiler.py  planner.py  director.py  scorer.py  digest.py
+      llm.py  profiler.py  planner.py  director.py  scorer.py  digest.py  risk.py
       prompts/         one file per job and version
     scenarios/         one JSON file per scenario
   voice_agents/        the three ElevenLabs agents as files
@@ -267,7 +268,7 @@ any state ──► failed            (token or connection error)
 | `POST /api/calls/{id}/decline` | The phone declines | `ok` |
 | `POST /api/calls/{id}/events` | The phone reports turns, tactics, the outcome, the reveal | `ok` |
 | `POST /api/calls/{id}/end` | The phone reports the end | `ok` |
-| `GET /api/calls/{id}` | A call with its turns, tactics and result | Call object |
+| `GET /api/calls/{id}` | A call with its turns, tactics, risk points and result | Call object |
 | `GET /api/calls/{id}/events` | Live stream for the laptop | Call events |
 
 ### Families
@@ -400,7 +401,42 @@ Returns `201` with `{ "call_id": "call_9f3k", "status": "ringing" }`.
 - Send a comment line every 15 seconds to keep the connection open.
 - Headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `X-Accel-Buffering: no`.
 
-Event types are the ones in idea.md: `call.status`, `turn`, `tactic`, `outcome`, `revealed`, `callback.connected`. One is added when scoring finishes: `result`, carrying the lesson and the debrief.
+Event types are the ones in idea.md: `call.status`, `turn`, `tactic`, `outcome`, `revealed`, `callback.connected`. One is added when scoring finishes: `result`, carrying the lesson and the debrief. One more comes during a practice: `risk`, the live risk check (below).
+
+**The `risk` event: the laptop's traffic light.** During a practice call (never a welcome or family-line call), each events batch that holds a caller line (`turn` with `speaker: "agent"`) starts a check in the background; `POST /events` does not wait for it. A fast model reads the turns so far (only the words, never the `tactic` events) and names warning signals; code turns them into a level (ai.md, "The live risk check"). Each result is stored as a call event and sent on the stream:
+
+```
+id: 14
+event: risk
+data: {"level": "red",
+       "signals": ["new_number", "urgency", "money_request"],
+       "labels": ["New number", "Urgency", "Asks for money"],
+       "reason": "Asks for money today",
+       "turn_index": 4,
+       "source": "risk.v1",
+       "t": 21.7}
+```
+
+| Field | Meaning |
+|---|---|
+| `level` | `green`, `yellow` or `red`. Never lower than the call's previous `risk` event. |
+| `signals` | Every signal seen so far in the call, first seen first; it only grows. Keys from the list below. |
+| `labels` | The signals' labels for chips on the screen, in the same order. |
+| `reason` | A few plain words for under the light, such as "Asks for money and to keep it quiet". "Nothing worrying yet" when green. |
+| `turn_index` | The index, in the call object's `turns` (all speakers, from 0), of the last caller line this check read. |
+| `source` | The prompt version (`risk.v1`) when the model answered, `fallback` when keywords in code did (no model key, too slow, or refused). |
+| `t` | Seconds since the call was answered, when the result was stored (a second or two after that line). |
+
+Signals: the eight tactics (`new_number`, `urgency`, `secrecy`, `authority`, `emotional_appeal`, `small_ask_first`, `isolation`, `unusual_payment`) plus `money_request` ("Asks for money"), `asks_for_code` ("Asks for a code") and `refuses_callback` ("Avoids a call-back"). The level rule, in code: no signals is green; only softer pressure (`new_number`, `urgency`, `authority`, `emotional_appeal`, `small_ask_first`) is yellow; any of `money_request`, `unusual_payment`, `asks_for_code`, `refuses_callback`, `secrecy` or `isolation` is red.
+
+Building the light:
+- Start every practice screen at green with "Nothing worrying yet"; the first `risk` event comes after the caller's first line.
+- On each `risk` event, show its `level` and `reason` and its `labels` as chips. Take the event as it is: it already carries everything so far, and the back end never lowers the level, so there is nothing to merge.
+- There is at most one check per call at a time. Lines that arrive during a check are read by one more check right after it, so the light can skip a line, but it always catches up with the latest one. Checks stop at the first `outcome` event (the agent then reveals), so the light holds its last state through the reveal.
+- Replay: `GET /api/calls/{id}` has `risk`, the same events in order (`level`, `signals`, `labels`, `reason`, `turn_index`, `source`, `t`), so the result screen can show the light beside the matching line in `turns`. It is `[]` for welcome and family-line calls, and for a practice before the caller has spoken.
+- Through the tunnel there is no stream: polling `GET /api/calls/{id}` gives the same points; show the last one.
+
+`RISK_CHECK_ENABLED=false` in `.env` switches the check off (the test suite does).
 
 ### Waking the phone: Web Push
 
@@ -531,7 +567,7 @@ Show only `title` and `body`; do not add words such as "practice". When the page
 **3. Practice call**
 1. Laptop or scheduler: `POST /api/practice-calls`. The checks pass; the brief is built; the call rings.
 2. Phone: Answer, session, `startSession` with the voice override and the variables.
-3. Phone: forwards each line and each `mark_tactic` and `practice_result` as events. Laptop: shows them from the stream.
+3. Phone: forwards each line and each `mark_tactic` and `practice_result` as events. Laptop: shows them from the stream. Back end: after each batch with a caller line, the live risk check runs in the background and publishes `risk` (see "Reading a call").
 4. The agent reveals and calls `end_call`, or the person taps End. Phone: `POST /api/calls/{id}/end`.
 5. Phone: shows the reveal screen whatever happened, with fixed wording and `reveal.voice_of`. The reveal never depends on the agent having said it.
 6. After-call work: scoring.

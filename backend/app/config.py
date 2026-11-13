@@ -12,9 +12,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
-# The five model jobs (ai.md, "The model jobs"), plus the weekly note. Each setting is a
-# comma-separated list: first choice, then the second choice at the other provider.
-MODEL_JOBS = ("profiler", "planner", "digest", "director", "scorer", "weekly_note")
+# The five model jobs (ai.md, "The model jobs"), plus the weekly note and the live risk
+# check. Each setting is a comma-separated list: first choice, then the second choice at
+# the other provider.
+MODEL_JOBS = ("profiler", "planner", "digest", "director", "scorer", "weekly_note", "risk")
 
 # The VAPID `sub` claim when VAPID_SUBJECT is empty. Set a real contact for a live demo.
 DEFAULT_VAPID_SUBJECT = "mailto:callback@example.com"
@@ -52,6 +53,10 @@ class Settings(BaseSettings):
     director_models: str = "claude-haiku-5-5,gpt-6-luna"
     scorer_models: str = "claude-haiku-5-5,gpt-6-luna"
     weekly_note_models: str = "claude-haiku-5-5,gpt-6-luna"
+    risk_models: str = "claude-haiku-5-5,gpt-6-luna"
+
+    # The live risk check on practice calls (tests switch it off; their own tests switch it on)
+    risk_check_enabled: bool = True
 
     # Storage
     database_url: str = "sqlite:///data/app.db"

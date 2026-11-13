@@ -35,9 +35,16 @@ ConsentSource = Literal["voice_recording", "welcome_call", "manual"]
 ReadinessKey = Literal["verify_first", "safe_word", "trusted_contact", "payment_caution", "under_pressure"]
 EventType = Literal[
     "call.status", "turn", "tactic", "outcome", "revealed", "callback.connected", "result", "consent",
+    "risk",
 ]
+# The live risk check (agents/risk.py): the tactics, plus three signs that a
+# call is a scam. Code maps the signals to the level.
+RiskSignal = Literal[Tactic, "money_request", "asks_for_code", "refuses_callback"]
+RiskLevel = Literal["green", "yellow", "red"]
 
 TACTICS: tuple[str, ...] = Tactic.__args__  # type: ignore[attr-defined]
+RISK_SIGNALS: tuple[str, ...] = RiskSignal.__args__  # type: ignore[attr-defined]
+RISK_LEVELS: tuple[str, ...] = RiskLevel.__args__  # type: ignore[attr-defined]
 OUTCOMES: tuple[str, ...] = Outcome.__args__  # type: ignore[attr-defined]
 SCENARIOS: tuple[str, ...] = ScenarioKey.__args__  # type: ignore[attr-defined]
 READINESS_KEYS: tuple[str, ...] = ReadinessKey.__args__  # type: ignore[attr-defined]
@@ -51,6 +58,13 @@ TACTIC_LABELS: dict[str, str] = {
     "small_ask_first": "Small ask first",
     "isolation": "Don't call anyone",
     "unusual_payment": "Unusual payment",
+}
+
+RISK_SIGNAL_LABELS: dict[str, str] = {
+    **TACTIC_LABELS,
+    "money_request": "Asks for money",
+    "asks_for_code": "Asks for a code",
+    "refuses_callback": "Avoids a call-back",
 }
 
 OUTCOME_LABELS: dict[str, str] = {
@@ -271,6 +285,18 @@ class TacticView(BaseModel):
     t: float | None
 
 
+class RiskPointView(BaseModel):
+    """One stored `risk` event: the light after one check (backend.md)."""
+
+    level: RiskLevel
+    signals: list[RiskSignal]
+    labels: list[str]
+    reason: str
+    turn_index: int  # index in CallView.turns of the last caller line checked
+    source: str  # the prompt version, or "fallback"
+    t: float | None
+
+
 class CallResultView(BaseModel):
     outcome: Outcome
     seconds_to_challenge: float | None
@@ -291,6 +317,7 @@ class CallView(BaseModel):
     caller_label: str | None
     turns: list[TurnView]
     tactics: list[TacticView]
+    risk: list[RiskPointView] = []  # the live risk check's results, in order (practice calls)
     result: CallResultView | None  # None until the call is scored
     callback_seconds: float | None
     answered_at: str | None = None
