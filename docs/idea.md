@@ -111,6 +111,85 @@ These decide the design. Not legal advice.
 
 Endpoint and field names below come from an agent's reading of the ElevenLabs and Twilio docs on 13 Nov, plus memory. Check each against the docs as you wire it.
 
+### Start here: stack, layout and the contract
+
+**Confirmed on Friday 13 Nov:** the stack below, the contract below, and the owners. Denis owns the back end and both provider accounts (ElevenLabs and Twilio), including their set-up. The front-end colleague owns `frontend/`. The data scientist owns the agents' scripts, the survey, the scoring scale and the plan format.
+
+**Stack**
+- Front end: React with Vite, already set up in `frontend/`.
+- Back end: Python with FastAPI in `backend/`. The repo's ignore file already covers Python, audio clean-up is easy with ffmpeg, and the prompts and scoring can be written by anyone on the team.
+- Database: SQLite to start.
+- Live updates to the browser: server-sent events, one stream per call.
+- Secrets in `backend/.env`, never committed. Commit a `backend/.env.example` listing the names only: `ELEVENLABS_API_KEY`, the three agent ids, `ELEVENLABS_PHONE_NUMBER_ID`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_NUMBER`, the model provider's key, `PUBLIC_BASE_URL`.
+
+**The contract between front end and back end.** Agree this first; then both sides work in parallel, and the front end builds against fixed sample responses until the back end is ready.
+
+| Call | Purpose | Returns |
+|---|---|---|
+| `POST /api/families` | Create a family: name, safe word, members (name, phone, relationship) | `family_id` |
+| `GET /api/families/{id}` | Everything the family page shows | The family object below |
+| `POST /api/members/{id}/welcome-call` | Start the welcome call to that member | `call_id` |
+| `POST /api/members/{id}/voice` | Upload a microphone recording to clone from (demo path) | `voice_ready` |
+| `POST /api/practice-calls` | Start a practice: `target_member_id`, `voice_member_id` or none, `scenario` | `call_id` |
+| `GET /api/calls/{id}` | A finished call: turns, tactics, result, lesson | The call object below |
+| `GET /api/calls/{id}/events` | Live stream for the call screen | Events below |
+
+*Member, inside the family object:* `id`, `name`, `relationship`, `consent` (clone, practice), `voice_ready`, `readiness` (`before`, `now`, and `items` each with `label`, `before`, `now`, `max`), `weak_spot`, `said` (their quote from the welcome call), `plan` (`this_week`, and `steps` each with `when`, `scenario`, `why`, `status`).
+
+*Family object:* `id`, `name`, `safe_word_set`, `family_number`, `members`, `readiness` (`before`, `now`), `week` (recent and planned activity).
+
+*Call object:* `id`, `kind`, `target`, `voice_of`, `scenario`, `status`, `turns` (`speaker`, `text`, `t`, optional `tactic`), `tactics` (`key`, `label`, `t`), `result` (`outcome`, `seconds_to_challenge`, `lesson`), `callback_seconds`.
+
+*Live events:*
+- `call.status`: `ringing`, `in_progress` or `ended`
+- `tactic`: `key`, `label`, `t`
+- `turn`: `speaker`, `text`, `t` (only if a live transcript turns out to be available)
+- `outcome`: `outcome`, `seconds_to_challenge`
+- `revealed`
+- `callback.connected`: `seconds`
+
+*Fixed lists:* tactic keys are `new_number`, `urgency`, `secrecy`, `authority`, `emotional_appeal`, `small_ask_first`, `isolation`, `unusual_payment`. Outcomes are `asked_safe_word`, `hung_up`, `asked_personal_question`, `hesitated`, `agreed`. Scenarios are `relative_new_number`, `police`, `bank_security`, `hospital`.
+
+The provider webhooks (after-call report, the agent's tool calls, the caller look-up for the family line) are back-end only; the front end never sees them.
+
+**The first three hours, in parallel**
+- Back end: the first test in the schedule below (a call in a cloned voice), then `POST /api/practice-calls` and the event stream.
+- Front end: the three screens from the mockup against sample data shaped like the objects above, starting with the live call screen.
+- Data: the welcome agent's script with the five questions, the practice agent's script for the relative story, and the scoring scale.
+
+### Set-up checklist: Twilio and ElevenLabs
+
+Written so that a person or a coding agent can follow it. Steps marked "check" were not confirmed in the docs. Whoever runs this creates the keys themselves and puts them only in `backend/.env`.
+
+**Twilio**
+1. Open the account. Note the Account SID and the Auth Token.
+2. Get one phone number that can make and receive voice calls.
+3. On a trial account, verify each teammate's mobile number as a caller ID. A trial calls only verified numbers in the sign-up country.
+4. Check that calling the teammates' country is switched on in the voice geographic permissions.
+5. Place one test call and listen: if the trial plays its own message before the agent speaks, upgrade to a paid account. (Check.)
+
+**ElevenLabs**
+1. Redeem the Creator plan through the event's Discord coupon, on the one account that will hold everything.
+2. Create an API key.
+3. In the Phone Numbers tab, import the Twilio number with the Account SID and Auth Token ([native integration](https://elevenlabs.io/docs/eleven-agents/phone-numbers/twilio-integration/native-integration)). Note the phone number id.
+4. Create three agents and note their ids: welcome, practice, family line. Their scripts come from the data scientist.
+5. On the practice agent, allow per-call overrides for the voice, the prompt and the first message. This is probably in the agent's security settings ([overrides](https://elevenlabs.io/docs/eleven-agents/customization/personalization/twilio-personalization)). (Check.)
+6. Give the practice agent two server tools that call our back end: `mark_tactic` and `practice_result`.
+7. Point the after-call webhook at our back end, so transcripts arrive when a call ends.
+8. Assign the family-line agent to the number for incoming calls, with the start-of-call look-up pointing at our back end, and find the built-in way to transfer a call to another number. (Check.)
+9. Pick the language model for the agents: the fastest one that stays in role.
+
+**A public address for the back end**
+- Run a tunnel to the local server and put its HTTPS address in `PUBLIC_BASE_URL`. The webhooks and tools above all point there, so they must be updated if the address changes.
+
+**Then the first test, in this order**
+1. From the ElevenLabs dashboard, send a test call from the welcome agent to your own mobile.
+2. Place the same call through the API ([outbound call](https://elevenlabs.io/docs/eleven-agents/api-reference/twilio/outbound-call.md)). With the Twilio call id it returns, start a two-channel recording and check that your voice is alone on one channel.
+3. Clone your voice from a one-minute microphone recording ([instant cloning](https://elevenlabs.io/docs/product-guides/voices/voice-cloning/instant-voice-cloning)).
+4. Place a call from the practice agent to a teammate with that voice id as the override.
+
+**Before any cloned-voice call to someone other than yourself:** that person has said yes, and the question about this use has been sent to ElevenLabs ([use policy](https://elevenlabs.io/use-policy)).
+
 ### The pieces
 
 ```
@@ -274,9 +353,9 @@ For the weekend: generate one real weekly digest from live sources, send one rea
 
 | When | Milestone |
 |---|---|
-| Fri 14:45–16:30 | **First test:** from a paid Twilio account, place one outbound call to your own mobile; fetch both recordings and check the channels separate; clone your voice from 60 seconds of phone audio; place a second call that speaks the real practice script in that voice, using the per-call voice override. Send the question to ElevenLabs' sponsor contact. One person goes to the mentor carousel (15:00 to 17:00). |
-| Fri 16:30 | **Go or no-go:** a stable two-way agent call on your own mobiles. |
-| Fri 16:30–19:00 | **M1:** the welcome call works end to end: consent, recording, clone. Sign-up page. One practice story and the scoring rules written. |
+| Fri 13:15–15:00 | **First test:** from a paid Twilio account, place one outbound call to your own mobile; fetch both recordings and check the channels separate; clone your voice from 60 seconds of phone audio; place a second call that speaks the real practice script in that voice, using the per-call voice override. Send the question to ElevenLabs' sponsor contact. One person goes to the mentor carousel (15:00 to 17:00). |
+| Fri 15:00 | **Go or no-go:** a stable two-way agent call on your own mobiles. |
+| Fri 15:00–19:00 | **M1:** the welcome call works end to end: consent, recording, clone. Sign-up page. One practice story and the scoring rules written. |
 | Fri 19:00–23:00 | **M2:** a practice call in the cloned voice, with the reveal and the lesson, and the family page. |
 | Sat 09:00–12:00 | **M3:** the call back to the family number, the tactic labels on screen, fixes. Feature freeze at 12:00. |
 | Sat 12:00–15:00 | Second practice for Friday's pairs; numbers; screen takes for the video. |
@@ -284,7 +363,7 @@ For the weekend: generate one real weekly digest from live sources, send one rea
 | Sat 18:00–19:30 | Submitted by 19:30. |
 
 **Decision points**
-- **Fri 16:30:** if a call with a cloned voice can't be placed, build the help-line form instead.
+- **Fri 15:00:** if a call with a cloned voice can't be placed, build the help-line form instead.
 - **Fri 18:00:** if clones made from phone audio sound wrong, take the voice sample through a web link with the phone's microphone instead.
 - **If ElevenLabs says the practice call is not allowed:** keep the welcome call and the cloning, and play the practice inside the web page as a labelled demonstration the family listens to together, with no outbound call in the cloned voice.
 
