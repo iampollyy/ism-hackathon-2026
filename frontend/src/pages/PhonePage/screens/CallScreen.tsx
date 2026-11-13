@@ -9,6 +9,8 @@ type CallScreenProps = {
   startedAt: number;
   connected: boolean;
   mode: Mode | null;
+  /** End was tapped while the call was still connecting. */
+  ending?: boolean;
   onEnd: () => void;
 };
 
@@ -27,9 +29,17 @@ function useSecondsSince(startedAt: number): number {
 }
 
 /** The in-call screen, for a practice, a welcome call or the family line. */
-export function CallScreen({ title, number, variant, startedAt, connected, mode, onEnd }: CallScreenProps) {
+export function CallScreen({ title, number, variant, startedAt, connected, mode, ending = false, onEnd }: CallScreenProps) {
   const seconds = useSecondsSince(startedAt);
-  const status = !connected ? (variant === 'family_line' ? 'Calling…' : 'Connecting…') : mode === 'speaking' ? 'Speaking' : 'Listening';
+  const status = ending
+    ? 'Ending…'
+    : !connected
+      ? variant === 'family_line'
+        ? 'Calling…'
+        : 'Connecting…'
+      : mode === 'speaking'
+        ? 'Speaking'
+        : 'Listening';
   const Icon = variant === 'family_line' ? HeartHandshake : variant === 'welcome' ? ShieldCheck : UserRound;
 
   return (
@@ -56,7 +66,13 @@ export function CallScreen({ title, number, variant, startedAt, connected, mode,
 
       <div className="call-buttons call-buttons--single">
         <div className="call-button">
-          <button type="button" className="round-button round-button--red" onClick={onEnd} aria-label="End call">
+          <button
+            type="button"
+            className="round-button round-button--red"
+            onClick={onEnd}
+            disabled={ending}
+            aria-label="End call"
+          >
             <PhoneOff size={32} aria-hidden="true" />
           </button>
           <span>End</span>

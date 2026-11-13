@@ -7,6 +7,13 @@ $call-bg-bottom: #08131d;
 $call-red: #e5484d;
 $call-green: #22b16b;
 
+// A swipe down must not reload the page (pull-to-refresh) in the middle of
+// a call or on the reveal.
+html:has(.phone-page),
+body:has(.phone-page) {
+  overscroll-behavior-y: none;
+}
+
 .phone-page {
   min-height: 100vh;
   min-height: 100dvh;
@@ -667,6 +674,12 @@ $call-green: #22b16b;
   &:active {
     transform: scale(0.93);
     filter: brightness(0.92);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+    transform: none;
   }
 }
 

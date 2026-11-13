@@ -67,6 +67,7 @@ function Phone({ memberId }: { memberId: string }) {
           startedAt={view.startedAt}
           connected={view.connected}
           mode={view.mode}
+          ending={view.ending}
           onEnd={phone.hangUp}
         />
       );

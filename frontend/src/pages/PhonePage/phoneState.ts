@@ -32,6 +32,8 @@ export type PhoneView =
       startedAt: number;
       connected: boolean;
       mode: Mode | null;
+      /** End was tapped before the call had connected: waiting for the answer to come back. */
+      ending: boolean;
     }
   | {
       name: 'family_line';
@@ -67,8 +69,20 @@ export type PhoneAction =
   | { type: 'decline'; callId: string }
   | { type: 'connected'; callId: string }
   | { type: 'mode'; callId: string; mode: Mode }
-  | { type: 'finished'; callId: string; kind: CallKind; endedBy: EndedBy; voiceOf: string | null }
+  | { type: 'ending'; callId: string }
+  | {
+      type: 'finished';
+      callId: string;
+      kind: CallKind;
+      endedBy: EndedBy;
+      voiceOf: string | null;
+      /** The welcome call's consent answer, if the agent reported one. */
+      consent: boolean | null;
+    }
   | { type: 'end_sent'; callId: string }
+  | { type: 'recovered'; callId: string; voiceOf: string | null; endedBy: EndedBy; endSent: boolean }
+  | { type: 'recovering'; callId: string }
+  | { type: 'recovery_dropped'; callId: string }
   | { type: 'scored'; callId: string; result: CallResultView | null }
   | { type: 'scoring_gave_up'; callId: string }
   | { type: 'family_line_starting' }
@@ -106,31 +120,41 @@ function callIdOf(view: PhoneView): string | null {
   return 'callId' in view ? view.callId : null;
 }
 
+function revealView(callId: string, voiceOf: string | null, endedBy: EndedBy, endSent: boolean): RevealView {
+  return {
+    name: 'reveal',
+    callId,
+    voiceOf,
+    endedBy,
+    endSent,
+    scoring: 'waiting',
+    result: null,
+    startingFamilyLine: false,
+    familyLineError: null,
+  };
+}
+
+/** What the person hears after a welcome call: it must match what they said. */
+function welcomeThanks(waiting: PhoneUiState, endedBy: EndedBy, consent: boolean | null): PhoneUiState {
+  if (consent === true) {
+    return withNotice(waiting, 'good', 'Thank you for the call. You are all set, and Callback stays on.');
+  }
+  if (consent === false) {
+    return withNotice(waiting, 'info', 'Thank you for the call. No practice calls will come unless you change your mind.');
+  }
+  return endedBy === 'error'
+    ? withNotice(waiting, 'error', 'The call could not connect. Your family can ring again from their laptop.')
+    : withNotice(waiting, 'info', 'Thank you for the call.');
+}
+
 function finishedState(state: PhoneUiState, action: Extract<PhoneAction, { type: 'finished' }>): PhoneUiState {
   if (callIdOf(state.view) !== action.callId) return state;
   if (action.kind === 'practice') {
     // The reveal is certain: every practice call ends here, however it ended.
-    return {
-      ...state,
-      view: {
-        name: 'reveal',
-        callId: action.callId,
-        voiceOf: action.voiceOf,
-        endedBy: action.endedBy,
-        endSent: false,
-        scoring: 'waiting',
-        result: null,
-        startingFamilyLine: false,
-        familyLineError: null,
-      },
-    };
+    return { ...state, view: revealView(action.callId, action.voiceOf, action.endedBy, false) };
   }
   const waiting: PhoneUiState = { ...state, view: { name: 'waiting' } };
-  if (action.kind === 'welcome') {
-    return action.endedBy === 'error'
-      ? withNotice(waiting, 'error', 'The call could not connect. Your family can ring again from their laptop.')
-      : withNotice(waiting, 'good', 'Thank you for the call. You are all set, and Callback stays on.');
-  }
+  if (action.kind === 'welcome') return welcomeThanks(waiting, action.endedBy, action.consent);
   // The family line. If it could not connect, back to the reveal, where the
   // family number button is, so it can be tried again.
   if (action.endedBy === 'error' && state.view.name === 'family_line' && state.view.reveal) {
@@ -189,6 +213,7 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
           startedAt: action.at,
           connected: false,
           mode: null,
+          ending: false,
         },
       };
 
@@ -208,8 +233,35 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
       if ((view.name !== 'in_call' && view.name !== 'family_line') || view.callId !== action.callId) return state;
       return { ...state, view: { ...view, mode: action.mode, connected: true } };
 
+    case 'ending':
+      if (view.name !== 'in_call' || view.callId !== action.callId) return state;
+      return { ...state, view: { ...view, ending: true } };
+
     case 'finished':
       return finishedState(state, action);
+
+    case 'recovered':
+      // After a reload: the practice this tab answered gets its reveal back.
+      if (view.name !== 'waiting') return state;
+      return {
+        ...state,
+        handled: remember(state.handled, action.callId),
+        notice: null,
+        view: revealView(action.callId, action.voiceOf, action.endedBy, action.endSent),
+      };
+
+    case 'recovering':
+      // After a reload, while the back end is asked about a call this tab was
+      // answering: it does not ring again here meanwhile.
+      return { ...state, handled: remember(state.handled, action.callId) };
+
+    case 'recovery_dropped': {
+      // The back end says it was never answered: nothing to reveal, and it
+      // may ring again.
+      const handled = state.handled.filter((id) => id !== action.callId);
+      if (view.name !== 'reveal' || view.callId !== action.callId || view.endSent) return { ...state, handled };
+      return { ...state, handled, view: { name: 'waiting' } };
+    }
 
     case 'end_sent':
       if (view.name !== 'reveal' || view.callId !== action.callId) return state;

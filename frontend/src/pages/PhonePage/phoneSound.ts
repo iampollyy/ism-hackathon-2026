@@ -5,6 +5,10 @@
 // forgets it was a tap) we unlock an AudioContext, play the ringtone once
 // muted, ask for the microphone so no permission box appears while it rings,
 // and keep the screen awake.
+//
+// The phone can take the sound away again later (a lock screen, Siri, a real
+// call, the voice call's own audio): the status follows the AudioContext, so
+// the waiting screen brings the button back when a new tap is needed.
 
 export type SoundStatus = 'off' | 'on' | 'mic_blocked';
 
@@ -12,6 +16,27 @@ type AudioContextClass = typeof AudioContext;
 
 const RING_EVERY_MS = 3000;
 const VIBRATE_PATTERN = [600, 300, 600];
+/** iOS keeps resume() pending while the sound is interrupted: wait this long at most. */
+const RESUME_WAIT_MS = 3000;
+/** The microphone question waits for the person, but not for ever. */
+const MICROPHONE_WAIT_MS = 30000;
+
+/** The promise's value, or `fallback` once `ms` have passed. */
+function within<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise<T>((resolve) => {
+    const timer = window.setTimeout(() => resolve(fallback), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        window.clearTimeout(timer);
+        resolve(fallback);
+      },
+    );
+  });
+}
 
 function audioContextClass(): AudioContextClass | null {
   const w = window as typeof window & { webkitAudioContext?: AudioContextClass };
@@ -26,33 +51,56 @@ export class PhoneSound {
   /** The sound tap happened: vibration is allowed from now on. */
   private unlocked = false;
   private vibrating = false;
+  private switching = false;
+  private microphoneOk = false;
+  private listener: ((status: SoundStatus) => void) | null = null;
 
   constructor() {
     document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
+  /** 'on' only while the tap's sound still works; 'off' asks for a new tap. */
+  get status(): SoundStatus {
+    if (!this.unlocked) return 'off';
+    if (this.context && this.context.state !== 'running') return 'off';
+    return this.microphoneOk ? 'on' : 'mic_blocked';
+  }
+
+  /** Told whenever the status changes by itself (not during switchOn). */
+  onStatusChange(listener: ((status: SoundStatus) => void) | null): void {
+    this.listener = listener;
+  }
+
   /** Call straight from the tap's click handler. */
   async switchOn(): Promise<SoundStatus> {
-    // Synchronous part first: these need the tap itself.
-    this.unlocked = true;
-    const Context = audioContextClass();
-    if (Context && !this.context) this.context = new Context();
-    const resumed = this.context?.resume().catch(() => undefined);
-    this.playRing(0); // once, muted: unlocks playback for later
-    this.wantWakeLock = true;
-    const lock = this.requestWakeLock();
-    const microphone = navigator.mediaDevices?.getUserMedia
-      ? navigator.mediaDevices.getUserMedia({ audio: true }).then(
-          (stream) => {
+    this.switching = true;
+    try {
+      // Synchronous part first: these need the tap itself.
+      this.unlocked = true;
+      const Context = audioContextClass();
+      if (Context && !this.context) {
+        this.context = new Context();
+        this.context.onstatechange = this.report;
+      }
+      const resumed = this.context ? this.context.resume().catch(() => undefined) : Promise.resolve();
+      this.playRing(0); // once, muted: unlocks playback for later
+      this.wantWakeLock = true;
+      const lock = this.requestWakeLock();
+      const microphone = navigator.mediaDevices?.getUserMedia
+        ? navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
             stream.getTracks().forEach((track) => track.stop());
             return true;
-          },
-          () => false,
-        )
-      : Promise.resolve(false);
+          })
+        : Promise.resolve(false);
 
-    const [, , micOk] = await Promise.all([resumed, lock, microphone]);
-    return micOk ? 'on' : 'mic_blocked';
+      // Never leave the button stuck: an interrupted resume or a slow wake
+      // lock gives up after a few seconds, and the button can be tapped again.
+      await within(Promise.all([resumed, lock]).then(() => undefined), RESUME_WAIT_MS, undefined);
+      this.microphoneOk = await within(microphone, MICROPHONE_WAIT_MS, false);
+    } finally {
+      this.switching = false;
+    }
+    return this.status;
   }
 
   /** The ringtone (every few seconds) and vibration, until stopRinging. */
@@ -77,13 +125,19 @@ export class PhoneSound {
 
   dispose(): void {
     this.stopRinging();
+    this.listener = null;
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.wantWakeLock = false;
     this.wakeLock?.release().catch(() => undefined);
     this.wakeLock = null;
+    if (this.context) this.context.onstatechange = null;
     this.context?.close().catch(() => undefined);
     this.context = null;
   }
+
+  private report = () => {
+    if (!this.switching) this.listener?.(this.status);
+  };
 
   /** One "ring ring": two short bursts of 440 + 480 Hz, like a phone line. */
   private playRing(volume: number): void {
@@ -122,6 +176,13 @@ export class PhoneSound {
   private onVisibilityChange = () => {
     if (document.visibilityState !== 'visible') return;
     void this.requestWakeLock();
-    if (this.context && this.context.state !== 'running') this.context.resume().catch(() => undefined);
+    const context = this.context;
+    if (!context || context.state === 'running') {
+      this.report();
+      return;
+    }
+    // Try to get the sound back without a tap; if the phone refuses, the
+    // status says 'off' and the waiting screen asks for a new tap.
+    void within(context.resume().catch(() => undefined), RESUME_WAIT_MS, undefined).then(this.report);
   };
 }

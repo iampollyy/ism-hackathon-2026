@@ -6,6 +6,8 @@
 //   network or server error it stays and goes again on the next tick.
 // - A refusal that can never succeed (the call is over, a bad value) drops
 //   that batch, so it cannot block the rest of the call.
+// - Events left over at the end keep going in the background (linger), and
+//   a page that is closing hands them to lastWords.ts (takeAll).
 
 import { ApiError, api } from '../../api/client';
 import type { PhoneEvent } from '../../api/types';
@@ -24,8 +26,9 @@ export class EventQueue {
   private events: PhoneEvent[] = [];
   private sending: Promise<void> | null = null;
   private timer: number | null = null;
+  private lingerTimer: number | null = null;
 
-  constructor(private readonly callId: string) {}
+  constructor(readonly callId: string) {}
 
   push(event: PhoneEvent): void {
     this.events.push(event);
@@ -40,6 +43,32 @@ export class EventQueue {
   stop(): void {
     if (this.timer !== null) window.clearInterval(this.timer);
     this.timer = null;
+    if (this.lingerTimer !== null) window.clearInterval(this.lingerTimer);
+    this.lingerTimer = null;
+  }
+
+  /** Everything still queued, removed from the queue (for a page that is
+   * closing). A batch on its way may arrive as well: a repeat beats a loss. */
+  takeAll(): PhoneEvent[] {
+    return this.events.splice(0, this.events.length);
+  }
+
+  /** After the call: keep trying every `everyMs` until the queue is empty or
+   * `forMs` has passed, then call `onDone`. The back end still takes events
+   * after the end of a call. */
+  linger(everyMs: number, forMs: number, onDone: () => void): void {
+    this.stop();
+    const until = Date.now() + forMs;
+    const tick = () => {
+      if ((this.events.length === 0 && !this.sending) || Date.now() > until) {
+        this.stop();
+        if (this.events.length > 0) console.warn('Callback: gave up sending these events', this.events);
+        onDone();
+        return;
+      }
+      void this.sendOnce();
+    };
+    this.lingerTimer = window.setInterval(tick, everyMs);
   }
 
   get size(): number {
