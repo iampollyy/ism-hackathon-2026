@@ -1,0 +1,171 @@
+[
+  {
+    "id": "p01_safe_word_at_once",
+    "scenario": "relative_new_number",
+    "difficulty": 1,
+    "target_name": "Sara",
+    "expected_outcome": "asked_safe_word",
+    "tactics_marked": ["new_number"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Mum? It's me. I dropped my phone, so this is a new number."},
+      {"speaker": "user", "t": 5, "text": "Jon? You sound a bit odd."},
+      {"speaker": "agent", "t": 8, "text": "Yeah, it's a borrowed phone. Can you hear me okay?"},
+      {"speaker": "user", "t": 12, "text": "I can. Before anything else, what's our family word?"},
+      {"speaker": "agent", "t": 15, "text": "Sara, this was a Callback practice call. The voice you heard was artificial, made with Jon's permission."},
+      {"speaker": "agent", "t": 21, "text": "You asked for the family word straight away. That is exactly the habit. Goodbye."}
+    ]
+  },
+  {
+    "id": "p02_safe_word_after_pressure",
+    "scenario": "relative_new_number",
+    "difficulty": 2,
+    "target_name": "Ben",
+    "expected_outcome": "asked_safe_word",
+    "tactics_marked": ["new_number", "urgency", "secrecy"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Dad? It's me, Ana. I broke my phone this morning, this is a friend's."},
+      {"speaker": "user", "t": 6, "text": "Ana? Are you all right?"},
+      {"speaker": "agent", "t": 9, "text": "I'm fine, but I have to pay the landlord today and I can't get into my banking app."},
+      {"speaker": "user", "t": 15, "text": "Right. How much is it?"},
+      {"speaker": "agent", "t": 18, "text": "Four hundred euros. Could you send it to my friend's account? Please don't tell Mum, she'll worry."},
+      {"speaker": "user", "t": 26, "text": "Hang on. If this is really you, tell me the family word."},
+      {"speaker": "agent", "t": 29, "text": "Dad, there's no time for that, the landlord is waiting."},
+      {"speaker": "user", "t": 33, "text": "No word, no money. What's the word?"},
+      {"speaker": "agent", "t": 36, "text": "Ben, this was a Callback practice call. The voice you heard was artificial, made with Ana's permission."}
+    ]
+  },
+  {
+    "id": "p03_hung_up_to_call_back",
+    "scenario": "relative_new_number",
+    "difficulty": 1,
+    "target_name": "Sara",
+    "expected_outcome": "hung_up",
+    "tactics_marked": ["new_number", "urgency"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Mum? It's me. I dropped my phone, so this is a new number."},
+      {"speaker": "user", "t": 4, "text": "Oh, hello love. What happened?"},
+      {"speaker": "agent", "t": 7, "text": "It smashed on the way to work. I need to pay for something today and my app won't work."},
+      {"speaker": "user", "t": 13, "text": "I'll tell you what, I'm going to hang up and ring you on your usual number."},
+      {"speaker": "agent", "t": 16, "text": "Sara, this was a Callback practice call. The voice you heard was artificial, made with Jon's permission."},
+      {"speaker": "agent", "t": 22, "text": "You stopped to check on the usual number, which is the right thing to do. Goodbye."}
+    ]
+  },
+  {
+    "id": "p04_hung_up_check_with_daughter",
+    "scenario": "bank_security",
+    "difficulty": 2,
+    "target_name": "Ben",
+    "expected_outcome": "hung_up",
+    "tactics_marked": ["authority", "small_ask_first"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Good afternoon, this is the security team at your bank. Am I speaking with Mr Ben?"},
+      {"speaker": "user", "t": 5, "text": "Yes, speaking."},
+      {"speaker": "agent", "t": 8, "text": "We've blocked a payment of nine hundred euros from your account. Did you make it?"},
+      {"speaker": "user", "t": 13, "text": "No, I didn't."},
+      {"speaker": "agent", "t": 16, "text": "Then I just need to confirm it's you. Could you read me the code we've texted you?"},
+      {"speaker": "user", "t": 22, "text": "I don't think so. I'll check with my daughter first and ring the bank myself. Goodbye."},
+      {"speaker": "agent", "t": 26, "text": "Ben, this was a Callback practice call. The voice you heard was artificial."}
+    ]
+  },
+  {
+    "id": "p05_personal_question",
+    "scenario": "relative_new_number",
+    "difficulty": 2,
+    "target_name": "Sara",
+    "expected_outcome": "asked_personal_question",
+    "tactics_marked": ["new_number", "emotional_appeal"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Mum? It's me. I dropped my phone, so this is a new number."},
+      {"speaker": "user", "t": 4, "text": "Jon? Is that you?"},
+      {"speaker": "agent", "t": 7, "text": "Yeah, sorry, it's been an awful morning. I really need your help today."},
+      {"speaker": "user", "t": 12, "text": "Tell me, what was the name of the dog we had when you were little?"},
+      {"speaker": "agent", "t": 16, "text": "Sara, this was a Callback practice call. The voice you heard was artificial, made with Jon's permission."},
+      {"speaker": "agent", "t": 22, "text": "You tested the caller with a question only Jon would know. Next time, also hang up and call the family number."}
+    ]
+  },
+  {
+    "id": "p06_is_this_a_practice",
+    "scenario": "police",
+    "difficulty": 1,
+    "target_name": "Ana",
+    "expected_outcome": "asked_personal_question",
+    "tactics_marked": ["authority", "secrecy"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Hello, this is the police. I'm calling about your bank account. Is this Ana?"},
+      {"speaker": "user", "t": 5, "text": "Yes. What's this about?"},
+      {"speaker": "agent", "t": 8, "text": "We believe criminals are using your account. You must not discuss this with anyone, including your bank."},
+      {"speaker": "user", "t": 15, "text": "Hmm. Is this one of those Callback practice calls?"},
+      {"speaker": "agent", "t": 18, "text": "Ana, this was a Callback practice call. The voice you heard was artificial."},
+      {"speaker": "agent", "t": 23, "text": "You questioned the caller instead of going along with it. Goodbye."}
+    ]
+  },
+  {
+    "id": "p07_hesitated_ran_out",
+    "scenario": "relative_new_number",
+    "difficulty": 1,
+    "target_name": "Sara",
+    "expected_outcome": "hesitated",
+    "tactics_marked": ["new_number", "urgency", "secrecy"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Mum? It's me. I dropped my phone, so this is a new number."},
+      {"speaker": "user", "t": 5, "text": "Oh. Okay. Are you all right?"},
+      {"speaker": "agent", "t": 8, "text": "I'm fine, but I need to pay for something today and I can't get into my banking app."},
+      {"speaker": "user", "t": 14, "text": "Oh dear. I'm not sure. I don't really do transfers."},
+      {"speaker": "agent", "t": 18, "text": "It has to be today, Mum, or I lose the booking."},
+      {"speaker": "user", "t": 23, "text": "I don't know, love. Let me think about it."},
+      {"speaker": "agent", "t": 27, "text": "Please don't mention it to Dad, he'll only fuss."},
+      {"speaker": "user", "t": 32, "text": "Well. I'm just not sure what to do."},
+      {"speaker": "agent", "t": 36, "text": "Sara, this was a Callback practice call. The voice you heard was artificial, made with Jon's permission."}
+    ]
+  },
+  {
+    "id": "p08_hesitated_uneasy",
+    "scenario": "bank_security",
+    "difficulty": 1,
+    "target_name": "Ben",
+    "expected_outcome": "hesitated",
+    "tactics_marked": ["authority", "urgency"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Good afternoon, this is your bank's security team. We've noticed an unusual payment."},
+      {"speaker": "user", "t": 6, "text": "Oh. Which payment?"},
+      {"speaker": "agent", "t": 9, "text": "A payment of six hundred euros, about ten minutes ago. We need to stop it today."},
+      {"speaker": "user", "t": 15, "text": "I see. That's worrying. I'm not quite sure what you want me to do."},
+      {"speaker": "agent", "t": 20, "text": "I'll need you to confirm a code we're sending you now."},
+      {"speaker": "user", "t": 25, "text": "Right. Well. I don't know. I'm a bit confused, to be honest."},
+      {"speaker": "agent", "t": 30, "text": "Ben, this was a Callback practice call. The voice you heard was artificial."}
+    ]
+  },
+  {
+    "id": "p09_agreed_to_pay",
+    "scenario": "relative_new_number",
+    "difficulty": 1,
+    "target_name": "Sara",
+    "expected_outcome": "agreed",
+    "tactics_marked": ["new_number", "urgency", "emotional_appeal"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Mum? It's me. I dropped my phone, so this is a new number."},
+      {"speaker": "user", "t": 4, "text": "Jon! Oh no, are you okay?"},
+      {"speaker": "agent", "t": 7, "text": "I'm okay, just stressed. I have to pay my rent today and the app is locked."},
+      {"speaker": "user", "t": 12, "text": "Oh sweetheart. How much do you need? Where do I send it?"},
+      {"speaker": "agent", "t": 16, "text": "Sara, this was a Callback practice call. The voice you heard was artificial, made with Jon's permission."},
+      {"speaker": "agent", "t": 22, "text": "You offered to send money. Next time, hang up and call the family number first."}
+    ]
+  },
+  {
+    "id": "p10_agreed_reading_code",
+    "scenario": "bank_security",
+    "difficulty": 2,
+    "target_name": "Ana",
+    "expected_outcome": "agreed",
+    "tactics_marked": ["authority", "small_ask_first", "urgency"],
+    "turns": [
+      {"speaker": "agent", "t": 1, "text": "Hello, this is the security team at your bank. Is this Ana?"},
+      {"speaker": "user", "t": 4, "text": "Yes, it is."},
+      {"speaker": "agent", "t": 7, "text": "We've stopped a suspicious payment. To cancel it I just need to verify you, it takes a second."},
+      {"speaker": "user", "t": 13, "text": "Okay, sure."},
+      {"speaker": "agent", "t": 15, "text": "You'll get a text with a code. Please read it out to me now, before the payment goes through."},
+      {"speaker": "user", "t": 21, "text": "Okay, I've got it, it's four, eight..."},
+      {"speaker": "agent", "t": 23, "text": "Stop, please don't read that out. Ana, this was a Callback practice call. The voice you heard was artificial."}
+    ]
+  }
+]

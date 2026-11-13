@@ -1,0 +1,17 @@
+{
+  "key": "bank_security",
+  "title": "Bank security team",
+  "voice": "ELEVENLABS_BANK_VOICE_ID",
+  "caller_label": "Unknown number",
+  "allowed_tactics": ["authority", "small_ask_first", "urgency", "secrecy", "isolation"],
+  "summary": "from someone posing as their bank's security team",
+  "default_caller": { "name": "Emma", "relationship": "bank security officer" },
+  "template": {
+    "caller_claim": "{caller_name}, from the security team at {target_name}'s bank",
+    "address_as": "{target_name}",
+    "opening_line": "Hello {target_name}, this is {caller_name} from your bank's security team. Have you got a moment?",
+    "scenario_brief": "You say the bank has just stopped a suspicious payment of 640 euros from {target_name}'s account. First you ask them to confirm a small detail, such as the town where they opened the account. Then you say a code has been texted to their phone to cancel the payment.",
+    "ask": "to read out the code the bank has just texted to their phone",
+    "tactic_order": ["authority", "small_ask_first", "urgency"]
+  }
+}

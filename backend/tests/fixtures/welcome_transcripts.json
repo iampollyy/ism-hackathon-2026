@@ -1,0 +1,81 @@
+[
+  {
+    "id": "w01_sara_trusts_bank",
+    "member_name": "Sara",
+    "consent_event": true,
+    "expected": {
+      "consent_practice": true,
+      "trusts_most": "bank",
+      "items": {"verify_first": 0, "safe_word": 1, "trusted_contact": 2, "payment_caution": 1, "under_pressure": 0}
+    },
+    "turns": [
+      {"speaker": "agent", "text": "Hi Sara, this is Callback. Jon set this up for your family. Have you got two minutes?"},
+      {"speaker": "user", "text": "Yes, go on."},
+      {"speaker": "agent", "text": "Scammers can now copy a relative's voice. Callback gives your family short practice calls, so everyone learns to stop and check. Every practice call ends by saying it was a practice. Are you happy to get a practice call now and then, without knowing when?"},
+      {"speaker": "user", "text": "Yes, that's fine, I'm happy with that."},
+      {"speaker": "agent", "text": "Thank you. Has anyone ever phoned or messaged you pretending to be family, your bank or the police? What happened?"},
+      {"speaker": "user", "text": "Not that I know of. If the bank rings, I do what they say, they know what they're doing."},
+      {"speaker": "agent", "text": "If Jon rang from a new number, said he'd lost his phone and needed money today, what would you do first?"},
+      {"speaker": "user", "text": "I'd probably just send it. He's my son, I'd want to help him straight away."},
+      {"speaker": "agent", "text": "Does your family have a secret word or question for checking it's really them? Don't tell me what it is."},
+      {"speaker": "user", "text": "I think we talked about one once, but I'm honestly not sure I remember it."},
+      {"speaker": "agent", "text": "Who would you ring if something felt wrong?"},
+      {"speaker": "user", "text": "Jon. I'd ring Jon, he sorts everything out."},
+      {"speaker": "agent", "text": "How do you usually send money, and has anyone ever asked you to do it in an unusual way?"},
+      {"speaker": "user", "text": "Bank transfer, usually. Nobody's asked anything odd. I'm not sure what I'd do if they did."},
+      {"speaker": "agent", "text": "Thank you, Sara. One habit: if a call asks for money or a code, hang up and call the family number, or ask for the family word. Goodbye."}
+    ]
+  },
+  {
+    "id": "w02_ben_careful",
+    "member_name": "Ben",
+    "consent_event": true,
+    "expected": {
+      "consent_practice": true,
+      "trusts_most": "police",
+      "items": {"verify_first": 2, "safe_word": 2, "trusted_contact": 2, "payment_caution": 2, "under_pressure": 2}
+    },
+    "turns": [
+      {"speaker": "agent", "text": "Hi Ben, this is Callback. Jon set this up for your family. Have you got two minutes?"},
+      {"speaker": "user", "text": "I have, yes."},
+      {"speaker": "agent", "text": "Scammers can now copy a relative's voice. Callback gives your family short practice calls, so everyone learns to stop and check. Every practice call ends by saying it was a practice. Are you happy to get a practice call now and then, without knowing when?"},
+      {"speaker": "user", "text": "Yes, absolutely, sign me up."},
+      {"speaker": "agent", "text": "Thank you. Has anyone ever phoned or messaged you pretending to be family, your bank or the police? What happened?"},
+      {"speaker": "user", "text": "I had a text pretending to be a delivery firm. I deleted it. I suppose if it was the police calling I'd be more inclined to listen."},
+      {"speaker": "agent", "text": "If Jon rang from a new number, said he'd lost his phone and needed money today, what would you do first?"},
+      {"speaker": "user", "text": "I'd hang up and call his old number, or ask him for our word."},
+      {"speaker": "agent", "text": "Does your family have a secret word or question for checking it's really them? Don't tell me what it is."},
+      {"speaker": "user", "text": "We do, and I'd use it without a second thought."},
+      {"speaker": "agent", "text": "Who would you ring if something felt wrong?"},
+      {"speaker": "user", "text": "My wife Sara first, then Jon."},
+      {"speaker": "agent", "text": "How do you usually send money, and has anyone ever asked you to do it in an unusual way?"},
+      {"speaker": "user", "text": "Only through my own banking app. I never pay anything on a phone call, and I'd never buy gift cards for anyone."},
+      {"speaker": "agent", "text": "And when someone rushes you?"},
+      {"speaker": "user", "text": "When someone rushes me, I slow down. That's when I get suspicious."},
+      {"speaker": "agent", "text": "Thank you, Ben. One habit: if a call asks for money or a code, hang up and call the family number, or ask for the family word. Goodbye."}
+    ]
+  },
+  {
+    "id": "w03_ana_unsure",
+    "member_name": "Ana",
+    "consent_event": false,
+    "expected": {
+      "consent_practice": false,
+      "trusts_most": "family",
+      "items": {"verify_first": 1, "safe_word": 0, "trusted_contact": 0, "payment_caution": 1, "under_pressure": 1}
+    },
+    "turns": [
+      {"speaker": "agent", "text": "Hi Ana, this is Callback. Jon set this up for your family. Have you got two minutes?"},
+      {"speaker": "user", "text": "Um, sure, I guess."},
+      {"speaker": "agent", "text": "Scammers can now copy a relative's voice. Callback gives your family short practice calls, so everyone learns to stop and check. Every practice call ends by saying it was a practice. Are you happy to get a practice call now and then, without knowing when?"},
+      {"speaker": "user", "text": "Maybe? I'm not sure yet. Can I think about it?"},
+      {"speaker": "agent", "text": "Of course. Thank you, Ana. Nothing will be sent to you. Before you go, if you're happy to: if Jon rang from a new number and needed money today, what would you do first?"},
+      {"speaker": "user", "text": "I'd ask him a few questions, I think. Probably. It depends how upset he sounded."},
+      {"speaker": "agent", "text": "Does your family have a secret word or question for checking it's really them? Don't tell me what it is."},
+      {"speaker": "user", "text": "No, we don't have anything like that."},
+      {"speaker": "agent", "text": "How do you usually send money?"},
+      {"speaker": "user", "text": "Mostly apps. I've never been asked to do anything strange, I don't know what I'd do."},
+      {"speaker": "agent", "text": "Thank you, Ana. Goodbye."}
+    ]
+  }
+]

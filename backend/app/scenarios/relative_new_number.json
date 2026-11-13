@@ -1,0 +1,16 @@
+{
+  "key": "relative_new_number",
+  "title": "Relative with a new number",
+  "voice": "clone",
+  "caller_label": "Unknown number",
+  "allowed_tactics": ["new_number", "urgency", "secrecy", "emotional_appeal", "small_ask_first"],
+  "summary": "about a new phone number and an urgent transfer",
+  "default_caller": { "name": "Sam", "relationship": "nephew" },
+  "template": {
+    "caller_claim": "{target_relation_to_caller}'s {caller_relationship}, {caller_name}",
+    "opening_line": "{address_as}? It's me. I dropped my phone, so this is a new number.",
+    "scenario_brief": "You broke your phone this morning and are using a borrowed one. You need to pay for something today and cannot get into your banking app.",
+    "ask": "a transfer of a few hundred euros today, to a friend's account",
+    "tactic_order": ["new_number", "urgency", "secrecy"]
+  }
+}
