@@ -512,3 +512,142 @@ class WeeklyRunResult(BaseModel):
 class Health(BaseModel):
     ok: bool = True
     fake_elevenlabs: bool
+
+
+# ---------------------------------------------------------------- track 4: review, activity, progress, learning, news
+# Read-only screens (routers/review.py; docs/full-app/review.md). Status and
+# scenario are plain strings here, so a status or scenario another track adds
+# never breaks these lists.
+
+
+class TacticRef(BaseModel):
+    key: str  # a tactic key (or, in learning, a risk signal key)
+    label: str
+
+
+class DrillView(BaseModel):
+    """One practice call for the review screen. The full replay is GET /api/calls/{id}."""
+
+    call_id: str
+    member: PersonRef  # who was called
+    voice_of: PersonRef | None  # whose clone spoke; None for a library voice
+    scenario: str | None
+    scenario_title: str | None
+    difficulty: int
+    status: str  # a call status
+    created_at: str
+    scheduled_for: str | None
+    answered_at: str | None
+    ended_at: str | None
+    outcome: Outcome | None  # None until the drill is scored with a result
+    outcome_label: str | None
+    safe: bool  # asked the family word, hung up, or asked a personal question
+    seconds_to_challenge: float | None
+    peak_risk_level: RiskLevel | None  # the highest live risk level, or None without a risk check
+    tactics: list[TacticRef]
+    lesson: str | None
+    callback_seconds: float | None  # practice end to the family-number tap
+
+
+class DrillList(BaseModel):
+    drills: list[DrillView]  # newest first
+
+
+ActivityKind = Literal[
+    "joined", "consent_given", "consent_withdrawn", "voice_consent", "voice_ready", "welcome_done",
+    "drill", "drill_unanswered", "family_line", "alert", "weekly_note", "reminder", "message", "opted_out",
+]
+
+
+class ActivityItem(BaseModel):
+    when: str  # ISO time
+    member: PersonRef | None  # who did it (for a message, who got it); None for a family-wide item
+    kind: ActivityKind
+    text: str  # kind words: what the person did, never "failed"
+    call_id: str | None = None  # the practice call to open, when there is one
+
+
+class ActivityView(BaseModel):
+    items: list[ActivityItem]  # newest first
+
+
+class DrillStats(BaseModel):
+    total: int  # drills with a result
+    safe: int  # of those, the safe ones
+    last_outcome: Outcome | None
+    last_outcome_label: str | None
+    safe_streak: int  # safe results in a row, counting back from the latest
+
+
+class LessonView(BaseModel):
+    call_id: str
+    when: str
+    outcome: Outcome
+    outcome_label: str
+    lesson: str
+
+
+class ProgressView(BaseModel):
+    member: PersonRef
+    readiness: ReadinessView
+    drills: DrillStats
+    lessons: list[LessonView]  # newest first
+    weak_spot: str | None
+    next_drill_at: str | None  # the next scheduled drill; for the organiser's screen, never the member's own
+
+
+class LearnTactic(BaseModel):
+    key: RiskSignal
+    label: str
+    kind: Literal["tactic", "signal"]  # one of the eight tactics, or one of the three extra risk signals
+    level: Literal["yellow", "red"]  # the live risk light this sign alone gives
+    what_it_sounds_like: list[Annotated[str, Field(min_length=1)]] = Field(min_length=1)  # two short example lines
+    why_it_works: str = Field(min_length=1)
+    what_to_do: str = Field(min_length=1)
+
+
+class LearnTactics(BaseModel):
+    tactics: list[LearnTactic]
+
+
+class Habit(BaseModel):
+    key: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    line: str = Field(min_length=1)
+
+
+class Habits(BaseModel):
+    habits: list[Habit]
+
+
+class NewsSource(BaseModel):
+    url: str
+    date: str  # YYYY-MM-DD: the day Callback read the page
+
+
+class NewsPattern(BaseModel):
+    title: str
+    summary: str
+    tactics: list[TacticRef]
+    closest_scenario: str | None
+    sources: list[NewsSource]  # empty for the built-in examples
+
+
+class NewsNote(BaseModel):
+    member: PersonRef
+    text: str
+    when: str
+
+
+class NewsView(BaseModel):
+    patterns: list[NewsPattern]
+    updated_at: str | None  # when the digest was built; None when there is none
+    week: str | None  # e.g. "2026-W46"
+    fallback: bool  # the built-in examples or an older digest, not a fresh one
+    notes: list[NewsNote]  # each member's latest weekly note
+    next_refresh_at: str | None  # when this family may refresh again; None: now
+
+
+class NewsRefreshed(NewsView):
+    refreshed: bool  # True: a new digest was built now
+    reason: Literal["too_soon", "fresh", "no_new_digest", "failed"] | None = None

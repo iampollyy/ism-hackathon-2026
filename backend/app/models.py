@@ -186,3 +186,19 @@ class ModelRun(Base):
     input_tokens: Mapped[int | None] = mapped_column(Integer)
     output_tokens: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+# ---------------------------------------------------------------- track 4: review, learning, news
+
+
+class NewsRefresh(Base):
+    """One news refresh a family asked for (POST /api/families/{id}/news/refresh).
+    Written and committed before Firecrawl and the digest job run, so a family
+    refreshes at most once per settings.news_refresh_seconds (services/news.py)."""
+
+    __tablename__ = "news_refreshes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, index=True)
+    outcome: Mapped[str | None] = mapped_column(String)  # refreshed | no_new_digest | failed; None while it runs
+    created_at: Mapped[str] = mapped_column(String, nullable=False)

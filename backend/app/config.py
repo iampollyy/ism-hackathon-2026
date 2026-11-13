@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     vapid_private_key: str = Field(default="", repr=False)
     vapid_subject: str = DEFAULT_VAPID_SUBJECT  # a contact the push services can reach
 
+    # Track 4 (review, learning, news): the least time between two news
+    # refreshes for one family (POST /api/families/{id}/news/refresh).
+    news_refresh_seconds: int = 600
+
     @property
     def push_enabled(self) -> bool:
         return bool(self.vapid_public_key and self.vapid_private_key)
