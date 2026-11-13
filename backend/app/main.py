@@ -1,0 +1,104 @@
+"""The FastAPI app: routers under /api, CORS, the error shape, start-up."""
+
+import asyncio
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from app.config import get_settings
+from app.db import init_db
+from app.routers import calls, families, phone, scenarios, streams, voice, weekly
+from app.schemas import ApiError
+from app.services import scheduler
+
+log = logging.getLogger("app")
+
+STATUS_CODES = {
+    400: "bad_request",
+    404: "not_found",
+    405: "method_not_allowed",
+    409: "conflict",
+    413: "too_large",
+    415: "unsupported_media_type",
+    422: "invalid_request",
+    502: "upstream_failed",
+}
+
+
+async def _run_scheduler() -> None:
+    """Run track B's loop; a crash or a stub is logged and never stops the app."""
+    try:
+        await scheduler.run_forever()
+    except asyncio.CancelledError:
+        raise
+    except NotImplementedError:
+        log.warning("scheduler.run_forever is not implemented yet; no scheduler running")
+    except Exception:
+        log.exception("scheduler loop crashed; the app keeps running without it")
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    init_db()
+    task: asyncio.Task | None = None
+    if get_settings().scheduler_enabled:
+        task = asyncio.create_task(_run_scheduler(), name="scheduler")
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, Exception):
+                pass
+
+
+def error_body(code: str, message: str) -> dict:
+    return {"error": {"code": code, "message": message}}
+
+
+def create_app() -> FastAPI:
+    app = FastAPI(title="Callback", lifespan=lifespan)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.exception_handler(ApiError)
+    async def api_error_handler(_request: Request, exc: ApiError) -> JSONResponse:
+        return JSONResponse(status_code=exc.status_code, content=error_body(exc.code, exc.message))
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error_handler(_request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        code = STATUS_CODES.get(exc.status_code, "error")
+        return JSONResponse(status_code=exc.status_code, content=error_body(code, str(exc.detail)),
+                            headers=getattr(exc, "headers", None))
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error_handler(_request: Request, exc: RequestValidationError) -> JSONResponse:
+        first = exc.errors()[0] if exc.errors() else {}
+        where = ".".join(str(part) for part in first.get("loc", ()))
+        message = f"{where}: {first.get('msg', 'invalid request')}" if where else "Invalid request."
+        return JSONResponse(status_code=422, content=error_body("invalid_request", message))
+
+    @app.exception_handler(Exception)
+    async def unexpected_error_handler(_request: Request, exc: Exception) -> JSONResponse:
+        log.exception("unhandled error", exc_info=exc)
+        return JSONResponse(status_code=500, content=error_body("internal_error", "Something went wrong."))
+
+    for module in (families, voice, phone, scenarios, calls, streams, weekly):
+        app.include_router(module.router, prefix="/api")
+    return app
+
+
+app = create_app()
