@@ -90,7 +90,7 @@ Paths under `backend/`. Edit only files you own; ask for changes elsewhere.
 
 | Endpoint | Router | Track |
 |---|---|---|
-| `GET /api/health`, `POST /api/families`, `GET /api/families/{id}` | `families.py` | shared |
+| `GET /api/health`, `POST /api/families`, `GET /api/families/{id}`, `POST /api/members/{id}/consent` | `families.py` | shared |
 | `POST /api/families/{id}/weekly-run` | `weekly.py` | C |
 | `POST`/`DELETE /api/members/{id}/voice`, `POST /api/members/{id}/opt-out` | `voice.py` | A |
 | `GET /api/scenarios` | `scenarios.py` | A |

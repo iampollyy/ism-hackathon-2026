@@ -269,7 +269,7 @@ Written so that a person or a coding agent can follow it. Steps marked "check" w
 2. The back end cuts the silence, evens out the loudness, sends the audio to instant cloning, and stores the returned `voice_id` on the member.
 3. On the same page each member ticks "I agree to receive practice calls without knowing when". That tick is enough for a practice call, so practice calls work on Friday, before the welcome call exists.
 4. The welcome call rings the member's phone page. The agent explains the service, asks again for consent to receive practice calls, and runs the five-question survey (flow 4).
-5. When it ends, the back end reads the conversation, records a clear "yes", and fills the readiness profile.
+5. The back end records a clear "yes". A "no" withdraws the tick at once, so no practice call is sent to them until they tick again or say yes on a later welcome call. When the call ends, the back end reads the conversation and fills the readiness profile.
 
 Later, in the product, the voice sample comes from the welcome call itself, as in "The path".
 

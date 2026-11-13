@@ -375,7 +375,12 @@ async def score_welcome(call_id: str) -> None:
     A welcome call where nothing was said (it dropped, or failed) changes
     no profile, snapshot or plan; only an explicit consent event counts. A
     fallback profile (every model failed) never replaces one a model made.
-    So a failed welcome call can be run again, and the good run wins."""
+    So a failed welcome call can be run again, and the good run wins.
+
+    Withdrawal is not done here: an explicit no (a consent event with
+    given=false) has already withdrawn practice consent when the phone
+    sent it (calls.record_consent_answer). The profiler's reading never
+    withdraws, and never gives consent against that no."""
     with new_session() as db:
         call = db.get(Call, call_id)
         member = db.get(Member, call.target_member_id) if call else None
@@ -404,7 +409,10 @@ async def score_welcome(call_id: str) -> None:
         if not keeps_old_profile(member, profile):
             member.profile_json = json.dumps(profile)
             set_welcome_snapshot(db, member.id, call_id, profile)
-        if profile.get("consent_practice"):
+        # Read the events again: an explicit no that arrived while the
+        # profiler ran has withdrawn consent, and the model must not undo it.
+        said_no = consent_from_events(events.list_events(call_id, db=db)) is False
+        if profile.get("consent_practice") and not said_no:
             record_spoken_consent(db, member, call, profile.get("consent_quote") or "")
         call.status = "scored"
         db.commit()

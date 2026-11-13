@@ -17,7 +17,9 @@ Rules (docs/backend.md):
   (time since answered_at, capped at ended_at for a batch that arrives
   after the end; later outcomes get none); a welcome
   `consent` with given=true sets consent_practice_at and writes a consents
-  row (practice, welcome_call).
+  row (practice, welcome_call); given=false is an explicit no: it clears
+  consent_practice_at and writes a row (practice_withdrawn, welcome_call),
+  so the consent gate refuses practice calls (services/consent.py).
 - end: status ended, ended_at, ended_by, publish call.status, answer at
   once, then services.run_in_background(pipeline.after_call(call_id), ...).
 - Every status change publishes call.status {status} on the call's stream.
@@ -43,7 +45,7 @@ from app import events, schemas
 from app.db import get_db, now_iso, parse_time, seconds_between, to_iso, utcnow
 from app.ids import new_call_id
 from app.models import Call, CallEvent, Consent, Member, Result
-from app.services import briefs, pipeline, run_in_background, sessions
+from app.services import briefs, consent, pipeline, run_in_background, sessions
 
 log = logging.getLogger("app.calls")
 
@@ -339,23 +341,31 @@ def event_data(item: Any) -> dict[str, Any]:
     return data
 
 
-def record_spoken_consent(db: DbSession, call: Call) -> None:
-    """A spoken yes on the welcome call: set consent_practice_at (if not set
-    yet) and write one consents row for this call. Not committed here."""
+def record_consent_answer(db: DbSession, call: Call, given: bool) -> None:
+    """The welcome agent's consent_result answer. Not committed here.
+
+    - yes: set consent_practice_at (if not set yet) and write one `practice`
+      row for this call; a repeated yes writes nothing more.
+    - no (explicit): withdraw practice consent, with a `practice_withdrawn`
+      row for this call, so the consent gate refuses practice calls from
+      now on. Nothing to withdraw: nothing is written (the stored event is
+      the record).
+    The latest answer wins, so a yes after a no in the same call gives
+    consent again."""
     member = db.get(Member, call.target_member_id)
     if member is None:
         return
-    already = db.scalar(
-        select(Consent.id).where(Consent.call_id == call.id, Consent.kind == "practice").limit(1)
-    )
-    if already is not None:
+    if not given:
+        consent.withdraw_practice(db, member, "welcome_call",
+                                  "Said no on the welcome call (consent_result).", call.id)
         return
-    now = now_iso()
-    if member.consent_practice_at is None:
-        member.consent_practice_at = now
-    db.add(Consent(member_id=member.id, kind="practice", source="welcome_call",
-                   evidence="Said yes on the welcome call (consent_result).",
-                   call_id=call.id, created_at=now))
+    already = db.scalar(
+        select(Consent.id).where(Consent.call_id == call.id, Consent.kind == consent.GIVEN).limit(1)
+    )
+    if member.consent_practice_at is not None and already is not None:
+        return
+    consent.give_practice(db, member, "welcome_call",
+                          "Said yes on the welcome call (consent_result).", call.id)
 
 
 @router.post("/calls/{call_id}/events", response_model=schemas.Ok)
@@ -374,8 +384,8 @@ async def post_events(call_id: str, body: schemas.EventsBatch,
         if item.type == "outcome" and not outcome_seen:
             data["seconds_to_challenge"] = challenge_seconds(call)
             outcome_seen = True
-        if item.type == "consent" and item.given and call.kind == "welcome":
-            record_spoken_consent(db, call)
+        if item.type == "consent" and call.kind == "welcome":
+            record_consent_answer(db, call, item.given)
         events.publish(call.id, item.type, data, db=db)  # commits the consent too
     return schemas.Ok()
 
