@@ -21,7 +21,17 @@ Rules:
   fooled anyone.
 - A drill's timing is a surprise for its target, so the activity never lists
   a drill that is scheduled, ringing or in progress. drills() and progress()
-  do return scheduled_for and next_drill_at, for the organiser's screens.
+  do return scheduled_for and next_drill_at, for the organiser's screens,
+  except for the organiser's own drills: the organiser reads these screens,
+  so a scheduled drill of an is_organiser member is left out of drills()
+  and their next_drill_at is None (families.organisers_surprise). Once it
+  rings it shows like any other.
+- Activity names who acted. A member's row is "{organiser} added {name}"
+  at its created_at; "{name} joined" only at member_joins.joined_at. The
+  organiser's switch (consents source `organiser`) and a voice recorded on
+  the organiser's laptop (source `voice_recording`) say so; the
+  organiser's name is the owning account's, else the is_organiser
+  member's.
 - Messages: a callback_notice is shown once, as the family_line call it
   reports; the same alert sent to several members within five minutes is
   one item.
@@ -32,15 +42,15 @@ from collections.abc import Iterable, Iterator
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, not_, select
 from sqlalchemy.orm import Session as DbSession
 
 from app import schemas
 from app.agents import risk
 from app.db import parse_time
-from app.models import Call, CallEvent, CallShield, Consent, Member, Message, Result
+from app.models import Call, CallEvent, CallShield, Consent, Member, MemberJoin, Message, Result
 from app.routers import families as family_view
-from app.services import readiness
+from app.services import accounts, readiness
 from app.services import scenarios as scenario_files
 
 SAFE_OUTCOMES = frozenset(readiness.SAFE_OUTCOMES)
@@ -119,14 +129,25 @@ def family_members(db: DbSession, family_id: str) -> dict[str, Member]:
     return {member.id: member for member in rows}
 
 
+def organiser_name(db: DbSession, family_id: str, members: dict[str, Member]) -> str | None:
+    """Who runs the family: the owning account's name, else the first
+    is_organiser member's, else None."""
+    owner = accounts.family_owner_name(db, family_id)
+    if owner:
+        return owner
+    return next((member.name for member in members.values() if member.is_organiser), None)
+
+
 # ---------------------------------------------------------------- drills
 
 
 def drills(db: DbSession, family_id: str, member_id: str | None = None,
            limit: int = 20) -> list[schemas.DrillView]:
     """The family's practice calls, newest first (by created_at), optionally
-    only those to one member."""
-    query = select(Call).where(Call.family_id == family_id, Call.kind == "practice")
+    only those to one member. The organiser's own scheduled drill is left
+    out: the organiser reads this list."""
+    query = select(Call).where(Call.family_id == family_id, Call.kind == "practice",
+                               not_(family_view.organisers_surprise(family_id)))
     if member_id is not None:
         query = query.where(Call.target_member_id == member_id)
     calls = list(db.scalars(query.order_by(Call.created_at.desc(), Call.id.desc()).limit(limit)))
@@ -189,9 +210,10 @@ def drill_view(call: Call, result: Result | None, marked: list[Any], levels: lis
 def activity(db: DbSession, family_id: str, limit: int = 30) -> list[schemas.ActivityItem]:
     """Who did what in the family, newest first."""
     members = family_members(db, family_id)
-    items = list(member_items(members))
+    organiser = organiser_name(db, family_id, members)
+    items = list(member_items(db, members, organiser))
     if members:
-        items += consent_items(db, members)
+        items += consent_items(db, members, organiser)
         items += message_items(db, members)
     items += call_items(db, family_id, members)
     return newest_first(items, limit)
@@ -204,34 +226,59 @@ def newest_first(items: list[schemas.ActivityItem], limit: int) -> list[schemas.
     return [item for _, _, item in dated[:limit]]
 
 
-def member_items(members: dict[str, Member]) -> Iterator[schemas.ActivityItem]:
+def member_items(db: DbSession, members: dict[str, Member], organiser: str | None) -> Iterator[schemas.ActivityItem]:
+    """Each member's start: added by the organiser at created_at, and
+    joined (on their own invite page) at member_joins.joined_at if they did."""
+    joins = {row.member_id: row for row in db.scalars(
+        select(MemberJoin).where(MemberJoin.member_id.in_(members.keys())))} if members else {}
     for member in members.values():
         ref = person(members, member.id)
-        joined = "started the family plan" if member.is_organiser else "joined the family plan"
-        yield schemas.ActivityItem(when=member.created_at, member=ref, kind="joined", text=f"{member.name} {joined}")
+        if member.is_organiser:
+            added = f"{member.name} started the family plan"
+        elif organiser:
+            added = f"{organiser} added {member.name} to the family plan"
+        else:
+            added = f"{member.name} was added to the family plan"
+        yield schemas.ActivityItem(when=member.created_at, member=ref, kind="joined", text=added)
+        joined = joins.get(member.id)
+        if joined is not None:
+            yield schemas.ActivityItem(when=joined.joined_at, member=ref, kind="joined",
+                                       text=f"{member.name} joined the family plan")
         # consent_clone_at is set when a clone is made; a later deletion keeps it.
         if member.consent_clone_at and member.voice_status in ("ready", "deleted"):
             yield schemas.ActivityItem(when=member.consent_clone_at, member=ref, kind="voice_ready",
                                        text=f"{member.name}'s voice was set up for family drills")
 
 
-def consent_words(row: Consent, name: str) -> tuple[str, str] | None:
-    """(kind, text) for one consents row, or None for a kind we do not show."""
+def consent_words(row: Consent, name: str, organiser: str | None = None,
+                  is_organiser: bool = False) -> tuple[str, str] | None:
+    """(kind, text) for one consents row, or None for a kind we do not show.
+    organiser: who runs the family (organiser_name); is_organiser: the row
+    is the organiser's own, so the organiser's actions are theirs."""
+    by = organiser or "The organiser"
+    by_whom = f"{organiser}'s" if organiser else "the organiser's"
     if row.kind == "practice":
         if row.source == "welcome_call":
             return "consent_given", f"{name} said yes to practice calls on the welcome call"
         if row.source == "invite":
             return "consent_given", f"{name} agreed to practice calls when joining"
         if row.evidence == "sign-up tick":
-            return "consent_given", f"{name} agreed to practice calls at sign-up"
+            if is_organiser or not organiser:
+                return "consent_given", f"{name} agreed to practice calls at sign-up"
+            return "consent_given", f"{organiser} ticked practice calls for {name} at sign-up"
         return "consent_given", f"{name} agreed to practice calls"
     if row.kind == "practice_withdrawn":
         if row.source == "welcome_call":
             return "consent_withdrawn", f"{name} chose not to get practice calls for now"
+        if row.source == "organiser" and not is_organiser:
+            return "consent_withdrawn", f"{by} switched off {name}'s practice calls"
         return "consent_withdrawn", f"{name} paused practice calls"
     if row.kind == "clone":
         if row.source == "welcome_call":
             return "voice_consent", f"{name} agreed on the welcome call to lend their voice for family drills"
+        if row.source == "voice_recording" and not is_organiser:
+            return "voice_consent", (f"{name}'s voice sample was recorded on {by_whom} laptop, "
+                                     "starting with their spoken consent")
         return "voice_consent", f"{name} recorded a voice sample for family drills"
     if row.kind == "clone_from_call":
         return "voice_consent", f"{name} agreed that their welcome call may be used to copy their voice for family drills"
@@ -240,14 +287,16 @@ def consent_words(row: Consent, name: str) -> tuple[str, str] | None:
     return None
 
 
-def consent_items(db: DbSession, members: dict[str, Member]) -> list[schemas.ActivityItem]:
+def consent_items(db: DbSession, members: dict[str, Member],
+                  organiser: str | None = None) -> list[schemas.ActivityItem]:
     rows = db.scalars(
         select(Consent).where(Consent.member_id.in_(members.keys()))
         .order_by(Consent.created_at.desc(), Consent.id.desc()).limit(ROWS_READ)
     )
     items: list[schemas.ActivityItem] = []
     for row in rows:
-        words = consent_words(row, members[row.member_id].name)
+        member = members[row.member_id]
+        words = consent_words(row, member.name, organiser, member.is_organiser)
         if words is not None:
             items.append(schemas.ActivityItem(when=row.created_at, member=person(members, row.member_id),
                                               kind=words[0], text=words[1]))
@@ -399,7 +448,8 @@ def progress(db: DbSession, member: Member) -> schemas.ProgressView:
                            outcome_label=schemas.OUTCOME_LABELS[result.outcome], lesson=result.lesson)
         for call, result in scored[:LESSONS_SHOWN] if result.lesson
     ]
-    next_drill = db.scalar(
+    # The organiser reads this page, so their own next drill stays a surprise.
+    next_drill = None if member.is_organiser else db.scalar(
         select(func.min(Call.scheduled_for))
         .where(Call.target_member_id == member.id, Call.kind == "practice", Call.status == "scheduled")
     )
