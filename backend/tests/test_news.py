@@ -2,6 +2,7 @@
 jobs are replaced and Firecrawl has no key (its built-in pages), so nothing
 reaches the network."""
 
+import asyncio
 import json
 from datetime import timedelta
 from typing import Any
@@ -12,9 +13,9 @@ from sqlalchemy import func, select
 
 from app.agents import llm
 from app.db import new_session, now_iso, parse_time, to_iso, utcnow
-from app.models import Call, Digest, Member, Message, ModelRun, NewsRefresh
+from app.models import Call, Digest, Family, Member, Message, ModelRun, NewsRefresh
 from app.routers import weekly
-from app.services import firecrawl
+from app.services import firecrawl, news
 
 DIGEST = {"patterns": [
     {"title": "Parcel fee calls", "summary": "A caller asks for a small fee to release a parcel.",
@@ -89,8 +90,8 @@ def test_news_from_the_latest_digest_and_weekly_notes(client: Any, fam: dict[str
         db.add(Digest(week="2026-W45", sources_json='["https://old.example"]', tactics_json=json.dumps([
             {"title": "Old", "summary": "Last week.", "tactics": [], "source_url": "https://old.example"}]),
             created_at="2026-11-07T09:00:00+00:00"))
-        db.add(Digest(week="2026-W46", sources_json='["https://consumer.ftc.gov/consumer-alerts"]',
-                      tactics_json=json.dumps(patterns), created_at="2026-11-14T09:30:00+00:00"))
+        db.add(Digest(week=weekly.iso_week(), sources_json='["https://consumer.ftc.gov/consumer-alerts"]',
+                      tactics_json=json.dumps(patterns), created_at="2026-11-09T09:30:00+00:00"))
         db.add(Message(member_id=fam["sara"], kind="weekly", text="Older note.", created_at="2026-11-07T10:00:00+00:00"))
         db.add(Message(member_id=fam["sara"], kind="weekly", text="Newest note.", created_at="2026-11-14T10:00:00+00:00"))
         db.add(Message(member_id=fam["sara"], kind="reminder", text="Not a note.", created_at="2026-11-14T11:00:00+00:00"))
@@ -99,19 +100,31 @@ def test_news_from_the_latest_digest_and_weekly_notes(client: Any, fam: dict[str
         db.commit()
 
     body = client.get(f"/api/families/{fam['id']}/news").json()
-    assert body["updated_at"] == "2026-11-14T09:30:00+00:00" and body["week"] == "2026-W46"
+    assert body["updated_at"] == "2026-11-09T09:30:00+00:00" and body["week"] == weekly.iso_week()
     assert body["fallback"] is False and body["next_refresh_at"] is None
     assert body["patterns"] == [
         {"title": "Parcel fee calls", "summary": "A caller asks for a small fee to release a parcel.",
          "tactics": [{"key": "small_ask_first", "label": "Small ask first"}, {"key": "urgency", "label": "Urgency"}],
          "closest_scenario": "bank_security",
-         "sources": [{"url": "https://consumer.ftc.gov/consumer-alerts", "date": "2026-11-14"}]},
+         "sources": [{"url": "https://consumer.ftc.gov/consumer-alerts", "date": "2026-11-09"}]},
         {"title": "A relative with a new number", "summary": "Someone sounding like family needs money today.",
          "tactics": [{"key": "new_number", "label": "New number"}], "closest_scenario": "relative_new_number",
          "sources": []},  # a built-in example has no web address
     ]
     assert body["notes"] == [{"member": {"id": fam["sara"], "name": "Sara"}, "text": "Newest note.",
                               "when": "2026-11-14T10:00:00+00:00"}]
+
+
+def test_a_fallback_row_is_marked_and_has_no_source_dates(client: Any, fam: dict[str, str]) -> None:
+    """The weekly run carried last week's patterns forward: when their pages
+    were read is not known, so no date (the row's own time is later)."""
+    with new_session() as db:
+        db.add(Digest(week=weekly.iso_week(), sources_json=json.dumps([weekly.FALLBACK_SOURCE]),
+                      tactics_json=json.dumps(DIGEST["patterns"]), created_at="2026-11-09T09:30:00+00:00"))
+        db.commit()
+    body = client.get(f"/api/families/{fam['id']}/news").json()
+    assert body["fallback"] is True and body["week"] == weekly.iso_week()
+    assert body["patterns"][0]["sources"] == [{"url": "https://consumer.ftc.gov/consumer-alerts", "date": None}]
 
 
 # ---------------------------------------------------------------- refreshing
@@ -154,7 +167,10 @@ def test_a_fresh_digest_is_shared(client: Any, fam: dict[str, str], make_family:
     other = make_family(1)["family_id"]
     body = client.post(f"/api/families/{other}/news/refresh").json()
     assert body["refreshed"] is False and body["reason"] == "fresh"
-    assert len(body["patterns"]) == 2 and body["next_refresh_at"] is None
+    assert len(body["patterns"]) == 2
+    # A click before then would not build either: the button stays off for everyone.
+    assert body["next_refresh_at"] == client.get(f"/api/families/{fam['id']}/news").json()["next_refresh_at"]
+    assert body["next_refresh_at"] is not None
     assert jobs.jobs == ["digest"]
 
 
@@ -166,9 +182,16 @@ def test_refresh_without_a_model_stores_the_built_in_examples(client: Any, fam: 
     assert [p["title"] for p in body["patterns"]] == [p["title"] for p in weekly.FALLBACK_PATTERNS]
     assert all(pattern["sources"] == [] for pattern in body["patterns"])
     assert count(ModelRun) == 0 and count(Digest) == 1
-    # Another family: the stored examples stay as they are.
-    other = client.post(f"/api/families/{make_family(1)['family_id']}/news/refresh").json()
-    assert other["reason"] == "no_new_digest" and other["patterns"] == body["patterns"] and count(Digest) == 1
+    # Another family within ten minutes: no second build (the news is shared).
+    other_id = make_family(1)["family_id"]
+    other = client.post(f"/api/families/{other_id}/news/refresh").json()
+    assert other["reason"] == "too_soon" and other["patterns"] == body["patterns"]
+    assert other["next_refresh_at"] == body["next_refresh_at"] and count(NewsRefresh) == 1
+    # Later: it builds, still gets no model, and the stored examples stay as they are.
+    backdate(11 * 60)
+    later = client.post(f"/api/families/{other_id}/news/refresh").json()
+    assert later["reason"] == "no_new_digest" and later["patterns"] == body["patterns"]
+    assert count(Digest) == 1 and count(NewsRefresh) == 2
 
 
 def test_refresh_keeps_an_older_digest_when_no_model_answers(client: Any, fam: dict[str, str]) -> None:
@@ -179,6 +202,9 @@ def test_refresh_keeps_an_older_digest_when_no_model_answers(client: Any, fam: d
     body = client.post(f"/api/families/{fam['id']}/news/refresh").json()
     assert body["reason"] == "no_new_digest" and body["week"] == "2026-W40"
     assert [p["title"] for p in body["patterns"]] == ["Parcel fee calls"] and count(Digest) == 1
+    # Weeks old: not this week's news, though a model built it (on the day it read the page).
+    assert body["fallback"] is True
+    assert body["patterns"][0]["sources"] == [{"url": "https://consumer.ftc.gov/consumer-alerts", "date": "2026-10-01"}]
 
 
 def test_refresh_never_raises(client: Any, fam: dict[str, str], monkeypatch: pytest.MonkeyPatch) -> None:
@@ -209,3 +235,75 @@ def test_refresh_reads_the_weekly_run_pages(client: Any, fam: dict[str, str], jo
     run = client.post(f"/api/families/{fam['id']}/weekly-run").json()
     assert [p["title"] for p in run["digest"]["patterns"]] == ["Parcel fee calls", "A relative with a new number"]
     assert jobs.jobs.count("digest") == 1
+
+
+# ---------------------------------------------------------------- refreshes at the same time
+
+
+@pytest.fixture
+def slow_pages(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Firecrawl that takes a moment and, while it waits, writes in another
+    session: that write fails ("database is locked") if a refresh held an
+    uncommitted write across the await."""
+    written: list[str] = []
+
+    async def pages(urls: list[str]) -> list[dict[str, Any]]:
+        await asyncio.sleep(0.05)
+        with new_session() as other:
+            other.add(Digest(week="2001-W01", sources_json="[]", tactics_json="[]",
+                             created_at="2001-01-01T00:00:00+00:00"))
+            other.commit()
+        written.append("digest")
+        return firecrawl.builtin_pages()
+
+    monkeypatch.setattr(firecrawl, "fetch_warnings", pages)
+    return written
+
+
+async def refresh_at_once(*family_ids: str) -> list[Any]:
+    sessions = [new_session() for _ in family_ids]
+    try:
+        families = [db.get(Family, family_id) for db, family_id in zip(sessions, family_ids)]
+        return list(await asyncio.gather(*(news.refresh(db, family) for db, family in zip(sessions, families))))
+    finally:
+        for db in sessions:
+            db.close()
+
+
+async def test_two_clicks_at_once_build_once(fam: dict[str, str], jobs: FakeRunJob, slow_pages: list[str]) -> None:
+    first, second = await refresh_at_once(fam["id"], fam["id"])
+    assert (first.refreshed, first.reason) == (True, None)
+    assert (second.refreshed, second.reason) == (False, "too_soon")
+    assert jobs.jobs == ["digest"] and slow_pages == ["digest"]  # one build; the other write went through
+    with new_session() as db:
+        assert [row.outcome for row in db.scalars(select(NewsRefresh))] == ["refreshed"]
+
+
+async def test_another_familys_refresh_while_one_runs(fam: dict[str, str], make_family: Any, jobs: FakeRunJob,
+                                                      slow_pages: list[str]) -> None:
+    other = make_family(1)["family_id"]
+    first, second = await refresh_at_once(fam["id"], other)
+    assert first.reason is None and second.reason == "too_soon" and second.refreshed is False
+    assert second.next_refresh_at is not None
+    assert jobs.jobs == ["digest"] and count(NewsRefresh) == 1
+
+
+async def test_the_examples_never_replace_a_digest_stored_meanwhile(fam: dict[str, str],
+                                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """No digest when the refresh starts and no model to build one; the weekly
+    run stores a real digest while the refresh waits for Firecrawl. The
+    refresh must keep it, not store the built-in examples over it."""
+    week = weekly.iso_week()
+
+    async def pages(urls: list[str]) -> list[dict[str, Any]]:
+        await asyncio.sleep(0.01)
+        weekly._save_digest(week, ["https://consumer.ftc.gov/consumer-alerts"], DIGEST["patterns"])
+        return firecrawl.builtin_pages()
+
+    monkeypatch.setattr(firecrawl, "fetch_warnings", pages)
+    (body,) = await refresh_at_once(fam["id"])
+    assert body.reason == "no_new_digest" and body.fallback is False
+    assert [p.title for p in body.patterns] == ["Parcel fee calls", "A relative with a new number"]
+    with new_session() as db:
+        row = db.scalars(select(Digest)).one()
+        assert not weekly._is_fallback(row) and row.week == week

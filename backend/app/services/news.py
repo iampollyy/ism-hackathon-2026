@@ -5,28 +5,41 @@ news(): the latest digest (the `digests` table: one row per ISO week, shared
 by all families, written by the weekly run or by a refresh) and each
 member's latest `weekly` message. With no digest: patterns [] and
 updated_at null.
+- `fallback` is true when the digest is not this week's news: the weekly
+  run's fallback row (the built-in examples, or an older digest carried
+  forward) or a digest from an earlier week.
+- Sources are listed only for real web addresses, never for the built-in
+  ones (builtin:...). Their `date` is the day the digest was built, which is
+  the day Callback read the pages; null on a fallback row, which was saved
+  again later and does not know when its pages were read.
+- `next_refresh_at`: when a refresh may build again (the rules below), or
+  null if it may now.
 
 refresh(): fetches the warning pages and runs the digest job again, with the
 weekly run's own code (routers/weekly.py: WARNING_URLS and its digest
 helpers; services/firecrawl.fetch_warnings; agents/digest.build_digest), and
 stores the result as this week's digest. It creates no calls and no
 messages; only the weekly run does that.
-- One refresh per family per settings.news_refresh_seconds (10 minutes):
-  a sooner one returns the current news, refreshed false, reason too_soon.
-- A digest a model built within that time (any family's refresh, or the
-  weekly run) is fresh: it is returned as it is, reason fresh, with no new
-  fetch. The digest is shared, so building it again would only cost.
+- The digest is shared by all families, so building it is shared too: at
+  most one build per settings.news_refresh_seconds (10 minutes) for all
+  families together. Without a build the current news is returned:
+  - too_soon: this family, or another family, started a refresh within that
+    time (it may still be running: its news_refreshes row has no outcome
+    yet). So two clicks at once, from one family or two, build once.
+  - fresh: a model built the digest within that time (any family's refresh,
+    or the weekly run); building it again would only cost.
+  This family's own recent refresh is checked first (too_soon), then the
+  fresh digest (fresh), then another family's refresh (too_soon).
 - When no new digest can be built (no model key, every model failed), the
   stored news stays: reason no_new_digest. With no digest at all, the
   built-in patterns are stored as this week's fallback, as the weekly run
-  does, so the screen has something to show.
+  does, so the screen has something to show. Whether there is a digest is
+  checked again after the awaits, with no await between the check and the
+  write, so a digest stored meanwhile (the weekly run, another build) is
+  never overwritten with the examples.
 - The attempt (a news_refreshes row) is committed before any await (db.py,
   "Hard rule"). Never raises: any error after the family is found is logged
   and answered with the current news, reason failed.
-
-`fallback` is true when the digest is the weekly run's fallback row (the
-built-in examples, or an older digest carried forward). Sources are listed
-only for real web addresses, never for the built-in ones (builtin:...).
 """
 
 import logging
@@ -39,7 +52,7 @@ from sqlalchemy.orm import Session as DbSession
 from app import schemas
 from app.agents import digest as digest_job
 from app.config import get_settings
-from app.db import now_iso, parse_time, to_iso, utcnow
+from app.db import new_session, now_iso, parse_time, to_iso, utcnow
 from app.models import Digest, Family, Member, Message, NewsRefresh
 from app.routers import weekly
 from app.services import firecrawl
@@ -54,11 +67,12 @@ def latest_digest(db: DbSession) -> Digest | None:
     return db.scalars(select(Digest).order_by(Digest.created_at.desc(), Digest.id.desc()).limit(1)).first()
 
 
-def last_refresh(db: DbSession, family_id: str) -> NewsRefresh | None:
-    return db.scalars(
-        select(NewsRefresh).where(NewsRefresh.family_id == family_id)
-        .order_by(NewsRefresh.created_at.desc(), NewsRefresh.id.desc()).limit(1)
-    ).first()
+def last_refresh(db: DbSession, family_id: str | None = None) -> NewsRefresh | None:
+    """The newest refresh this family started (any family's with None)."""
+    query = select(NewsRefresh)
+    if family_id is not None:
+        query = query.where(NewsRefresh.family_id == family_id)
+    return db.scalars(query.order_by(NewsRefresh.created_at.desc(), NewsRefresh.id.desc()).limit(1)).first()
 
 
 def _time(value: str | None) -> datetime | None:
@@ -74,17 +88,24 @@ def within(value: str | None, seconds: float) -> bool:
     return when is not None and (utcnow() - when).total_seconds() < seconds
 
 
-def next_refresh_at(db: DbSession, family_id: str) -> str | None:
-    """When this family may refresh again, or None if it may now."""
-    last = last_refresh(db, family_id)
-    when = _time(last.created_at) if last is not None else None
-    if when is None:
-        return None
-    ready = when + timedelta(seconds=get_settings().news_refresh_seconds)
-    return to_iso(ready) if ready > utcnow() else None
+def is_real(row: Digest | None) -> bool:
+    """A digest a model built (not the weekly run's fallback row)."""
+    return row is not None and not weekly._is_fallback(row) and bool(weekly._stored_patterns(row))
 
 
-def pattern_view(pattern: dict[str, Any], day: str) -> schemas.NewsPattern | None:
+def next_refresh_at(db: DbSession) -> str | None:
+    """When a refresh may build again: the wait after the newest refresh any
+    family started, and after the newest digest a model built. None if now."""
+    wait = timedelta(seconds=get_settings().news_refresh_seconds)
+    last = last_refresh(db)
+    digest = latest_digest(db)
+    times = [_time(last.created_at) if last is not None else None,
+             _time(digest.created_at) if digest is not None and is_real(digest) else None]
+    ready = max((when + wait for when in times if when is not None), default=None)
+    return to_iso(ready) if ready is not None and ready > utcnow() else None
+
+
+def pattern_view(pattern: dict[str, Any], day: str | None) -> schemas.NewsPattern | None:
     title = " ".join(str(pattern.get("title") or "").split())
     summary = " ".join(str(pattern.get("summary") or "").split())
     if not title or not summary:
@@ -129,7 +150,7 @@ def news(db: DbSession, family_id: str) -> schemas.NewsView:
     patterns: list[schemas.NewsPattern] = []
     if row is not None:
         when = _time(row.created_at)
-        day = when.date().isoformat() if when else ""
+        day = when.date().isoformat() if when and not weekly._is_fallback(row) else None
         patterns = [view for pattern in weekly._stored_patterns(row)
                     if (view := pattern_view(pattern, day)) is not None]
     found = row is not None and bool(patterns)
@@ -137,9 +158,9 @@ def news(db: DbSession, family_id: str) -> schemas.NewsView:
         patterns=patterns,
         updated_at=row.created_at if found else None,
         week=row.week if found else None,
-        fallback=found and weekly._is_fallback(row),
+        fallback=found and (weekly._is_fallback(row) or row.week != weekly.iso_week()),
         notes=notes(db, family_id),
-        next_refresh_at=next_refresh_at(db, family_id),
+        next_refresh_at=next_refresh_at(db),
     )
 
 
@@ -150,7 +171,19 @@ def _answer(db: DbSession, family_id: str, refreshed: bool, reason: str | None) 
     return schemas.NewsRefreshed(**news(db, family_id).model_dump(), refreshed=refreshed, reason=reason)
 
 
-async def build_and_store(had_digest: bool) -> str:
+def store_examples_if_empty(week: str) -> bool:
+    """With no digest at all, the built-in patterns become this week's
+    fallback row. Checked now, in a new session, and written with no await
+    in between, so a digest stored while the refresh awaited is kept.
+    Returns whether the examples were stored."""
+    with new_session() as db:
+        if db.scalars(select(Digest.id).limit(1)).first() is not None:
+            return False
+    weekly._save_digest(week, [weekly.FALLBACK_SOURCE], [dict(pattern) for pattern in weekly.FALLBACK_PATTERNS])
+    return True
+
+
+async def build_and_store() -> str:
     """Firecrawl and the digest job, as the weekly run calls them; the new
     patterns become this week's digest. Returns refreshed or no_new_digest.
     Raises only if storing fails (refresh() catches it)."""
@@ -160,24 +193,26 @@ async def build_and_store(had_digest: bool) -> str:
     if built and weekly.pattern_views(built.get("patterns") or []):
         weekly._save_digest(week, [str(page.get("url")) for page in pages], built["patterns"])
         return "refreshed"
-    if not had_digest:
-        weekly._save_digest(week, [weekly.FALLBACK_SOURCE], [dict(pattern) for pattern in weekly.FALLBACK_PATTERNS])
+    store_examples_if_empty(week)
     return "no_new_digest"
 
 
 async def refresh(db: DbSession, family: Family) -> schemas.NewsRefreshed:
     """Build a fresh digest for the family's news screen (the rules above).
-    Never raises."""
+    Never raises. Everything from the checks to the attempt's commit runs
+    with no await, so a second click (any family) always sees the first."""
     family_id = family.id
     try:
         wait = get_settings().news_refresh_seconds
-        last = last_refresh(db, family_id)
-        if last is not None and within(last.created_at, wait):
+        own = last_refresh(db, family_id)
+        if own is not None and within(own.created_at, wait):
             return _answer(db, family_id, False, "too_soon")
         latest = latest_digest(db)
-        if (latest is not None and not weekly._is_fallback(latest) and weekly._stored_patterns(latest)
-                and within(latest.created_at, wait)):
+        if is_real(latest) and within(latest.created_at, wait):
             return _answer(db, family_id, False, "fresh")
+        anyone = last_refresh(db)
+        if anyone is not None and within(anyone.created_at, wait):
+            return _answer(db, family_id, False, "too_soon")  # another family's, maybe still running
         attempt = NewsRefresh(family_id=family_id, created_at=now_iso())
         db.add(attempt)
         db.commit()  # nothing pending while Firecrawl and the model run
@@ -187,7 +222,7 @@ async def refresh(db: DbSession, family: Family) -> schemas.NewsRefreshed:
         return _safe_answer(db, family_id, "failed")
 
     try:
-        outcome = await build_and_store(had_digest=latest is not None)
+        outcome = await build_and_store()
     except Exception:
         log.exception("news refresh for %s failed", family_id)
         outcome = "failed"

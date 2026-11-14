@@ -207,12 +207,12 @@ Both can be cached for the session; they change only with a deploy. `503 content
 | Field | Meaning |
 |---|---|
 | `patterns` | Up to three patterns. `[]` when there is no digest yet. |
-| `patterns[].sources` | The page each pattern came from, with the day Callback read it. `[]` for the built-in examples, which have no web page. |
+| `patterns[].sources` | The page each pattern came from, with the day Callback read it (`YYYY-MM-DD`). `date` is `null` when `fallback` is `true` because the weekly run carried older patterns forward (the day is not known); show the link without a date. `[]` for the built-in examples, which have no web page. |
 | `patterns[].closest_scenario` | The scenario a "practise this" button could start, or `null`. |
 | `updated_at`, `week` | When the digest was built, and its ISO week; both `null` when there is none. |
-| `fallback` | `true` when these are the built-in examples (or an older digest carried forward because no model answered). Label them "Examples" rather than "This week". |
+| `fallback` | `true` when this is not this week's news: the built-in examples, an older digest carried forward because no model answered, or a digest from an earlier week (`week` is not the current one). Label them "Examples" or "Earlier" rather than "This week". |
 | `notes` | Each member's latest weekly note (members who left are not listed). |
-| `next_refresh_at` | When this family may refresh again; `null` means now. Disable the refresh button until then. |
+| `next_refresh_at` | When a refresh may build again; `null` means now. The news is shared by all families, so this is 10 minutes after the last refresh any family started, or after the last digest a model built (a refresh or the weekly run). Disable the refresh button until then. |
 
 `POST /api/families/{id}/news/refresh` (no body): fetches the warning pages and builds a new digest with the same code as the weekly run, then answers with the news as above plus two fields:
 
@@ -225,11 +225,12 @@ Both can be cached for the session; they change only with a deploy. `503 content
 | `refreshed` | `reason` | Meaning |
 |---|---|---|
 | `true` | `null` | A new digest was built just now. |
-| `false` | `too_soon` | This family refreshed less than 10 minutes ago; the current news is returned. |
+| `false` | `too_soon` | This family, or another family, started a refresh less than 10 minutes ago (it may still be running); the current news is returned. Fetch `GET …/news` again in a minute to see a build another family started. |
 | `false` | `fresh` | A digest was built less than 10 minutes ago (by another family or the weekly run); it is returned as it is. |
 | `false` | `no_new_digest` | No model could build one (no key, or every model failed). The stored news stays; with none at all, the built-in examples are stored (`fallback: true`). |
 | `false` | `failed` | Something went wrong (a network error); the current news is returned. |
 
-- At most one refresh per family per 10 minutes (`NEWS_REFRESH_SECONDS`, default 600). The request can take up to about a minute when it does build (Firecrawl, then the digest model); show a spinner.
+- At most one build per 10 minutes for all families together (`NEWS_REFRESH_SECONDS`, default 600), since the digest is shared: two clicks at once, from one family or two, build once. The request can take up to about a minute when it does build (Firecrawl, then the digest model); show a spinner.
+- The built-in examples are stored only when there is still no digest at all once the build has finished, so a digest the weekly run stored meanwhile is never replaced by them.
 - It never creates a call or a message: the weekly run (`POST /api/families/{id}/weekly-run`) is still what sends notes and schedules drills, and it reuses this week's refreshed digest without building it again.
 - `404 not_found` for an unknown family is the only error status; everything else answers `200` with a `reason`.

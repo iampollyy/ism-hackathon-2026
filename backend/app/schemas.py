@@ -622,7 +622,7 @@ class Habits(BaseModel):
 
 class NewsSource(BaseModel):
     url: str
-    date: str  # YYYY-MM-DD: the day Callback read the page
+    date: str | None  # YYYY-MM-DD: the day Callback read the page; None on a fallback row (not known)
 
 
 class NewsPattern(BaseModel):
@@ -643,9 +643,9 @@ class NewsView(BaseModel):
     patterns: list[NewsPattern]
     updated_at: str | None  # when the digest was built; None when there is none
     week: str | None  # e.g. "2026-W46"
-    fallback: bool  # the built-in examples or an older digest, not a fresh one
+    fallback: bool  # not this week's news: the built-in examples, or a digest from an earlier week
     notes: list[NewsNote]  # each member's latest weekly note
-    next_refresh_at: str | None  # when this family may refresh again; None: now
+    next_refresh_at: str | None  # when a refresh may build again (shared by all families); None: now
 
 
 class NewsRefreshed(NewsView):

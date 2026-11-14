@@ -192,9 +192,10 @@ class ModelRun(Base):
 
 
 class NewsRefresh(Base):
-    """One news refresh a family asked for (POST /api/families/{id}/news/refresh).
-    Written and committed before Firecrawl and the digest job run, so a family
-    refreshes at most once per settings.news_refresh_seconds (services/news.py)."""
+    """One news refresh a family started (POST /api/families/{id}/news/refresh).
+    Written and committed before Firecrawl and the digest job run, so at most
+    one build runs per settings.news_refresh_seconds for all families together,
+    even while one is still running (services/news.py)."""
 
     __tablename__ = "news_refreshes"
 

@@ -82,7 +82,8 @@ class Settings(BaseSettings):
     vapid_subject: str = DEFAULT_VAPID_SUBJECT  # a contact the push services can reach
 
     # Track 4 (review, learning, news): the least time between two news
-    # refreshes for one family (POST /api/families/{id}/news/refresh).
+    # builds (POST /api/families/{id}/news/refresh), for all families
+    # together, since the digest is shared.
     news_refresh_seconds: int = 600
 
     @property
