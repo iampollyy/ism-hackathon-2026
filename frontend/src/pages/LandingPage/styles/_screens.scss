@@ -1,0 +1,1166 @@
+// Phone screens at their 390 x 844 design size (pixels here are design pixels).
+
+.lp-scr {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 56px;
+  overflow: hidden;
+  color: #f2f6f4;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(231, 109, 82, 0.28), transparent 60%),
+    linear-gradient(180deg, #1a2c3b 0%, #0b1620 60%, #070f16 100%);
+  text-align: left;
+  user-select: none;
+
+  p {
+    margin: 0;
+  }
+}
+
+.lp-scr--safe {
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(60, 197, 143, 0.3), transparent 60%),
+    linear-gradient(180deg, #14302a 0%, #0b1a19 60%, #071110 100%);
+}
+
+.lp-scr--reveal {
+  background:
+    radial-gradient(110% 55% at 50% 0%, rgba(93, 114, 128, 0.42), transparent 62%),
+    linear-gradient(180deg, #1c2f3e 0%, #0d1823 70%, #091219 100%);
+  // The glitch hands over to the reveal: only the screen's content cross-fades.
+  animation: lp-fade 260ms ease both;
+
+  // Call Son sits right under the lesson, not at the foot of the screen.
+  .lp-scr__actions {
+    margin-top: 32px;
+  }
+}
+
+// The close: one big Answer for Mum's call.
+.lp-scr--mum .lp-rb__btn {
+  width: 104px;
+  height: 104px;
+}
+
+.lp-scr--declined,
+.lp-scr--lock {
+  background:
+    radial-gradient(140% 70% at 30% 10%, rgba(33, 61, 82, 0.9), transparent 70%),
+    linear-gradient(180deg, #132433 0%, #08121a 100%);
+}
+
+.lp-scr--shield {
+  background:
+    radial-gradient(120% 55% at 50% 100%, rgba(231, 109, 82, 0.26), transparent 60%),
+    linear-gradient(180deg, #1a2c3b 0%, #0b1620 100%);
+}
+
+// Status bar with the island.
+.lp-sb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 54px;
+  padding: 16px 30px 0 40px;
+  flex: none;
+  color: #fff;
+}
+
+.lp-sb__time {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  min-width: 48px;
+}
+
+.lp-sb__island {
+  position: absolute;
+  left: 50%;
+  top: 11px;
+  width: 122px;
+  height: 36px;
+  margin-left: -61px;
+  border-radius: 20px;
+  background: #000;
+}
+
+.lp-sb__icons {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+
+  svg {
+    fill: currentColor;
+  }
+}
+
+.lp-scr__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 92px;
+  padding: 0 24px;
+}
+
+.lp-scr__head--low {
+  margin-top: auto;
+  margin-bottom: 40px;
+}
+
+.lp-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 92px;
+  height: 92px;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 40px;
+  font-weight: 500;
+  color: #e9f0ec;
+  background: linear-gradient(180deg, #5b6f7d, #3c4d5a);
+  flex: none;
+}
+
+.lp-avatar--safe {
+  background: linear-gradient(180deg, #2fae7f, #1d8d64);
+  color: #f4fbf8;
+}
+
+.lp-scr__name {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.lp-scr__name.is-scrambling {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.lp-scr__sub {
+  margin-top: 6px;
+  font-size: 18px;
+  color: rgba(242, 246, 244, 0.72);
+}
+
+.lp-scr__note {
+  margin-top: 4px;
+  font-size: 15px;
+  color: rgba(242, 246, 244, 0.6);
+}
+
+.lp-scr__mid {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-scr__actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 46px;
+}
+
+.lp-scr__actions--one {
+  justify-content: center;
+}
+
+.lp-scr__actions--wide {
+  padding: 0 28px;
+}
+
+.lp-scr__actions--stack {
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 28px;
+}
+
+// Round call buttons.
+.lp-rb {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.lp-rb__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 78px;
+  height: 78px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  transition:
+    transform 150ms var(--lp-ease),
+    filter 90ms ease;
+
+  &--scam {
+    background: #e2563a;
+  }
+  &--safe {
+    background: #22a06f;
+  }
+
+  &:is(button):hover {
+    transform: translateY(-1px) scale(1.03);
+  }
+  &:is(button):active {
+    transform: scale(0.96);
+    filter: brightness(1.08);
+  }
+
+  &:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 4px;
+    border-radius: 50%;
+  }
+
+  &.is-breathing {
+    animation: lp-breathe 1.2s ease-in-out infinite;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    animation: none;
+  }
+}
+
+@keyframes lp-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.lp-rb__label {
+  font-size: 15px;
+  color: rgba(242, 246, 244, 0.85);
+}
+
+// The live waveform during the call.
+.lp-livewave {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 120px;
+
+  i {
+    width: 5px;
+    height: 100%;
+    border-radius: 3px;
+    background: rgba(242, 246, 244, 0.85);
+    transform: scaleY(0.08);
+    transform-origin: 50% 50%;
+  }
+}
+
+.lp-scr--safe .lp-livewave i {
+  background: #6fe0b3;
+}
+
+.lp-pulse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  color: #c8f3e1;
+  background: rgba(60, 197, 143, 0.14);
+  box-shadow: 0 0 0 0 rgba(60, 197, 143, 0.4);
+  animation: lp-pulse 1.6s ease-out infinite;
+
+  &.is-still {
+    animation: none;
+  }
+}
+
+@keyframes lp-pulse {
+  to {
+    box-shadow: 0 0 0 36px rgba(60, 197, 143, 0);
+  }
+}
+
+// The reveal.
+.lp-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 72px 30px 0;
+}
+
+.lp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(60, 197, 143, 0.16);
+  color: #9be8c8;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 26px;
+}
+
+.lp-reveal__title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 36px;
+  line-height: 1.08;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.lp-reveal__sub {
+  margin-top: 10px;
+  font-size: 19px;
+  color: rgba(242, 246, 244, 0.75);
+}
+
+.lp-reveal__praise {
+  margin-top: 14px;
+  font-size: 18px;
+  color: #9be8c8;
+}
+
+.lp-reveal__lesson {
+  margin-top: 30px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: rgba(242, 246, 244, 0.07);
+  border: 1px solid rgba(242, 246, 244, 0.1);
+  opacity: 0.25;
+  transform: translateY(8px);
+  transition:
+    opacity 400ms var(--lp-ease),
+    transform 400ms var(--lp-ease);
+
+  &.is-shown {
+    opacity: 1;
+    transform: none;
+  }
+
+  p {
+    font-size: 19px;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+}
+
+.lp-reveal__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: rgba(242, 246, 244, 0.65);
+}
+
+.lp-callbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 64px;
+  border: 0;
+  border-radius: 32px;
+  background: #22a06f;
+  color: #fff;
+  font: 600 19px/1 'Inter', sans-serif;
+  cursor: pointer;
+  transition: transform 150ms var(--lp-ease);
+
+  &:is(button):hover {
+    transform: translateY(-1px);
+  }
+  &:is(button):active {
+    transform: scale(0.98);
+  }
+  &:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 4px;
+    border-radius: 32px;
+  }
+}
+
+// Decline: the text that follows.
+.lp-bubble {
+  margin: 10px 12px 0;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: rgba(242, 246, 244, 0.14);
+  backdrop-filter: blur(20px);
+  opacity: 0;
+  transform: translateY(-16px);
+  transition:
+    opacity 280ms var(--lp-ease),
+    transform 280ms var(--lp-ease);
+
+  &.is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  p {
+    font-size: 16px;
+    line-height: 1.38;
+  }
+}
+
+.lp-bubble__app,
+.lp-notify__app {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(242, 246, 244, 0.7);
+}
+
+.lp-bubble__when,
+.lp-notify__when {
+  margin-left: auto;
+  font-weight: 400;
+}
+
+// Glitch: the screen drawn three times, red and cyan, sliced and scanned.
+.lp-glitch {
+  position: absolute;
+  inset: 0;
+  animation: lp-slice 0.36s steps(1) 1;
+
+  > .lp-scr:first-child {
+    animation: lp-jitter 0.9s steps(1) 1;
+  }
+}
+
+.lp-glitch__layer {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  opacity: 0.75;
+
+  &--r {
+    filter: sepia(1) saturate(6) hue-rotate(-40deg);
+    animation: lp-shift-r 0.9s steps(1) 1 both;
+  }
+  &--c {
+    filter: sepia(1) saturate(6) hue-rotate(150deg);
+    animation: lp-shift-c 0.9s steps(1) 1 both;
+  }
+}
+
+.lp-glitch__scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 4px);
+}
+
+@keyframes lp-shift-r {
+  0% {
+    transform: translateX(-4px);
+    clip-path: inset(10% 0 62% 0);
+  }
+  17% {
+    transform: translateX(4px);
+    clip-path: inset(48% 0 30% 0);
+  }
+  33% {
+    transform: translateX(-3px);
+    clip-path: inset(70% 0 8% 0);
+  }
+  50% {
+    transform: translateX(4px);
+    clip-path: inset(22% 0 55% 0);
+  }
+  67% {
+    transform: translateX(-2px);
+    clip-path: inset(0 0 80% 0);
+  }
+  83%,
+  100% {
+    transform: none;
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+@keyframes lp-shift-c {
+  0% {
+    transform: translateX(4px);
+    clip-path: inset(55% 0 20% 0);
+  }
+  17% {
+    transform: translateX(-4px);
+    clip-path: inset(5% 0 75% 0);
+  }
+  33% {
+    transform: translateX(3px);
+    clip-path: inset(35% 0 40% 0);
+  }
+  50% {
+    transform: translateX(-4px);
+    clip-path: inset(80% 0 4% 0);
+  }
+  67% {
+    transform: translateX(2px);
+    clip-path: inset(30% 0 52% 0);
+  }
+  83%,
+  100% {
+    transform: none;
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+@keyframes lp-slice {
+  0% {
+    clip-path: inset(0 0 0 0);
+  }
+  17% {
+    clip-path: inset(6% 0 0 0);
+  }
+  33% {
+    clip-path: inset(0 0 9% 0);
+  }
+  50% {
+    clip-path: inset(3% 0 3% 0);
+  }
+  67% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes lp-jitter {
+  0% {
+    transform: translateX(3px);
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(2px);
+  }
+  60%,
+  100% {
+    transform: none;
+  }
+}
+
+// ---------------------------------------------------------------- app screens (the story)
+
+.lp-scr--app {
+  background: linear-gradient(180deg, #13212d 0%, #0b151e 100%);
+  padding-bottom: 28px;
+}
+
+.lp-scr--paper {
+  background: #eef3f0;
+  color: #12212f;
+
+  .lp-sb {
+    color: #12212f;
+  }
+}
+
+.lp-app {
+  display: flex;
+  flex-direction: column;
+  padding: 22px 26px 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.lp-app__title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+
+.lp-app__label {
+  font-size: 15px;
+  color: rgba(242, 246, 244, 0.65);
+  margin-bottom: 8px;
+}
+
+.lp-app__quote {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 23px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: rgba(242, 246, 244, 0.06);
+  border: 1px solid rgba(242, 246, 244, 0.08);
+}
+
+.lp-rec {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+
+  svg {
+    margin-left: auto;
+    color: rgba(242, 246, 244, 0.6);
+  }
+}
+
+.lp-rec__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e76d52;
+  box-shadow: 0 0 0 4px rgba(231, 109, 82, 0.2);
+  animation: lp-blink 1.2s ease-in-out infinite;
+
+  &--sm {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@keyframes lp-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.lp-wave {
+  display: block;
+  width: 100%;
+  height: 40px;
+
+  rect {
+    fill: rgba(242, 246, 244, 0.22);
+    transition: fill 150ms ease;
+  }
+  rect.on {
+    fill: #e76d52;
+  }
+}
+
+.lp-wave--rec {
+  height: 56px;
+}
+
+.lp-people {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid rgba(242, 246, 244, 0.08);
+  }
+
+  .lp-avatar {
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    font-size: 19px;
+  }
+
+  span {
+    display: flex;
+    flex-direction: column;
+  }
+
+  strong {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  em {
+    font-style: normal;
+    font-size: 14px;
+    color: rgba(242, 246, 244, 0.62);
+  }
+
+  .lp-ok,
+  .lp-rec__dot {
+    margin-left: auto;
+  }
+}
+
+.lp-ok {
+  color: #3cc58f;
+}
+
+// Transcript.
+.lp-callhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 22px 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(242, 246, 244, 0.08);
+
+  .lp-avatar {
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    font-size: 22px;
+  }
+}
+
+.lp-callhead__name {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.lp-callhead__time {
+  font-size: 14px;
+  color: rgba(242, 246, 244, 0.6);
+}
+
+.lp-transcript {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  padding: 12px 18px 0;
+  overflow: hidden;
+}
+
+.lp-transcript--dim {
+  opacity: 0.4;
+  flex: none;
+  justify-content: flex-start;
+}
+
+.lp-tline {
+  display: flex;
+  flex-direction: column;
+  max-width: 86%;
+  padding: 11px 14px;
+  border-radius: 18px 18px 18px 6px;
+  background: rgba(242, 246, 244, 0.08);
+  animation: lp-tin 280ms var(--lp-ease) both;
+
+  &--me {
+    align-self: flex-end;
+    border-radius: 18px 18px 6px 18px;
+    background: rgba(60, 197, 143, 0.2);
+  }
+
+  &.is-fresh .lp-tline__text {
+    text-decoration: underline;
+    text-decoration-color: #e76d52;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+}
+
+@keyframes lp-tin {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.lp-tline__who {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(242, 246, 244, 0.55);
+  margin-bottom: 2px;
+}
+
+.lp-tline__text {
+  font-size: 16px;
+  line-height: 1.38;
+}
+
+// The tactic under its line, for layouts without the flying chips.
+.lp-tline__tag {
+  display: none;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 109, 82, 0.6);
+  background: rgba(7, 17, 26, 0.6);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #f2f6f4;
+  animation: lp-fade 240ms ease both;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #e76d52;
+  }
+}
+
+// With the tags inside, the bubbles tighten so Rasa's question still fits on the screen.
+@mixin lp-tags-on {
+  .lp-tline__tag {
+    display: inline-flex;
+  }
+  .lp-transcript {
+    gap: 7px;
+  }
+  .lp-tline {
+    padding: 8px 12px;
+  }
+  .lp-tline__who {
+    margin-bottom: 0;
+  }
+}
+
+.lp[data-reduced] {
+  @include lp-tags-on;
+}
+
+@media (max-width: 859px) {
+  .lp {
+    @include lp-tags-on;
+  }
+}
+
+// Risk light.
+.lp-riskpill {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+
+  i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    opacity: 0.18;
+  }
+  .g {
+    background: #3cc58f;
+  }
+  .y {
+    background: #f5b94d;
+  }
+  .r {
+    background: #e76d52;
+  }
+}
+
+.lp-riskpill--green .g,
+.lp-riskpill--yellow .y,
+.lp-riskpill--red .r {
+  opacity: 1;
+}
+
+.lp-risk {
+  margin: 18px 22px 18px;
+  padding: 22px 22px 24px;
+  border-radius: 24px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(242, 246, 244, 0.08);
+}
+
+.lp-risk__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(242, 246, 244, 0.62);
+  margin-bottom: 14px;
+}
+
+.lp-risk__lights {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 999px;
+  background: #050a0f;
+  float: left;
+  margin-right: 20px;
+}
+
+.lp-light {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  opacity: 0.15;
+  transition:
+    opacity 200ms ease,
+    box-shadow 200ms ease;
+
+  &--green {
+    background: #3cc58f;
+    --glow: rgba(60, 197, 143, 0.65);
+  }
+  &--yellow {
+    background: #f5b94d;
+    --glow: rgba(245, 185, 77, 0.65);
+  }
+  &--red {
+    background: #e76d52;
+    --glow: rgba(231, 109, 82, 0.7);
+  }
+
+  &.is-on {
+    opacity: 1;
+    box-shadow: 0 4px 18px var(--glow);
+  }
+}
+
+.lp-risk__level {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 30px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.lp-risk__text {
+  margin-top: 8px;
+  font-size: 17px;
+  line-height: 1.38;
+  animation: lp-fade 200ms ease both;
+}
+
+@keyframes lp-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.lp-scr--risk-yellow .lp-risk {
+  border-color: rgba(245, 185, 77, 0.35);
+}
+.lp-scr--risk-red .lp-risk {
+  border-color: rgba(231, 109, 82, 0.45);
+}
+
+// Notification (reveal and Shield).
+.lp-notify {
+  margin: 18px 14px 0;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: rgba(242, 246, 244, 0.14);
+  backdrop-filter: blur(20px);
+  opacity: 0;
+  transform: translateY(-12px);
+  transition:
+    opacity 300ms var(--lp-ease),
+    transform 300ms var(--lp-ease);
+
+  &.is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  p {
+    font-size: 16px;
+    line-height: 1.38;
+  }
+}
+
+// Family page (paper).
+.lp-fam {
+  display: flex;
+  flex-direction: column;
+
+  li {
+    padding: 14px 0;
+    border-top: 1px solid rgba(18, 33, 47, 0.1);
+  }
+
+  .lp-avatar {
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    font-size: 18px;
+  }
+}
+
+.lp-fam__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  strong {
+    font-size: 17px;
+  }
+}
+
+.lp-fam__did {
+  font-size: 15px;
+  color: #16714f;
+  font-weight: 600;
+}
+
+.lp-fam__next {
+  margin-top: 2px;
+  font-size: 14px;
+  color: #4f6472;
+}
+
+.lp-bar {
+  position: relative;
+  height: 6px;
+  margin-top: 10px;
+  border-radius: 3px;
+  background: rgba(18, 33, 47, 0.12);
+}
+
+.lp-bar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--now) * 100%);
+  border-radius: 3px;
+  background: #1d8d64;
+}
+
+.lp-bar__tick {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: calc(var(--before) * 100%);
+  width: 2px;
+  background: #12212f;
+  opacity: 0.55;
+}
+
+.lp-week {
+  margin-top: auto;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(18, 33, 47, 0.1);
+
+  p {
+    font-size: 15px;
+    line-height: 1.4;
+  }
+}
+
+.lp-week__title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+// Shield.
+.lp-shieldbanner {
+  margin: 10px 12px 0;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: #c4462c;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(196, 70, 44, 0.35);
+
+  p {
+    font-size: 18px;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+}
+
+.lp-shieldbanner__app {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.lp-riskdot {
+  width: 14px;
+  height: 14px;
+  margin-top: 14px;
+  border-radius: 50%;
+  background: #e76d52;
+  box-shadow: 0 0 18px rgba(231, 109, 82, 0.9);
+}
+
+.lp-pillbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 58px;
+  border-radius: 29px;
+  font-size: 18px;
+  font-weight: 600;
+
+  &--scam {
+    background: #e2563a;
+    color: #fff;
+  }
+  &--outline {
+    border: 1.5px solid rgba(242, 246, 244, 0.5);
+    color: #f2f6f4;
+  }
+}
+
+// Lock screen.
+.lp-lock {
+  text-align: center;
+  margin-top: 36px;
+}
+
+.lp-lock__date {
+  font-size: 19px;
+  font-weight: 500;
+  color: rgba(242, 246, 244, 0.85);
+}
+
+.lp-lock__time {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 96px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.lp-notify--lock {
+  margin: 44px 16px 0;
+  padding: 20px 22px;
+  border-radius: 26px;
+
+  .lp-notify__app {
+    font-size: 19px;
+    margin-bottom: 8px;
+  }
+  p {
+    font-size: 26px;
+    line-height: 1.3;
+    font-weight: 500;
+  }
+}

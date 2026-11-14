@@ -1,0 +1,499 @@
+// Dawn, then daylight: the rules, pricing, banks and questions. These sections sit
+// above the fixed 3D canvas (z-index 1), so day slides over the night like a curtain.
+
+.lp-dawn,
+.lp-rules,
+.lp-pricing,
+.lp-banks,
+.lp-faq {
+  position: relative;
+  z-index: 1;
+}
+
+// It starts on Shield's own bottom colour (navy-soft, with the night's grain), so there
+// is no step; the grain thins out as the paper arrives.
+.lp-dawn {
+  height: 40vh;
+  min-height: 240px;
+  background: linear-gradient(
+    180deg,
+    var(--lp-navy-soft) 0%,
+    #284559 12%,
+    #4b687a 36%,
+    #8fa7b3 66%,
+    #c9d6d4 86%,
+    var(--lp-paper) 100%
+  );
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--grain, none);
+    background-size: 64px 64px;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 90%);
+    mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 90%);
+    pointer-events: none;
+  }
+}
+
+// A low, warm light on the horizon: drawn inside the band, so it has no edge to clip.
+.lp-dawn__sun {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    58% 78% at 50% 84%,
+    rgba(246, 196, 160, 0.4) 0%,
+    rgba(246, 196, 160, 0.18) 45%,
+    rgba(246, 196, 160, 0) 100%
+  );
+  // It meets the paper below without a line.
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 100%);
+  pointer-events: none;
+}
+
+.lp-rules,
+.lp-pricing,
+.lp-faq {
+  background: var(--lp-paper);
+  color: var(--lp-ink);
+}
+
+.lp-rules {
+  padding-top: clamp(48px, 6vh, 80px);
+}
+
+.lp-day {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 32px 64px;
+  align-items: start;
+}
+
+.lp-day__copy {
+  max-width: 480px;
+
+  .lp-lead {
+    margin-bottom: 40px;
+  }
+}
+
+[data-theme='light'] .lp-lead,
+[data-theme='light'] .lp-body {
+  color: var(--lp-ink);
+}
+
+.lp-consent {
+  padding: 20px 22px 18px;
+  border-radius: 16px;
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-line-light);
+}
+
+.lp-consent__quote {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+
+.lp-wave--consent {
+  height: 44px;
+
+  rect.on {
+    fill: var(--lp-safe-brand);
+  }
+}
+
+.lp-consent__done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lp-safe-ink);
+}
+
+.lp-rules__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 40px;
+
+  li {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 16px;
+    padding: 24px 0;
+    border-top: 1px solid var(--lp-line-light);
+  }
+
+  .lp-h4 {
+    margin-bottom: 6px;
+  }
+
+  p {
+    color: var(--lp-muted);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+}
+
+.lp-rules__icon {
+  color: var(--lp-safe-ink);
+  margin-top: 2px;
+}
+
+// ---------------------------------------------------------------- pricing
+
+.lp-pricing {
+  padding-top: clamp(48px, 8vh, 112px);
+}
+
+.lp-pricing__head {
+  max-width: 640px;
+  margin-bottom: 40px;
+}
+
+.lp-plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.lp-plan {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 28px 24px;
+  border-radius: 16px;
+  background: var(--lp-surface);
+  border: 1px solid var(--lp-line-light);
+
+  .lp-btn {
+    margin-top: auto;
+  }
+}
+
+.lp-plan__price {
+  margin-top: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: clamp(32px, 3vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.lp-plan__note {
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--lp-muted);
+  min-height: 3em;
+}
+
+.lp-plan__features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--lp-line-light);
+
+  li {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 10px;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  svg {
+    color: var(--lp-safe-ink);
+    margin-top: 2px;
+  }
+}
+
+.lp-pricing__demo {
+  margin-top: 24px;
+  font-size: 14px;
+  color: var(--lp-muted);
+}
+
+.lp-pricing__partner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+.lp-h1--page {
+  font-size: clamp(40px, 4.6vw, 64px);
+  margin-bottom: 20px;
+}
+
+.lp--pricing .lp-pricing {
+  padding-top: calc(var(--nav-h) + clamp(48px, 8vh, 96px));
+}
+
+// ---------------------------------------------------------------- banks
+
+.lp-banks {
+  background: var(--lp-navy);
+  color: var(--lp-text);
+
+  .lp-day {
+    align-items: center;
+  }
+
+  .lp-body {
+    margin-bottom: 28px;
+    color: var(--lp-text-muted);
+  }
+}
+
+.lp-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+
+  li {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: 12px;
+  }
+
+  svg {
+    color: var(--lp-safe);
+    margin-top: 3px;
+  }
+}
+
+.lp-banks__price {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+// ---------------------------------------------------------------- questions
+
+.lp-faq__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 56px;
+  margin-top: 28px;
+}
+
+.lp-faq__item {
+  padding: 24px 0;
+  border-top: 1px solid var(--lp-line-light);
+  break-inside: avoid;
+
+  dd {
+    margin: 8px 0 0;
+    color: var(--lp-muted);
+    max-width: 60ch;
+  }
+}
+
+.lp-faq__q {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--lp-ink);
+}
+
+// ---------------------------------------------------------------- forms
+
+.lp-form {
+  position: relative;
+}
+
+.lp-form--paper {
+  padding: 32px;
+  border-radius: 16px;
+  background: var(--lp-paper);
+  color: var(--lp-ink);
+
+  .lp-form__title {
+    margin-bottom: 20px;
+  }
+}
+
+.lp-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex: 1;
+  min-width: 0;
+
+  label {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(18, 33, 47, 0.28);
+    background: #fff;
+    color: var(--lp-ink);
+    font: 400 16px/1.4 'Inter', sans-serif;
+    caret-color: var(--lp-safe-brand);
+    transition: border-color 150ms ease;
+
+    &:hover {
+      border-color: rgba(18, 33, 47, 0.45);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--lp-focus-light);
+      outline-offset: 2px;
+      border-radius: 12px;
+    }
+
+    &[aria-invalid='true'] {
+      border-color: var(--lp-scam-ink);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 96px;
+  }
+}
+
+.lp-hintline {
+  font-size: 14px;
+  color: var(--lp-muted);
+}
+
+.lp-err {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lp-scam-ink);
+}
+
+.lp-err--form {
+  margin-top: 12px;
+}
+
+.lp-form--paper .lp-btn {
+  margin-bottom: 10px;
+}
+
+.lp-form__success {
+  animation: lp-fade 200ms ease both;
+
+  p {
+    margin-top: 6px;
+  }
+}
+
+.lp-form__successtitle {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+}
+
+.lp-form--dark {
+  .lp-body {
+    margin-bottom: 20px;
+  }
+
+  .lp-input {
+    margin-bottom: 0;
+
+    label {
+      color: var(--lp-text);
+    }
+
+    input {
+      background: rgba(234, 241, 238, 0.06);
+      border-color: rgba(234, 241, 238, 0.28);
+      color: var(--lp-text);
+      caret-color: var(--lp-safe);
+
+      &:hover {
+        border-color: rgba(234, 241, 238, 0.45);
+      }
+      &:focus-visible {
+        outline-color: var(--lp-focus-dark);
+      }
+      &[aria-invalid='true'] {
+        border-color: var(--lp-scam);
+      }
+    }
+  }
+
+  .lp-err {
+    color: #f0927d;
+  }
+
+  .lp-form__success p {
+    color: var(--lp-text-muted);
+  }
+}
+
+.lp-muted-dark {
+  color: var(--lp-text-muted);
+}
+
+.lp-field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  .lp-btn {
+    margin-top: 27px;
+    min-height: 48px;
+  }
+}
+
+// ---------------------------------------------------------------- responsive (day)
+
+@media (max-width: 1023px) {
+  .lp-plans {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 560px;
+  }
+  .lp-plan__note {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 859px) {
+  .lp-day {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lp-rules__list,
+  .lp-faq__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lp-form--paper {
+    padding: 24px 20px;
+  }
+  .lp-field-row {
+    flex-direction: column;
+    align-items: stretch;
+
+    .lp-btn {
+      margin-top: 4px;
+    }
+  }
+  // Full-width buttons on phones, in both forms.
+  .lp-form .lp-btn--form {
+    width: 100%;
+  }
+}

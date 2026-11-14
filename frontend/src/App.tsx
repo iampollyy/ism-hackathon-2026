@@ -28,6 +28,10 @@ const LearnPage = page(() => import('./pages/LearnPage/LearnPage'), 'LearnPage')
 const NewsPage = page(() => import('./pages/NewsPage/NewsPage'), 'NewsPage');
 const PlanPage = page(() => import('./pages/PlanPage/PlanPage'), 'PlanPage');
 const LiveCallPage = page(() => import('./pages/LiveCallPage/LiveCallPage'), 'LiveCallPage');
+// The marketing landing and pricing load on their own, so app routes never download three.js.
+const LandingPage = lazy(() => import('./pages/LandingPage/LandingPage'));
+const PricingPage = lazy(() => import('./pages/LandingPage/PricingPage'));
+const landingFallback = <div style={{ minHeight: '100vh', background: '#07111a' }} />;
 
 export default function App() {
   return (
@@ -39,9 +43,13 @@ export default function App() {
           <Route path="/join/:memberId" element={<JoinPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          {/* The marketing landing and pricing: full page, no sidebar. */}
+          <Route path="/" element={<Suspense fallback={landingFallback}><LandingPage /></Suspense>} />
+          <Route path="/pricing" element={<Suspense fallback={landingFallback}><PricingPage /></Suspense>} />
 
           <Route element={<DashboardLayout />}>
-            <Route path="/" element={<SignUpPage />} />
+            {/* Polina's first landing page, kept for reference. */}
+            <Route path="/classic" element={<SignUpPage />} />
             {/* The organiser's app. */}
             <Route path="/families" element={<FamiliesPage />} />
             <Route path="/signup" element={<FamilySignUpPage />} />
