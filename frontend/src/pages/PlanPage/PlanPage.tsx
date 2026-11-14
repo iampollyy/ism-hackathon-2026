@@ -152,16 +152,17 @@ function CurrentPlan({ plan, trialDays, confirming, cancelling, cancelError, onA
     <section className={`plan-current ${plan.status}`} aria-labelledby="plan-current-title">
       <div className="plan-current-main">
         <span className={`plan-status ${plan.status}`}>{STATUS_WORDS[plan.status]}</span>
-        <h2 id="plan-current-title">{plan.plan_name}</h2>
-        <p className="plan-price">
-          {plan.status === 'trialing'
-            ? trialEnded
-              ? 'Your free trial has ended'
-              : left !== null
-                ? `Free for ${daysWord(left)} more`
-                : 'Free while the trial runs'
-            : (plan.price ?? '')}
-        </p>
+        {plan.status === 'trialing' ? (
+          // The pill already says "Free trial": the heading says how long is left.
+          <h2 id="plan-current-title">
+            {trialEnded ? 'Your trial has ended' : left !== null ? `${daysWord(left)} left` : 'Free for now'}
+          </h2>
+        ) : (
+          <>
+            <h2 id="plan-current-title">{plan.plan_name}</h2>
+            {plan.price ? <p className="plan-price">{plan.price}</p> : null}
+          </>
+        )}
 
         {plan.status === 'trialing' && left !== null && trialDays ? (
           <div className="plan-trial">
@@ -178,7 +179,7 @@ function CurrentPlan({ plan, trialDays, confirming, cancelling, cancelError, onA
             <small>
               {trialEnded
                 ? `Ended on ${longDate(plan.trial_ends_at)}. Nothing stops working in this demo.`
-                : `Ends on ${longDate(plan.trial_ends_at)}. Nothing is charged when it ends.`}
+                : `Day ${(used ?? 0) + 1} of ${trialDays}. Nothing is charged when it ends.`}
             </small>
           </div>
         ) : null}

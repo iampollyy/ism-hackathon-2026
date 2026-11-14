@@ -182,3 +182,13 @@
 @media (prefers-reduced-motion: reduce) {
   .app-drawer, .app-drawer-backdrop { animation: none; }
 }
+
+// ---------------------------------------------------------------- print
+
+// Printing a page (a lesson, the habits card) prints the page alone.
+@media print {
+  .app-rail, .app-topbar, .app-skip, .app-drawer-layer { display: none; }
+  .app-shell { display: block; min-height: 0; }
+  .app-main { padding: 0; }
+  .app-content { max-width: none; }
+}

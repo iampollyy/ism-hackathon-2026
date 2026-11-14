@@ -52,6 +52,8 @@
 
 .sb-family {
   display: grid;
+  // One column that may shrink, so a long family name ellipses inside the rail.
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -119,6 +121,7 @@
 
 .sb-family-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
   padding: 6px;
   border-radius: 14px;

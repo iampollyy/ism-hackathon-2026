@@ -165,8 +165,13 @@ export function FamilyStep({ organiserName = '', onCreated }: Props) {
                     autoComplete="off"
                     onChange={(event) => update(row.key, { name: event.target.value })}
                     aria-invalid={Boolean(errors[`name-${row.key}`])}
+                    aria-describedby={errors[`name-${row.key}`] ? `name-${row.key}-error` : undefined}
                   />
-                  {errors[`name-${row.key}`] ? <small className="field-error">{errors[`name-${row.key}`]}</small> : null}
+                  {errors[`name-${row.key}`] ? (
+                    <small className="field-error" id={`name-${row.key}-error`}>
+                      {errors[`name-${row.key}`]}
+                    </small>
+                  ) : null}
                 </div>
                 <div className="onb-field">
                   <label htmlFor={`relationship-${row.key}`}>Relationship</label>
@@ -180,9 +185,12 @@ export function FamilyStep({ organiserName = '', onCreated }: Props) {
                     autoComplete="off"
                     onChange={(event) => update(row.key, { relationship: event.target.value })}
                     aria-invalid={Boolean(errors[`relationship-${row.key}`])}
+                    aria-describedby={errors[`relationship-${row.key}`] ? `relationship-${row.key}-error` : undefined}
                   />
                   {errors[`relationship-${row.key}`] ? (
-                    <small className="field-error">{errors[`relationship-${row.key}`]}</small>
+                    <small className="field-error" id={`relationship-${row.key}-error`}>
+                      {errors[`relationship-${row.key}`]}
+                    </small>
                   ) : null}
                 </div>
                 <button

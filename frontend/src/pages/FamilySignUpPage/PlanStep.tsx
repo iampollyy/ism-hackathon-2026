@@ -1,9 +1,10 @@
 // Step 3: choose a plan, or simply start the free trial (every family is on
 // it from sign-up, so skipping needs no request). Demo mode: no payment and
-// no card details.
+// no card details. The banner follows the plan: the trial, a chosen plan (on
+// coming back to this step), or a cancelled one.
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, CalendarClock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, CalendarClock, CircleSlash } from 'lucide-react';
 import { api } from '../../api/client';
 import type { FamilyPlanView } from '../../api/types';
 import { PlanPicker } from '../PlanPage/PlanPicker';
@@ -15,6 +16,48 @@ type Props = {
   onDone: () => void;
 };
 
+type Banner = {
+  icon: typeof CalendarClock;
+  tone: string;
+  title: string;
+  text: string;
+  action: string;
+  /** False when the plans below are the main thing to do. */
+  primary: boolean;
+};
+
+function banner(plan: FamilyPlanView | null, days: number): Banner {
+  if (plan?.status === 'active') {
+    return {
+      icon: BadgeCheck,
+      tone: 'active',
+      title: `You’re on ${plan.plan_name}`,
+      text: `${plan.price ? `${plan.price}, ` : ''}chosen on ${longDate(plan.started_at)}. No payment was taken. You can change it later from Plan in the menu.`,
+      action: 'Go to the family page',
+      primary: true,
+    };
+  }
+  if (plan?.status === 'canceled') {
+    return {
+      icon: CircleSlash,
+      tone: 'canceled',
+      title: 'Choose a plan again',
+      text: `${plan.plan_name} is cancelled. Pick a plan below whenever you like; drills and the Shield keep working in this demo.`,
+      action: 'Go to the family page',
+      primary: false,
+    };
+  }
+  const ends = plan?.status === 'trialing' ? longDate(plan.trial_ends_at) : '';
+  return {
+    icon: CalendarClock,
+    tone: 'trialing',
+    title: ends ? `${days} days free, until ${ends}` : `${days} days free`,
+    text: 'Nothing is charged when the trial ends. Choose a plan now, or later from Plan in the menu.',
+    action: `Start the ${days}-day free trial`,
+    primary: true,
+  };
+}
+
 export function PlanStep({ familyId, onBack, onDone }: Props) {
   const [plan, setPlan] = useState<FamilyPlanView | null>(null);
   const [trialDays, setTrialDays] = useState<number | null>(null);
@@ -23,31 +66,28 @@ export function PlanStep({ familyId, onBack, onDone }: Props) {
     let live = true;
     api.plan(familyId).then(
       (answer) => live && setPlan(answer),
-      () => undefined, // the trial line just stays general
+      () => undefined, // the banner just stays general
     );
     return () => {
       live = false;
     };
   }, [familyId]);
 
-  const ends = plan?.status === 'trialing' ? longDate(plan.trial_ends_at) : '';
-  const days = trialDays ?? 30;
+  const shown = banner(plan, trialDays ?? 30);
+  const Icon = shown.icon;
 
   return (
     <div className="onb-plan">
-      <div className="onb-trial">
+      <div className={`onb-trial ${shown.tone}`}>
         <span className="onb-how-icon" aria-hidden="true">
-          <CalendarClock size={18} />
+          <Icon size={18} />
         </span>
         <span>
-          <strong>Your {days}-day free trial has started.</strong>
-          <small>
-            {ends ? `It runs until ${ends}. ` : ''}Nothing is charged when it ends. Choose a plan now, or later from Plan
-            in the menu.
-          </small>
+          <strong>{shown.title}</strong>
+          <small>{shown.text}</small>
         </span>
-        <button type="button" className="button button-primary" onClick={onDone}>
-          Start the {days}-day free trial <ArrowRight size={18} aria-hidden="true" />
+        <button type="button" className={`button ${shown.primary ? 'button-primary' : 'button-secondary'}`} onClick={onDone}>
+          {shown.action} <ArrowRight size={18} aria-hidden="true" />
         </button>
       </div>
 

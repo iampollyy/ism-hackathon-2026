@@ -106,7 +106,9 @@ export function FamilySignUpPage() {
   const created = (result: FamilyCreated) => {
     saveFamilyId(result.family_id);
     void refreshMe(); // the menu and the list of families pick it up
-    setParams({ family: result.family_id, step: 'invite' });
+    // Replace the empty form in the history: Back from the invites must not
+    // offer to create the same family a second time.
+    setParams({ family: result.family_id, step: 'invite' }, { replace: true });
     window.scrollTo({ top: 0 });
   };
 

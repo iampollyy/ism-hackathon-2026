@@ -6,6 +6,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { api, ApiError } from '../api/client';
 import type { Me } from '../api/types';
+import { forgetFamilyId, storedFamilyId } from '../pages/FamilySignUpPage/familyStorage';
 
 export type MeState =
   | { status: 'loading' }
@@ -57,13 +58,19 @@ export function setSignedIn(me: Me): void {
   set({ status: 'in', me });
 }
 
-/** Log out on the server, then everywhere on the page. */
+/**
+ * Log out on the server, then everywhere on the page. The last family opened
+ * is forgotten too, whoever it belonged to: on a shared laptop the menu must
+ * not keep showing it to the next person.
+ */
 export async function logOut(): Promise<void> {
   try {
     await api.logout();
   } catch {
     // The cookie may already be gone; the page still forgets the account.
   }
+  const stored = storedFamilyId();
+  if (stored) forgetFamilyId(stored);
   set({ status: 'out' });
 }
 

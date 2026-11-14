@@ -9,7 +9,6 @@ import {
   Activity, BadgeEuro, Check, ChevronsUpDown, GraduationCap, LayoutDashboard, LogIn, LogOut, Newspaper, PhoneCall,
   Plus, Users, X,
 } from 'lucide-react';
-import { forgetFamilyId } from '../../pages/FamilySignUpPage/familyStorage';
 import { logOut, type MeState } from '../../layouts/useMe';
 import './Sidebar.scss';
 
@@ -79,8 +78,7 @@ export function Sidebar({ familyId, familyName, meState, onClose }: Props) {
   const sectionSuffix = FAMILY_SECTIONS.find((section) => section.key === active)?.suffix ?? '';
 
   const leave = async () => {
-    await logOut();
-    if (familyId) forgetFamilyId(familyId); // a shared laptop should not keep showing the family
+    await logOut(); // also forgets the last family opened
     navigate('/login');
   };
 
@@ -111,7 +109,7 @@ export function Sidebar({ familyId, familyName, meState, onClose }: Props) {
               <span className="sb-family-mark" aria-hidden="true">{familyInitial(familyName)}</span>
               <span className="sb-family-text">
                 <small>Family plan</small>
-                <strong>{familyName ?? 'Your family'}</strong>
+                <strong title={familyName ?? undefined}>{familyName ?? 'Your family'}</strong>
               </span>
               <ChevronsUpDown size={16} className="sb-switch-icon" aria-hidden="true" />
             </button>
@@ -120,7 +118,7 @@ export function Sidebar({ familyId, familyName, meState, onClose }: Props) {
               <span className="sb-family-mark" aria-hidden="true">{familyInitial(familyName)}</span>
               <span className="sb-family-text">
                 <small>Family plan</small>
-                <strong>{familyName ?? 'Your family'}</strong>
+                <strong title={familyName ?? undefined}>{familyName ?? 'Your family'}</strong>
               </span>
             </div>
           )}
@@ -130,7 +128,7 @@ export function Sidebar({ familyId, familyName, meState, onClose }: Props) {
               {families.map((family) => (
                 <Link key={family.id} to={`/family/${family.id}${sectionSuffix}`} className="sb-family-option">
                   <span className="sb-family-mark small" aria-hidden="true">{familyInitial(family.name)}</span>
-                  <span>{family.name}</span>
+                  <span title={family.name}>{family.name}</span>
                   {family.id === familyId ? <Check size={16} aria-label="Open now" /> : null}
                 </Link>
               ))}
@@ -197,8 +195,8 @@ export function Sidebar({ familyId, familyName, meState, onClose }: Props) {
           <div className="sb-person">
             <span className="sb-avatar" aria-hidden="true">{personInitials(meState.me.account.name)}</span>
             <span className="sb-person-text">
-              <strong>{meState.me.account.name}</strong>
-              <small>{meState.me.account.email}</small>
+              <strong title={meState.me.account.name}>{meState.me.account.name}</strong>
+              <small title={meState.me.account.email}>{meState.me.account.email}</small>
             </span>
             <button type="button" className="sb-logout" onClick={() => void leave()} aria-label="Log out" title="Log out">
               <LogOut size={18} />

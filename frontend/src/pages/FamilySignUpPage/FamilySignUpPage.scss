@@ -465,6 +465,8 @@
   .onb-invite-card {
     min-width: 0;
     display: grid;
+    // One column that may shrink: a long name ellipses instead of widening the card.
+    grid-template-columns: minmax(0, 1fr);
     align-content: start;
     gap: 14px;
     padding: 20px;
@@ -660,6 +662,11 @@
     > span:not(.onb-how-icon) { flex: 1; min-width: 240px; }
     strong { display: block; font-size: 1.02rem; }
     small { display: block; margin-top: 3px; color: var(--muted); line-height: 1.5; }
+
+    &.active {
+      border-color: rgba(29, 141, 100, 0.35);
+      .onb-how-icon { background: var(--good-soft); color: #17734f; }
+    }
   }
 
   // ---------------------------------------------------------------- the optional voice recorder (VoiceStep)

@@ -5,7 +5,7 @@
 // first. The landing page (/) is shown on its own, without the app around it.
 
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { Link, Outlet, matchPath, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, matchPath, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { Sidebar, familyInitial, pageLabel } from '../components/organisms/Sidebar';
@@ -87,20 +87,25 @@ export function DashboardLayout() {
   }, [menuOpen]);
 
   if (location.pathname === '/') return <Outlet />;
+  // The landing page's "Sign in" still points at the old mock sign-in form,
+  // which has made-up details in it; anyone following it gets the real one.
+  if (location.pathname === '/signin') return <Navigate to="/login" replace />;
 
   const label = pageLabel(location.pathname, familyId);
 
   return (
     <div className="app-shell">
-      <a className="app-skip" href="#app-main">
+      {/* While the phone menu is open everything else is inert, so the keyboard
+          and screen readers stay inside the menu, as a dialog promises. */}
+      <a className="app-skip" href="#app-main" inert={menuOpen}>
         Skip to the page
       </a>
 
-      <aside className="app-rail">
+      <aside className="app-rail" inert={menuOpen}>
         <Sidebar familyId={familyId} familyName={familyName} meState={meState} />
       </aside>
 
-      <header className="app-topbar">
+      <header className="app-topbar" inert={menuOpen}>
         <Link to={meState.status === 'in' ? '/families' : '/'} className="app-topbar-logo" aria-label="Callback">
           <img src="/icon-192.png" alt="" width={32} height={32} />
         </Link>
@@ -159,7 +164,7 @@ export function DashboardLayout() {
         </div>
       ) : null}
 
-      <main id="app-main" className="app-main">
+      <main id="app-main" className="app-main" inert={menuOpen}>
         <div className="app-content">
           {/* Pages load on demand; the navigation stays while one does. */}
           <Suspense fallback={<div className="app-page-loading" aria-busy="true" aria-label="Loading" />}>
