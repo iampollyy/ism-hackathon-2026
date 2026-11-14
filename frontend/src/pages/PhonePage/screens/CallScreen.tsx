@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { HeartHandshake, PhoneOff, ShieldCheck, UserRound } from 'lucide-react';
 import type { Mode } from '@elevenlabs/client';
+import { ShieldLayer, type ShieldState } from './ShieldWarning';
 
 type CallScreenProps = {
   title: string;
@@ -11,6 +12,9 @@ type CallScreenProps = {
   mode: Mode | null;
   /** End was tapped while the call was still connecting. */
   ending?: boolean;
+  /** Callback Shield, only during a Shield call (null on every drill). */
+  shield?: ShieldState | null;
+  onCallBack?: (hasNumber: boolean) => void;
   onEnd: () => void;
 };
 
@@ -29,7 +33,18 @@ function useSecondsSince(startedAt: number): number {
 }
 
 /** The in-call screen, for a practice, a welcome call or the family line. */
-export function CallScreen({ title, number, variant, startedAt, connected, mode, ending = false, onEnd }: CallScreenProps) {
+export function CallScreen({
+  title,
+  number,
+  variant,
+  startedAt,
+  connected,
+  mode,
+  ending = false,
+  shield = null,
+  onCallBack,
+  onEnd,
+}: CallScreenProps) {
   const seconds = useSecondsSince(startedAt);
   const status = ending
     ? 'Ending…'
@@ -43,7 +58,11 @@ export function CallScreen({ title, number, variant, startedAt, connected, mode,
   const Icon = variant === 'family_line' ? HeartHandshake : variant === 'welcome' ? ShieldCheck : UserRound;
 
   return (
-    <main className={`phone-screen phone-dark phone-in-call phone-in-call--${variant}`}>
+    <main
+      className={`phone-screen phone-dark phone-in-call phone-in-call--${variant}${shield?.warn ? ' is-warned' : ''}`}
+    >
+      {shield && <ShieldLayer shield={shield} onHangUp={onEnd} onCallBack={onCallBack ?? (() => onEnd())} />}
+
       <div className="call-head">
         <span className="call-avatar call-avatar--small" aria-hidden="true">
           <Icon size={36} strokeWidth={1.6} />

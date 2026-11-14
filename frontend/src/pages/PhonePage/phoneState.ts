@@ -1,15 +1,20 @@
 // The phone page's state: one reducer for what the screen shows.
 // waiting -> ringing -> in_call -> reveal (practice) -> family_line -> waiting
+//                              \-> welcome_done (welcome call) -> waiting
 //
 // Pure: no requests here. usePhone.ts does the requests and the conversation
 // and reports what happened as actions.
 
 import type { Mode } from '@elevenlabs/client';
-import type { CallKind, CallResultView, EndedBy, IncomingCall, PhoneState } from '../../api/types';
+import type { CallKind, CallResultView, EndedBy, IncomingCall, PhoneState, VoiceSampleStatus } from '../../api/types';
+
+/** A practice drill, or a Shield demo call (a simulated real scam call). */
+export type RevealKind = 'practice' | 'shield';
 
 export type RevealView = {
   name: 'reveal';
   callId: string;
+  kind: RevealKind;
   voiceOf: string | null;
   endedBy: EndedBy;
   /** The back end has the end: the family number can be called now. */
@@ -18,6 +23,19 @@ export type RevealView = {
   result: CallResultView | null;
   startingFamilyLine: boolean;
   familyLineError: string | null;
+};
+
+/** The thank-you screen after the welcome call. */
+export type WelcomeDoneView = {
+  name: 'welcome_done';
+  callId: string;
+  endedBy: EndedBy;
+  /** The voice connected at some point (an error then means it dropped). */
+  connected: boolean;
+  /** Their spoken answer to practice calls, if the agent reported one. */
+  consent: boolean | null;
+  /** Their spoken answer to a copy of their voice, if the agent reported one. */
+  voiceConsent: boolean | null;
 };
 
 export type PhoneView =
@@ -44,7 +62,16 @@ export type PhoneView =
       /** The reveal it was called from: back there if the line cannot connect. */
       reveal: RevealView | null;
     }
-  | RevealView;
+  | RevealView
+  | WelcomeDoneView;
+
+/** What became of the recording of their side of the welcome call. */
+export type VoiceProgress = {
+  callId: string;
+  phase: 'uploading' | 'checking' | 'final' | 'no_recording' | 'upload_failed';
+  state: VoiceSampleStatus['state'] | null;
+  reason: string | null;
+};
 
 export type Notice = { id: number; tone: 'info' | 'good' | 'error'; text: string; missed?: boolean };
 
@@ -59,6 +86,11 @@ export type PhoneUiState = {
   noticeSeq: number;
   /** Messages dismissed here, hidden until the back end stops sending them. */
   hiddenMessages: number[];
+  /** The recording from the latest welcome call on this page. */
+  voice: VoiceProgress | null;
+  /** Offer "Start my welcome call": after one was missed, declined or could
+   * not connect here, or when they never answered one. */
+  welcomeOffer: 'unknown' | 'show' | 'hide';
 };
 
 export type PhoneAction =
@@ -78,9 +110,19 @@ export type PhoneAction =
       voiceOf: string | null;
       /** The welcome call's consent answer, if the agent reported one. */
       consent: boolean | null;
+      /** The welcome call's answer about a copy of their voice. */
+      voiceConsent: boolean | null;
+      revealKind: RevealKind;
     }
   | { type: 'end_sent'; callId: string }
-  | { type: 'recovered'; callId: string; voiceOf: string | null; endedBy: EndedBy; endSent: boolean }
+  | {
+      type: 'recovered';
+      callId: string;
+      kind: RevealKind;
+      voiceOf: string | null;
+      endedBy: EndedBy;
+      endSent: boolean;
+    }
   | { type: 'recovering'; callId: string }
   | { type: 'recovery_dropped'; callId: string }
   | { type: 'scored'; callId: string; result: CallResultView | null }
@@ -92,7 +134,12 @@ export type PhoneAction =
   | { type: 'notice'; tone: Notice['tone']; text: string }
   | { type: 'dismiss_notice' }
   | { type: 'hide_messages'; ids: number[] }
-  | { type: 'show_messages'; ids: number[] };
+  | { type: 'show_messages'; ids: number[] }
+  | { type: 'voice'; progress: VoiceProgress }
+  /** Whether they ever answered a welcome call (asked once, on load). */
+  | { type: 'welcome_history'; answered: boolean }
+  /** "Start my welcome call" was tapped and the call is on its way. */
+  | { type: 'welcome_requested' };
 
 export const initialPhoneState: PhoneUiState = {
   phone: null,
@@ -102,6 +149,8 @@ export const initialPhoneState: PhoneUiState = {
   notice: null,
   noticeSeq: 0,
   hiddenMessages: [],
+  voice: null,
+  welcomeOffer: 'unknown',
 };
 
 /** Polls in a row that may fail before the page says the connection is gone. */
@@ -120,10 +169,17 @@ function callIdOf(view: PhoneView): string | null {
   return 'callId' in view ? view.callId : null;
 }
 
-function revealView(callId: string, voiceOf: string | null, endedBy: EndedBy, endSent: boolean): RevealView {
+function revealView(
+  callId: string,
+  kind: RevealKind,
+  voiceOf: string | null,
+  endedBy: EndedBy,
+  endSent: boolean,
+): RevealView {
   return {
     name: 'reveal',
     callId,
+    kind,
     voiceOf,
     endedBy,
     endSent,
@@ -134,27 +190,29 @@ function revealView(callId: string, voiceOf: string | null, endedBy: EndedBy, en
   };
 }
 
-/** What the person hears after a welcome call: it must match what they said. */
-function welcomeThanks(waiting: PhoneUiState, endedBy: EndedBy, consent: boolean | null): PhoneUiState {
-  if (consent === true) {
-    return withNotice(waiting, 'good', 'Thank you for the call. You are all set, and Callback stays on.');
-  }
-  if (consent === false) {
-    return withNotice(waiting, 'info', 'Thank you for the call. No practice calls will come unless you change your mind.');
-  }
-  return endedBy === 'error'
-    ? withNotice(waiting, 'error', 'The call could not connect. Your family can ring again from their laptop.')
-    : withNotice(waiting, 'info', 'Thank you for the call.');
-}
-
 function finishedState(state: PhoneUiState, action: Extract<PhoneAction, { type: 'finished' }>): PhoneUiState {
   if (callIdOf(state.view) !== action.callId) return state;
   if (action.kind === 'practice') {
     // The reveal is certain: every practice call ends here, however it ended.
-    return { ...state, view: revealView(action.callId, action.voiceOf, action.endedBy, false) };
+    return { ...state, view: revealView(action.callId, action.revealKind, action.voiceOf, action.endedBy, false) };
+  }
+  if (action.kind === 'welcome') {
+    // The thank-you screen: its words match what they said on the call.
+    return {
+      ...state,
+      notice: null,
+      welcomeOffer: action.endedBy === 'error' && action.consent === null ? 'show' : 'hide',
+      view: {
+        name: 'welcome_done',
+        callId: action.callId,
+        endedBy: action.endedBy,
+        connected: state.view.name === 'in_call' && state.view.connected,
+        consent: action.consent,
+        voiceConsent: action.voiceConsent,
+      },
+    };
   }
   const waiting: PhoneUiState = { ...state, view: { name: 'waiting' } };
-  if (action.kind === 'welcome') return welcomeThanks(waiting, action.endedBy, action.consent);
   // The family line. If it could not connect, back to the reveal, where the
   // family number button is, so it can be tried again.
   if (action.endedBy === 'error' && state.view.name === 'family_line' && state.view.reveal) {
@@ -179,13 +237,19 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
       const incoming = action.phone.incoming_call;
       let next: PhoneUiState = { ...state, phone: action.phone, link: 'online' };
       const canRing =
-        view.name === 'waiting' || (view.name === 'reveal' && !view.startingFamilyLine);
+        view.name === 'waiting' ||
+        view.name === 'welcome_done' ||
+        (view.name === 'reveal' && !view.startingFamilyLine);
       if (canRing && incoming && !state.handled.includes(incoming.call_id)) {
         next = { ...next, view: { name: 'ringing', call: incoming }, notice: null };
+        if (incoming.kind === 'welcome') next = { ...next, welcomeOffer: 'hide' };
       } else if (view.name === 'ringing' && incoming?.call_id !== view.call.call_id) {
         // It stopped ringing before an answer: missed, or cancelled.
         next = { ...next, view: { name: 'waiting' }, handled: remember(state.handled, view.call.call_id) };
-        next = withNotice(next, 'info', `Missed call from ${view.call.caller.label}.`, true);
+        next =
+          view.call.kind === 'welcome'
+            ? withNotice({ ...next, welcomeOffer: 'show' }, 'info', 'You missed your welcome call.', true)
+            : withNotice(next, 'info', `Missed call from ${view.call.caller.label}.`, true);
       }
       // Forget hidden messages the back end no longer sends.
       const sent = new Set(action.phone.messages.map((message) => message.id));
@@ -217,13 +281,21 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
         },
       };
 
-    case 'answer_failed':
+    case 'answer_failed': {
       if (callIdOf(view) !== action.callId) return state;
-      return withNotice({ ...state, view: { name: 'waiting' } }, 'error', action.message);
+      const welcome = view.name === 'in_call' && view.kind === 'welcome';
+      const next: PhoneUiState = { ...state, view: { name: 'waiting' }, welcomeOffer: welcome ? 'show' : state.welcomeOffer };
+      return withNotice(next, 'error', action.message);
+    }
 
     case 'decline':
       if (view.name !== 'ringing' || view.call.call_id !== action.callId) return state;
-      return { ...state, view: { name: 'waiting' }, handled: remember(state.handled, action.callId) };
+      return {
+        ...state,
+        view: { name: 'waiting' },
+        handled: remember(state.handled, action.callId),
+        welcomeOffer: view.call.kind === 'welcome' ? 'show' : state.welcomeOffer,
+      };
 
     case 'connected':
       if ((view.name !== 'in_call' && view.name !== 'family_line') || view.callId !== action.callId) return state;
@@ -247,7 +319,7 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
         ...state,
         handled: remember(state.handled, action.callId),
         notice: null,
-        view: revealView(action.callId, action.voiceOf, action.endedBy, action.endSent),
+        view: revealView(action.callId, action.kind, action.voiceOf, action.endedBy, action.endSent),
       };
 
     case 'recovering':
@@ -298,6 +370,7 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
       };
 
     case 'done':
+      if (view.name === 'welcome_done') return { ...state, view: { name: 'waiting' } };
       return view.name === 'reveal' && !view.startingFamilyLine ? { ...state, view: { name: 'waiting' } } : state;
 
     case 'notice':
@@ -311,5 +384,18 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
 
     case 'show_messages':
       return { ...state, hiddenMessages: state.hiddenMessages.filter((id) => !action.ids.includes(id)) };
+
+    case 'voice':
+      return { ...state, voice: action.progress };
+
+    case 'welcome_history': {
+      if (state.welcomeOffer !== 'unknown') return state;
+      // Never answered one, and none is ringing or running here right now.
+      const busy = view.name !== 'waiting' || state.phone?.incoming_call?.kind === 'welcome';
+      return { ...state, welcomeOffer: !action.answered && !busy ? 'show' : 'hide' };
+    }
+
+    case 'welcome_requested':
+      return { ...state, welcomeOffer: 'hide' };
   }
 }

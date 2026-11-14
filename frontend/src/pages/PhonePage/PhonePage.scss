@@ -248,7 +248,8 @@ body:has(.phone-page) {
 .phone-section-title {
   margin: 8px 0 0;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--ink);
 }
@@ -697,6 +698,944 @@ body:has(.phone-page) {
   animation: phone-answer-nudge 1.6s ease-in-out infinite;
 }
 
+// ---------------------------------------------------------------- Callback Shield (on the call screen)
+
+$shield-red-top: #c3262f;
+$shield-red-bottom: #7c111a;
+$shield-amber: #f5b94d;
+
+.phone-in-call.is-warned {
+  background: linear-gradient(180deg, #3a1418 0%, #12080a 100%);
+}
+
+.shield-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(143, 224, 181, 0.28);
+  background: rgba(143, 224, 181, 0.1);
+  color: #a9ebc6;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.shield-banner {
+  appearance: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  animation: phone-pop-in 0.25s ease-out;
+
+  > svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+}
+
+.shield-banner__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.4;
+
+  strong {
+    font-size: 1.05rem;
+  }
+
+  span {
+    font-size: 0.95rem;
+    opacity: 0.88;
+  }
+}
+
+.shield-banner--yellow {
+  background: rgba(245, 185, 77, 0.16);
+  border: 1px solid rgba(245, 185, 77, 0.45);
+  color: #ffe2a8;
+
+  > svg { color: $shield-amber; }
+}
+
+.shield-banner--red {
+  background: $shield-red-top;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(195, 38, 47, 0.35);
+}
+
+// The full warning: over everything on the call screen, impossible to miss.
+.shield-warning {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  overflow-y: auto;
+  padding: max(28px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.14), transparent 55%),
+    linear-gradient(180deg, $shield-red-top 0%, $shield-red-bottom 100%);
+  color: #fff;
+  text-align: left;
+  animation: shield-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shield-warning__top,
+.shield-warning__actions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.shield-warning__top {
+  gap: 18px;
+}
+
+.shield-warning__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+
+  svg {
+    padding: 6px;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: #fff;
+    color: $shield-red-top;
+    animation: shield-pulse 1.6s ease-out infinite;
+  }
+}
+
+.shield-warning__title {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.85rem, 8.2vw, 2.3rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.shield-warning__signs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+}
+
+.shield-warning__signs-label {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.shield-warning__told {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.18);
+  font-weight: 600;
+}
+
+.shield-warning__actions {
+  gap: 12px;
+}
+
+.shield-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 18px;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+
+  &:active {
+    transform: scale(0.98);
+    filter: brightness(0.95);
+  }
+}
+
+.shield-button--hang-up {
+  background: #fff;
+  color: #a5151f;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+.shield-button--call {
+  background: $call-green;
+  color: #fff;
+}
+
+.phone-page .shield-button:focus-visible,
+.phone-page .shield-warning__fold:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.shield-warning__fold {
+  appearance: none;
+  align-self: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+// ---------------------------------------------------------------- the member's tabs (waiting screen)
+
+.phone-waiting.has-tabs {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+
+.phone-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.phone-tabs {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  padding: 6px 12px max(8px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: rgba(249, 251, 250, 0.94);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+}
+
+.phone-tabs__list {
+  display: flex;
+  justify-content: space-around;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.phone-tabs__tab {
+  appearance: none;
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 58px;
+  padding: 8px 4px 6px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &.is-active {
+    color: var(--navy);
+
+    svg {
+      stroke-width: 2.4;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      width: 28px;
+      height: 3px;
+      border-radius: 0 0 3px 3px;
+      background: var(--good);
+    }
+  }
+}
+
+.phone-page .phone-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 10px 28px rgba(17, 34, 49, 0.07);
+}
+
+.phone-card__title {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.phone-card__text,
+.phone-section-text {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.phone-section-text {
+  margin-top: -6px;
+}
+
+.phone-page .phone-offer {
+  border-color: rgba(29, 141, 100, 0.3);
+  background: #f2faf6;
+}
+
+.phone-quiet-button {
+  appearance: none;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.phone-quiet-button--wide {
+  align-self: stretch;
+  margin-top: 4px;
+}
+
+.phone-link-button {
+  appearance: none;
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--navy);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+// What happens next: three plain lines, each with its icon.
+.phone-next {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  svg {
+    flex-shrink: 0;
+    box-sizing: content-box;
+    padding: 9px;
+    border-radius: 12px;
+    background: rgba(17, 34, 49, 0.05);
+    color: var(--navy);
+  }
+}
+
+// "Something's wrong?"
+.phone-alert__open {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  border: 1.5px solid rgba(17, 34, 49, 0.22);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--navy);
+  font: inherit;
+  font-size: 1.08rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.phone-alert__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(17, 34, 49, 0.04);
+  animation: phone-pop-in 0.2s ease-out;
+
+  p {
+    margin: 0;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+}
+
+.phone-alert__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.phone-alert__send {
+  appearance: none;
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--navy);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: default;
+  }
+}
+
+.phone-page .phone-alert--sent {
+  border-color: rgba(29, 141, 100, 0.3);
+  background: #f2faf6;
+}
+
+.phone-alert__done {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--good);
+}
+
+.phone-alert__subtitle {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.phone-alert__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+  color: var(--ink);
+
+  li {
+    position: relative;
+    padding-left: 22px;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0.6em;
+      left: 4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--good);
+    }
+  }
+}
+
+// Your choices: consent, always visible and changeable.
+.phone-choices__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+
+  > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+
+    &:first-child {
+      padding-top: 2px;
+    }
+  }
+
+  dt {
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  dd {
+    flex-shrink: 0;
+    margin: 0;
+    font-weight: 700;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+
+    &.is-on {
+      color: var(--good);
+    }
+  }
+}
+
+.phone-choices__voice {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--muted);
+
+  svg {
+    vertical-align: -3px;
+    color: var(--good);
+  }
+}
+
+.phone-choices__change {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 4px 0 0;
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.phone-skeleton {
+  display: block;
+  height: 18px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(17, 34, 49, 0.06), rgba(17, 34, 49, 0.12), rgba(17, 34, 49, 0.06));
+  background-size: 200% 100%;
+  animation: phone-shimmer 1.4s ease-in-out infinite;
+}
+
+.phone-skeleton--short {
+  width: 60%;
+}
+
+.phone-page .phone-message--alert {
+  border-color: rgba(231, 109, 82, 0.4);
+  background: #fff6f3;
+}
+
+// Loading and error states inside a tab.
+.phone-tab-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--muted);
+
+  p {
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .phone-quiet-button {
+    align-self: center;
+  }
+}
+
+// Learn
+.phone-learn,
+.phone-news {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+
+.phone-habits {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 4px 18px;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+}
+
+.phone-habits__icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.phone-signs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.phone-sign {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.phone-sign__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+  }
+}
+
+.phone-sign__level {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #94600f;
+
+  &::before {
+    content: '';
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--warning);
+  }
+}
+
+.phone-sign--red .phone-sign__level {
+  color: #b23b25;
+
+  &::before {
+    background: var(--accent);
+  }
+}
+
+.phone-sign__quote {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(231, 109, 82, 0.08);
+  font-size: 1.02rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.phone-sign__do {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--ink);
+
+  strong {
+    color: var(--good);
+  }
+}
+
+.phone-sign__why {
+  color: var(--muted);
+
+  summary {
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    color: var(--navy);
+    cursor: pointer;
+  }
+
+  p {
+    margin: 4px 0 0;
+    line-height: 1.55;
+  }
+}
+
+// News
+.phone-page .phone-news__note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: #ecf6f1;
+  border: 1px solid rgba(29, 141, 100, 0.22);
+
+  p {
+    margin: 0;
+    font-size: 1.08rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--navy);
+  }
+
+  span {
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+}
+
+.phone-news__sources {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.92rem;
+  color: var(--muted);
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 32px;
+    color: var(--navy);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+// ---------------------------------------------------------------- after the welcome call
+
+.phone-welcome-done {
+  padding-top: max(40px, env(safe-area-inset-top));
+}
+
+.phone-welcome-done__mark {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  animation: phone-pop-in 0.35s ease-out;
+}
+
+.phone-welcome-done__mark--good {
+  background: var(--good);
+  color: #fff;
+  box-shadow: 0 16px 32px rgba(29, 141, 100, 0.3);
+}
+
+.phone-welcome-done__mark--calm {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.phone-welcome-done__mark--warn {
+  background: rgba(245, 185, 77, 0.2);
+  color: #94600f;
+}
+
+.phone-welcome-done__title {
+  margin: 6px 0 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(2rem, 8.6vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.phone-welcome-done__text {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.phone-voice {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.92);
+  animation: phone-pop-in 0.25s ease-out;
+}
+
+.phone-voice__icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(17, 34, 49, 0.06);
+  color: var(--navy);
+}
+
+.phone-voice__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.phone-voice__text {
+  margin: 4px 0 0;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.phone-voice--good {
+  border-color: rgba(29, 141, 100, 0.3);
+  background: #eef8f3;
+
+  .phone-voice__icon {
+    background: var(--good);
+    color: #fff;
+  }
+}
+
+.phone-voice--warn .phone-voice__icon {
+  background: rgba(245, 185, 77, 0.2);
+  color: #94600f;
+}
+
+.phone-voice--calm .phone-voice__icon {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.phone-big-button--quiet {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--navy);
+  box-shadow: 0 8px 20px rgba(17, 34, 49, 0.06);
+}
+
 // ---------------------------------------------------------------- motion
 
 @keyframes phone-ring-wave {
@@ -735,6 +1674,22 @@ body:has(.phone-page) {
 
 @keyframes phone-spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes phone-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@keyframes shield-in {
+  from { opacity: 0; transform: scale(1.03); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes shield-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
+  70% { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
