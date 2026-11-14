@@ -66,13 +66,16 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         resume_after_call_work()
     except Exception:
         log.exception("could not resume the after-call work of ended calls")
-    task: asyncio.Task | None = None
+    tasks: list[asyncio.Task] = []
     if get_settings().scheduler_enabled:
-        task = asyncio.create_task(_run_scheduler(), name="scheduler")
+        tasks.append(asyncio.create_task(_run_scheduler(), name="scheduler"))
+        from app.services import news  # the hourly news (services/news.keep_fresh_forever)
+
+        tasks.append(asyncio.create_task(news.keep_fresh_forever(), name="news"))
     try:
         yield
     finally:
-        if task is not None:
+        for task in tasks:
             task.cancel()
             try:
                 await task

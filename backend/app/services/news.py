@@ -42,7 +42,9 @@ messages; only the weekly run does that.
   and answered with the current news, reason failed.
 """
 
+import asyncio
 import logging
+import time
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -247,3 +249,41 @@ def _safe_answer(db: DbSession, family_id: str, reason: str | None) -> schemas.N
         log.exception("could not read the news for %s", family_id)
         return schemas.NewsRefreshed(patterns=[], updated_at=None, week=None, fallback=False, notes=[],
                                      next_refresh_at=None, refreshed=False, reason="failed")
+
+
+# ---------------------------------------------------------------- hourly, by itself
+
+CHECK_EVERY_SECONDS = 300
+FAILED_BACKOFF_SECONDS = 1800
+
+
+def needs_rebuild(seconds: float) -> bool:
+    """True when there is no digest, only the built-in examples, or the
+    digest is older than `seconds`."""
+    with new_session() as db:
+        row = latest_digest(db)
+        return row is None or not is_real(row) or not within(row.created_at, seconds)
+
+
+async def keep_fresh_forever() -> None:
+    """Keep the shared news fresh without anyone pressing Refresh: a first
+    check shortly after start, then every 5 minutes; a rebuild (Firecrawl and
+    the digest job) when the digest is older than
+    settings.news_auto_refresh_seconds. After a build that gave no new
+    digest, wait 30 minutes before trying again. Never raises."""
+    await asyncio.sleep(20)
+    failed_at = 0.0
+    while True:
+        try:
+            seconds = get_settings().news_auto_refresh_seconds
+            backing_off = time.monotonic() - failed_at < FAILED_BACKOFF_SECONDS if failed_at else False
+            if seconds > 0 and not backing_off and needs_rebuild(seconds):
+                outcome = await build_and_store()
+                log.info("news: automatic refresh -> %s", outcome)
+                failed_at = time.monotonic() if outcome != "refreshed" else 0.0
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("news: automatic refresh failed")
+            failed_at = time.monotonic()
+        await asyncio.sleep(CHECK_EVERY_SECONDS)

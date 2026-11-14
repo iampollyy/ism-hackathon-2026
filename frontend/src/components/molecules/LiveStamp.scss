@@ -1,0 +1,84 @@
+.live-stamp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.live-stamp__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  background: var(--good-soft);
+  color: var(--good-ink);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.live-stamp__dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1ad670;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: live-stamp-ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+}
+
+.live-stamp.is-stale {
+  .live-stamp__pill {
+    background: rgba(245, 185, 77, 0.18);
+    color: #8a5a06;
+  }
+
+  .live-stamp__dot {
+    background: var(--warning);
+  }
+}
+
+.live-stamp--deep {
+  color: var(--on-deep-muted);
+
+  .live-stamp__pill {
+    background: rgba(26, 214, 112, 0.16);
+    color: #7cf0b0;
+  }
+
+  &.is-stale .live-stamp__pill {
+    background: rgba(245, 185, 77, 0.16);
+    color: #f8cf7f;
+  }
+}
+
+@keyframes live-stamp-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  80%,
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-stamp__dot::after {
+    animation: none;
+  }
+}
