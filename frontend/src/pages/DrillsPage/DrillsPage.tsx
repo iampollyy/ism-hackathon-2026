@@ -35,8 +35,10 @@ export function DrillsPage() {
   );
 
   const members = family.data?.members ?? [];
-  const allDrills = all.data?.drills ?? [];
+  // Counted only once the list is in: no made-up zeros while it loads.
+  const allDrills = all.data?.drills ?? null;
   const counts = useMemo(() => {
+    if (!allDrills) return undefined;
     const map = new Map<string, number>();
     for (const drill of allDrills) map.set(drill.member.id, (map.get(drill.member.id) ?? 0) + 1);
     return map;
@@ -68,6 +70,7 @@ export function DrillsPage() {
         <ReviewHeader
           familyId={familyId}
           familyName={null}
+          back={{ to: '/families', label: 'Your families' }}
           title="We couldn’t find this family"
           lead="The link may be from another server, or the family was removed."
           actions={<Link to="/families" className="button button-primary rv-button">See your families</Link>}
@@ -96,11 +99,11 @@ export function DrillsPage() {
               value={memberId}
               onChange={choose}
               counts={counts}
-              total={allDrills.length}
+              total={allDrills?.length}
               label="Show drills for"
             />
           ) : <span />}
-          {drills && drills.length ? <Tally drills={drills} /> : null}
+          {drills && drills.length ? <Tally drills={drills} shields={shields} /> : null}
         </div>
 
         {drills === null ? (
@@ -194,18 +197,23 @@ function DrillGroups({ drills, family, shields }: DrillGroupsProps) {
 
 // ---------------------------------------------------------------- the tally
 
-/** How the finished drills went, as one thin bar and its legend. */
-function Tally({ drills }: { drills: DrillView[] }) {
+/** How the finished drills went, as one thin bar and its legend. A Shield
+ * demo, where the Shield warned the person, is counted on its own and never
+ * as a drill handled the safe way. */
+function Tally({ drills, shields }: { drills: DrillView[]; shields: Map<string, ShieldInfo> }) {
   let safe = 0;
   let tips = 0;
   let unanswered = 0;
+  let shieldDemos = 0;
   for (const drill of drills) {
     const state = drillState(drill);
-    if (state === 'safe') safe += 1;
+    if (!['safe', 'tip', 'unanswered'].includes(state)) continue;
+    if (shields.has(drill.call_id)) shieldDemos += 1;
+    else if (state === 'safe') safe += 1;
     else if (state === 'tip') tips += 1;
-    else if (state === 'unanswered') unanswered += 1;
+    else unanswered += 1;
   }
-  const total = safe + tips + unanswered;
+  const total = safe + tips + unanswered + shieldDemos;
   if (!total) return null;
   const width = (count: number) => `${(count / total) * 100}%`;
   return (
@@ -214,11 +222,13 @@ function Tally({ drills }: { drills: DrillView[] }) {
         {safe ? <span className="is-safe" style={{ width: width(safe) }} /> : null}
         {tips ? <span className="is-tip" style={{ width: width(tips) }} /> : null}
         {unanswered ? <span className="is-quiet" style={{ width: width(unanswered) }} /> : null}
+        {shieldDemos ? <span className="is-shield" style={{ width: width(shieldDemos) }} /> : null}
       </div>
       <ul className="rv-tally__legend">
-        <li><span className="is-safe" aria-hidden />{safe} handled the safe way</li>
+        {safe || !shieldDemos ? <li><span className="is-safe" aria-hidden />{safe} handled the safe way</li> : null}
         {tips ? <li><span className="is-tip" aria-hidden />{plural(tips, 'tip')} for next time</li> : null}
         {unanswered ? <li><span className="is-quiet" aria-hidden />{unanswered} not answered</li> : null}
+        {shieldDemos ? <li><span className="is-shield" aria-hidden />{plural(shieldDemos, 'Shield demo')}</li> : null}
       </ul>
     </div>
   );

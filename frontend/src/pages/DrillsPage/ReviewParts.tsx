@@ -15,6 +15,9 @@ import { avatarColor, initials } from '../FamilySignUpPage/signUpTypes';
 type ReviewHeaderProps = {
   familyId: string;
   familyName: string | null;
+  /** Where the back link goes instead of the family page, such as when the
+   * family itself was not found. */
+  back?: { to: string; label: string };
   title: ReactNode;
   lead?: ReactNode;
   actions?: ReactNode;
@@ -22,12 +25,14 @@ type ReviewHeaderProps = {
   leading?: ReactNode;
 };
 
-export function ReviewHeader({ familyId, familyName, title, lead, actions, leading }: ReviewHeaderProps) {
+export function ReviewHeader({ familyId, familyName, back, title, lead, actions, leading }: ReviewHeaderProps) {
+  const to = back?.to ?? `/family/${familyId}`;
+  const label = back?.label ?? (familyName ? `Back to ${familyName}` : 'Back to the family');
   return (
     <header className="rv-header">
-      <Link to={`/family/${familyId}`} className="rv-back">
+      <Link to={to} className="rv-back">
         <ArrowLeft size={16} aria-hidden />
-        <span>{familyName ? `Back to ${familyName}` : 'Back to the family'}</span>
+        <span>{label}</span>
       </Link>
       <div className="rv-header__row">
         <div className="rv-header__title">
@@ -67,9 +72,10 @@ type PersonFilterProps = {
   members: MemberView[];
   value: string | null;
   onChange: (memberId: string | null) => void;
-  /** How many items each person has, and in all. */
-  counts: Map<string, number>;
-  total: number;
+  /** How many items each person has, and in all; left out (no badges)
+   * while they are not known yet. */
+  counts?: Map<string, number>;
+  total?: number;
   label: string;
 };
 
@@ -78,7 +84,7 @@ export function PersonFilter({ members, value, onChange, counts, total, label }:
   return (
     <div className="rv-filter" role="group" aria-label={label}>
       <button type="button" className={`rv-filter__chip${value === null ? ' is-on' : ''}`} aria-pressed={value === null} onClick={() => onChange(null)}>
-        Everyone <span className="rv-filter__count">{total}</span>
+        Everyone {total !== undefined ? <span className="rv-filter__count">{total}</span> : null}
       </button>
       {members.map((member, index) => (
         <button
@@ -89,7 +95,7 @@ export function PersonFilter({ members, value, onChange, counts, total, label }:
           onClick={() => onChange(value === member.id ? null : member.id)}
         >
           <span className="rv-filter__dot" style={{ background: avatarColor(index) }} aria-hidden />
-          {member.name} <span className="rv-filter__count">{counts.get(member.id) ?? 0}</span>
+          {member.name} {counts ? <span className="rv-filter__count">{counts.get(member.id) ?? 0}</span> : null}
         </button>
       ))}
     </div>

@@ -10,12 +10,22 @@
     flex: none;
   }
 
+  // Wide: readiness, lessons and drills on the left, the side panels on the
+  // right. The side spans both rows, so a tall side never stretches readiness.
   .rv-member__grid {
     display: grid;
     grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "top side"
+      "main side";
     gap: 20px;
     align-items: start;
   }
+
+  .rv-member__top { grid-area: top; min-width: 0; }
+  .rv-member__side { grid-area: side; }
+  .rv-member__main { grid-area: main; }
 
   .rv-member__main,
   .rv-member__side {
@@ -47,6 +57,7 @@
     i { width: 14px; height: 8px; border-radius: 3px; }
     .is-had { background: var(--rv-had); }
     .is-gained { background: var(--good); }
+    .is-dropped { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rv-had); }
   }
 
   .rv-readiness__total {
@@ -301,6 +312,16 @@
     strong { font-weight: 650; }
   }
 
+  .rv-next__last {
+    margin: 12px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
   .rv-next__week {
     margin: 12px 0 0;
     padding-top: 12px;
@@ -308,6 +329,13 @@
     color: var(--muted);
     font-size: 0.86rem;
     font-weight: 600;
+
+    small {
+      display: block;
+      margin-top: 2px;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
   }
 
   // ---------------------------------------------------------------- consent
@@ -354,6 +382,38 @@
     font-size: 0.88rem;
   }
 
+  .rv-consent__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(17, 34, 49, 0.06);
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  .rv-consent__ask {
+    display: grid;
+    justify-items: start;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(33, 61, 82, 0.06);
+
+    p { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--ink); }
+    strong { font-weight: 650; }
+
+    .copy-button {
+      gap: 8px;
+      padding: 0.55rem 0.85rem;
+      border-radius: 12px;
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+  }
+
   .rv-consent__note { margin-top: 12px; font-size: 0.84rem; }
 }
 
@@ -362,8 +422,27 @@
   to { transform: none; opacity: 1; }
 }
 
+// One column: readiness, then the record, next drill and consent, then the
+// lessons and drills (the actions and consent are not left at the bottom).
 @media (max-width: 1080px) {
-  .rv-member .rv-member__grid { grid-template-columns: minmax(0, 1fr); }
+  .rv-member .rv-member__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      "top"
+      "side"
+      "main";
+  }
+}
+
+// Two side panels next to each other while there is room for it.
+@media (min-width: 720px) and (max-width: 1080px) {
+  .rv-member .rv-member__side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+
+    .rv-consent { grid-column: 1 / -1; }
+  }
 }
 
 @media (max-width: 640px) {

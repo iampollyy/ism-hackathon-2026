@@ -268,6 +268,7 @@
   .is-safe { --tone: var(--good); }
   .is-tip { --tone: var(--warning); }
   .is-quiet { --tone: rgba(17, 34, 49, 0.22); }
+  .rv-tally .is-shield { --tone: var(--navy); }
   .rv-tally__bar span,
   .rv-tally__legend span { background: var(--tone); }
 
@@ -301,12 +302,16 @@
     p { margin: 0; color: var(--muted); font-size: 0.88rem; }
   }
 
+  // The tint reaches 7px past the rows on each side; padding plus border
+  // give those 7px back, so the rows' columns line up with the other groups.
   .rv-group--now {
-    padding: 16px 16px 8px;
-    margin: 0 -6px;
+    padding: 16px 6px 8px;
+    margin: 0 -7px;
     border-radius: 20px;
     background: rgba(231, 109, 82, 0.06);
     border: 1px solid rgba(231, 109, 82, 0.18);
+
+    > h2 { padding-inline: 8px; }
   }
 
   .rv-live-dot {

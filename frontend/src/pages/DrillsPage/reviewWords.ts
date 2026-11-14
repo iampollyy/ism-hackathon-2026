@@ -94,7 +94,8 @@ export function drillOutcomeWords(drill: DrillView): { label: string; detail: st
     case 'safe':
       return {
         label: drill.outcome_label ?? 'Did the safe thing',
-        detail: challenge ? (drill.outcome === 'hung_up' ? `Hung up after ${challenge}` : `Checked after ${challenge}`) : null,
+        // The label already says "Hung up": the detail only adds when.
+        detail: challenge ? (drill.outcome === 'hung_up' ? `After ${challenge}` : `Checked after ${challenge}`) : null,
       };
     case 'tip':
       return { label: drill.outcome_label ?? 'Took the call', detail: 'Picked up a tip for next time' };

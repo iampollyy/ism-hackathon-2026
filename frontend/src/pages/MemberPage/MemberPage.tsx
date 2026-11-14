@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  ChevronRight, Flame, Lightbulb, LoaderCircle, Mic, Phone, PhoneIncoming, ShieldCheck, Target, Zap,
+  ChevronRight, Flame, Lightbulb, LoaderCircle, Lock, Mic, Phone, PhoneIncoming, ShieldCheck, Target, Zap,
 } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
 import type {
@@ -18,7 +18,11 @@ import { DrillListHead, DrillRow } from '../DrillsPage/DrillRow';
 import {
   EmptyState, LoadError, LoadingRows, memberIndex, PersonAvatar, ReviewHeader, StaleNotice, useRememberFamily,
 } from '../DrillsPage/ReviewParts';
-import { isSafeOutcome, lowerFirst, plural, possessive, whenWords, type LessonView } from '../DrillsPage/reviewWords';
+import {
+  isSafeOutcome, lowerFirst, plural, possessive, whenWords, type DrillView, type LessonView,
+} from '../DrillsPage/reviewWords';
+import { CopyButton, phoneUrl, usePhoneAddress } from '../FamilySignUpPage/phoneLinks';
+import { parseTime } from '../LiveCallPage/liveCallState';
 import { usePolled } from '../DrillsPage/usePolled';
 import { useShieldCalls } from '../DrillsPage/useShieldCalls';
 import { Readiness } from './Readiness';
@@ -46,9 +50,12 @@ export function MemberPage() {
         <ReviewHeader
           familyId={familyId}
           familyName={family.data?.name ?? null}
+          back={family.notFound ? { to: '/families', label: 'Your families' } : undefined}
           title="We couldn’t find this person"
           lead="The link may be incomplete, or they belong to another family."
-          actions={<Link to={`/family/${familyId}`} className="button button-primary rv-button">Open the family page</Link>}
+          actions={family.notFound
+            ? <Link to="/families" className="button button-primary rv-button">See your families</Link>
+            : <Link to={`/family/${familyId}`} className="button button-primary rv-button">Open the family page</Link>}
         />
       </div>
     );
@@ -70,8 +77,12 @@ export function MemberPage() {
   const data = progress.data;
   const subtitle = [
     member?.relationship ? capitalise(member.relationship) : null,
-    member?.is_organiser ? 'Organiser' : null,
-    member?.joined_at ? `Joined ${lowerFirst(whenWords(member.joined_at))}` : member && !member.joined ? 'Hasn’t used their invite yet' : null,
+    // An organiser started the plan: they never use an invite.
+    member?.is_organiser
+      ? 'Organiser'
+      : member?.joined_at
+        ? `Joined ${lowerFirst(whenWords(member.joined_at))}`
+        : member && !member.joined ? 'Hasn’t used their invite yet' : null,
   ].filter(Boolean).join(' · ');
 
   return (
@@ -91,10 +102,43 @@ export function MemberPage() {
 
       {progress.stale ? <StaleNotice /> : null}
 
+      {/* Readiness, then the side panels, then the lessons and drills: on a
+          narrow screen the record, the next drill and consent come straight
+          after readiness instead of below every lesson. */}
       <div className="rv-member__grid">
-        <div className="rv-member__main">
+        <div className="rv-member__top">
           <Readiness readiness={data.readiness} name={name} />
+        </div>
 
+        <aside className="rv-member__side">
+          <Record progress={data} name={name} />
+          <NextDrill
+            progress={data}
+            protection={protection.data}
+            drills={drills.data?.drills ?? null}
+            memberId={memberId}
+            familyId={familyId}
+            name={name}
+            onStarted={() => {
+              progress.reload();
+              drills.reload();
+              protection.reload();
+            }}
+          />
+          <ConsentPanel
+            member={member}
+            protection={protection.data}
+            memberId={memberId}
+            familyId={familyId}
+            name={name}
+            onChanged={() => {
+              family.reload();
+              protection.reload();
+            }}
+          />
+        </aside>
+
+        <div className="rv-member__main">
           <section className="rv-panel" aria-labelledby="lessons-title">
             <div className="rv-panel__head">
               <h2 id="lessons-title">What {name} has learned</h2>
@@ -115,8 +159,8 @@ export function MemberPage() {
             <div className="rv-panel__head">
               <h2 id="their-drills">{possessive(name)} drills</h2>
               {drills.data?.drills.length ? (
-                <Link to={`/family/${familyId}/drills?member=${memberId}`} className="rv-link">
-                  See them with everyone’s <ChevronRight size={15} aria-hidden />
+                <Link to={`/family/${familyId}/drills`} className="rv-link">
+                  See everyone’s drills <ChevronRight size={15} aria-hidden />
                 </Link>
               ) : null}
             </div>
@@ -147,32 +191,6 @@ export function MemberPage() {
             )}
           </section>
         </div>
-
-        <aside className="rv-member__side">
-          <Record progress={data} name={name} />
-          <NextDrill
-            progress={data}
-            protection={protection.data}
-            memberId={memberId}
-            familyId={familyId}
-            name={name}
-            onStarted={() => {
-              progress.reload();
-              drills.reload();
-              protection.reload();
-            }}
-          />
-          <ConsentPanel
-            member={member}
-            protection={protection.data}
-            memberId={memberId}
-            name={name}
-            onChanged={() => {
-              family.reload();
-              protection.reload();
-            }}
-          />
-        </aside>
       </div>
     </div>
   );
@@ -237,6 +255,8 @@ function Record({ progress, name }: { progress: ProgressView; name: string }) {
 type NextDrillProps = {
   progress: ProgressView;
   protection: ProtectionView | null;
+  /** Their drills, to see when a surprise drill has rung. */
+  drills: DrillView[] | null;
   memberId: string;
   familyId: string;
   name: string;
@@ -244,11 +264,24 @@ type NextDrillProps = {
   onStarted: () => void;
 };
 
-function NextDrill({ progress, protection, memberId, familyId, name, onStarted }: NextDrillProps) {
+/** After this long past its planned time, a surprise drill that the list
+ * still shows as planned is taken to have rung. */
+const SURPRISE_GRACE_MS = 2 * 60 * 1000;
+
+function NextDrill({ progress, protection, drills, memberId, familyId, name, onStarted }: NextDrillProps) {
   const entry = protection?.members.find((one) => one.member_id === memberId) ?? null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [started, setStarted] = useState<SurpriseDrillCreated | null>(null);
+  // The surprise drill waits to ring until its call leaves `scheduled` (or,
+  // if the list has not caught up, a little after its planned time). Then the
+  // button is back, with a link to that drill.
+  const startedDrill = started ? drills?.find((drill) => drill.call_id === started.call_id) ?? null : null;
+  const startedAt = parseTime(started?.scheduled_for);
+  const waiting = started !== null && (startedDrill
+    ? startedDrill.status === 'scheduled'
+    : startedAt === null || Date.now() < startedAt + SURPRISE_GRACE_MS);
+  const rangLive = startedDrill?.status === 'ringing' || startedDrill?.status === 'in_progress';
 
   const surprise = async () => {
     setBusy(true);
@@ -277,7 +310,7 @@ function NextDrill({ progress, protection, memberId, familyId, name, onStarted }
     detail = 'Random drills are off for the family. Turn them on in the protection settings.';
   } else if (entry && protection && entry.drills_last_7_days >= protection.drills_per_week) {
     line = 'Not this week';
-    detail = `${name} has had ${plural(entry.drills_last_7_days, 'drill')} in the last 7 days, and the family chose ${plural(protection.drills_per_week, 'drill')} a week. The next one is planned when the week allows.`;
+    detail = `${name} has had ${plural(entry.drills_last_7_days, 'practice drill')} in the last 7 days, and the family chose ${plural(protection.drills_per_week, 'drill')} a week. The next one is planned when the week allows.`;
   } else {
     line = 'Being planned';
     detail = 'With protection on, the next drill is planned within a minute or so, inside the family’s hours.';
@@ -291,7 +324,7 @@ function NextDrill({ progress, protection, memberId, familyId, name, onStarted }
       <p className="rv-next__when">{line}</p>
       {detail ? <p className="rv-muted">{detail}</p> : null}
 
-      {started ? (
+      {started && waiting ? (
         <div className="rv-next__started" role="status">
           <p>
             <strong>A surprise drill rings {possessive(name)} phone within a minute.</strong> {name} won’t know when,
@@ -305,14 +338,31 @@ function NextDrill({ progress, protection, memberId, familyId, name, onStarted }
         <div className="rv-next__surprise">
           <button type="button" className="button button-secondary rv-button" onClick={surprise} disabled={busy}>
             {busy ? <LoaderCircle size={16} className="rv-spin" aria-hidden /> : <Zap size={16} aria-hidden />}
-            {busy ? 'Planning the drill…' : 'Ring a surprise drill'}
+            {busy ? 'Planning the drill…' : started ? 'Ring another surprise drill' : 'Ring a surprise drill'}
           </button>
           <p className="rv-muted">Within a minute, at a moment {name} doesn’t know.</p>
         </div>
       ) : null}
+      {started && !waiting ? (
+        <p className="rv-next__last">
+          {startedDrill?.status === 'ringing'
+            ? 'Your surprise drill is ringing now.'
+            : startedDrill?.status === 'in_progress'
+              ? `${name} is on your surprise drill now.`
+              : 'Your surprise drill has rung.'}{' '}
+          <Link to={`/calls/${started.call_id}`} className="rv-link">
+            {rangLive ? 'Follow it live' : 'Replay it'} <ChevronRight size={15} aria-hidden />
+          </Link>
+        </p>
+      ) : null}
       {error ? <p className="rv-form-error" role="alert">{error}</p> : null}
 
-      {entry ? <p className="rv-next__week">{plural(entry.drills_last_7_days, 'drill')} in the last 7 days</p> : null}
+      {entry ? (
+        <p className="rv-next__week">
+          {plural(entry.drills_last_7_days, 'practice drill')} in the last 7 days
+          <small>Shield demos not counted</small>
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -323,11 +373,19 @@ type ConsentPanelProps = {
   member: MemberView | null;
   protection: ProtectionView | null;
   memberId: string;
+  familyId: string;
   name: string;
   onChanged: () => void;
 };
 
-function ConsentPanel({ member, protection, memberId, name, onChanged }: ConsentPanelProps) {
+/**
+ * Practice-call consent only goes one way from here: the organiser can pause
+ * or withdraw it for someone, never give it. A yes is that person's own, from
+ * their invite link or on a welcome call, so a "not agreed" is shown read-only
+ * with the way for them to say yes.
+ */
+function ConsentPanel({ member, protection, memberId, familyId, name, onChanged }: ConsentPanelProps) {
+  const [phoneBase] = usePhoneAddress();
   const [busy, setBusy] = useState<'consent' | 'pause' | null>(null);
   const [error, setError] = useState<string | null>(null);
   // What was just set, shown until the next refresh confirms it.
@@ -372,19 +430,23 @@ function ConsentPanel({ member, protection, memberId, name, onChanged }: Consent
         <div>
           <dt>Practice calls</dt>
           <dd>
-            {consent === null ? '…' : (
+            {consent === null ? '…' : consent ? (
               <button
                 type="button"
                 role="switch"
-                aria-checked={consent}
-                aria-label={`Practice calls for ${name}`}
-                className={`rv-switch${consent ? ' is-on' : ''}`}
+                aria-checked
+                aria-label={`Practice calls for ${name}: agreed. Switch off to withdraw`}
+                className="rv-switch is-on"
                 disabled={busy !== null}
-                onClick={() => run('consent', () => api.setConsent(memberId, { consent_practice: !consent }), () => setConsentOverride(!consent))}
+                onClick={() => run('consent', () => api.setConsent(memberId, { consent_practice: false }), () => setConsentOverride(false))}
               >
-                {consent ? 'Agreed' : 'Not agreed'}
+                Agreed
                 <span className="rv-switch__track" aria-hidden />
               </button>
+            ) : (
+              <span className="rv-consent__status">
+                <Lock size={13} aria-hidden /> Not agreed yet
+              </span>
             )}
           </dd>
         </div>
@@ -416,9 +478,41 @@ function ConsentPanel({ member, protection, memberId, name, onChanged }: Consent
           <dd>{member?.phone_number || 'Not given'}</dd>
         </div>
       </dl>
+      {consent === false ? (
+        <div className="rv-consent__ask">
+          {member?.is_organiser ? (
+            <p>
+              <strong>This is your own yes to give</strong>: from your invite page or on a welcome call. Until then,
+              no drill rings your phone.
+            </p>
+          ) : (
+            <p>
+              <strong>Only {name} can say yes</strong>: from their invite link or on the welcome call. Until then, no
+              drill rings {possessive(name)} phone.
+            </p>
+          )}
+          {member?.invite_link && !member.is_organiser ? (
+            <CopyButton
+              text={phoneUrl(member.invite_link, phoneBase)}
+              label={member.joined ? 'Copy their invite link again' : 'Copy their invite link'}
+              owner={name}
+            />
+          ) : member?.invite_link ? (
+            <Link to={member.invite_link} className="rv-link">
+              Open your invite page <ChevronRight size={15} aria-hidden />
+            </Link>
+          ) : (
+            <Link to={`/family/${familyId}`} className="rv-link">
+              Invite links are on the family page <ChevronRight size={15} aria-hidden />
+            </Link>
+          )}
+        </div>
+      ) : null}
       {error ? <p className="rv-form-error" role="alert">{error}</p> : null}
       <p className="rv-muted rv-consent__note">
-        {consent === false ? `Turn practice calls on only once ${name} has said yes to them. ` : null}
+        {consent
+          ? `Switching practice calls off withdraws ${possessive(name)} yes until they give it again themselves. `
+          : null}
         {name} can change these too, and can leave Callback at any time. A drill always says what it was at the end.
       </p>
     </section>

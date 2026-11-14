@@ -29,6 +29,8 @@ export function Readiness({ readiness, name }: { readiness: ReadinessView; name:
   const { before, now, max, items } = readiness;
   const gained = now - before;
   const nothingYet = before === 0 && now === 0;
+  // The outline segment needs its own key, but only when one is drawn.
+  const anyDropped = before > now || items.some((item) => item.before > item.now);
   return (
     <section className="rv-panel rv-readiness" aria-labelledby="readiness-title">
       <div className="rv-panel__head">
@@ -36,6 +38,7 @@ export function Readiness({ readiness, name }: { readiness: ReadinessView; name:
         <ul className="rv-readiness__legend" aria-label="Key">
           <li><i className="is-had" aria-hidden /> At the welcome call</li>
           <li><i className="is-gained" aria-hidden /> Gained since</li>
+          {anyDropped ? <li><i className="is-dropped" aria-hidden /> Had then, not now</li> : null}
         </ul>
       </div>
 

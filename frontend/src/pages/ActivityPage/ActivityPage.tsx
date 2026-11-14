@@ -149,6 +149,7 @@ export function ActivityPage() {
         <ReviewHeader
           familyId={familyId}
           familyName={null}
+          back={{ to: '/families', label: 'Your families' }}
           title="We couldn’t find this family"
           lead="The link may be from another server, or the family was removed."
           actions={<Link to="/families" className="button button-primary rv-button">See your families</Link>}
@@ -229,6 +230,7 @@ export function ActivityPage() {
                       item={item}
                       look={lookFor(item, drills, shields)}
                       shieldCallId={shieldCallFor(item, shields)}
+                      drills={drills}
                       colorIndex={item.member ? memberIndex(family.data, item.member.id) : 0}
                     />
                   ))}
@@ -250,15 +252,19 @@ type TimelineItemProps = {
   look: Look;
   /** For an alert the Shield sent during a Shield demo call: that call. */
   shieldCallId: string | null;
+  /** The drills list, to tell a Shield call still going on from a past one. */
+  drills: Map<string, DrillView>;
   colorIndex: number;
 };
 
-function TimelineItem({ item, look, shieldCallId, colorIndex }: TimelineItemProps) {
+function TimelineItem({ item, look, shieldCallId, drills, colorIndex }: TimelineItemProps) {
   const Icon = look.icon;
   const sent = SENT_KINDS.includes(item.kind);
   const name = shieldCallId ? 'Shield alert' : look.label;
   const label = sent ? `${name} · sent to ${item.member ? item.member.name : 'the family'}` : name;
   const callId = item.call_id ?? shieldCallId;
+  const shieldDrill = shieldCallId ? drills.get(shieldCallId) : undefined;
+  const shieldLive = !!shieldDrill && ['live', 'reviewing'].includes(drillState(shieldDrill));
   return (
     <li className={`rv-event is-${look.tone}`}>
       <time className="rv-event__time" dateTime={item.when}>{clockTime(item.when)}</time>
@@ -272,7 +278,8 @@ function TimelineItem({ item, look, shieldCallId, colorIndex }: TimelineItemProp
       </div>
       {callId ? (
         <Link to={`/calls/${callId}`} className="rv-event__open">
-          {shieldCallId ? 'Replay the call' : look.open ?? 'Open the call'} <ChevronRight size={15} aria-hidden />
+          {shieldCallId ? (shieldLive ? 'Follow the call' : 'Replay the call') : look.open ?? 'Open the call'}
+          <ChevronRight size={15} aria-hidden />
         </Link>
       ) : <span />}
     </li>

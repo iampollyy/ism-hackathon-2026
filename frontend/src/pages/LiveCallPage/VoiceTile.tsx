@@ -14,6 +14,10 @@ import { parseTime } from './liveCallState';
 const POLL_MS = 2000;
 /** After the call, how long a recording may still arrive from the phone. */
 const QUIET_AFTER_MS = 3 * 60 * 1000;
+/** The back end's words while no recording has arrived (services/voice_sample.py
+ * NO_RECORDING). Any other reason with state "none" is a refusal, such as no
+ * consent to a voice from the call, and is final. */
+const NO_RECORDING = 'No recording from this call yet.';
 
 type VoiceTileProps = {
   callId: string;
@@ -26,8 +30,9 @@ export function VoiceTile({ callId, target, status, endedAt }: VoiceTileProps) {
   const [sample, setSample] = useState<VoiceSampleStatus | null>(null);
   const settled = sample?.state === 'ready' || sample?.state === 'failed';
   const ended = parseTime(endedAt);
-  const quiet = ['declined', 'missed', 'failed'].includes(status)
-    || (status === 'scored' && ended !== null && Date.now() - ended > QUIET_AFTER_MS);
+  // Read on every render: each poll renders again, so this turns true by itself.
+  const windowPassed = ended !== null && Date.now() - ended > QUIET_AFTER_MS;
+  const quiet = ['declined', 'missed', 'failed'].includes(status) || (status === 'scored' && windowPassed);
 
   useEffect(() => {
     let live = true;
@@ -88,9 +93,17 @@ export function VoiceTile({ callId, target, status, endedAt }: VoiceTileProps) {
       if (status === 'in_progress' || status === 'ringing' || status === 'scheduled') {
         text = 'Nothing recorded yet';
         detail = `If ${target} agreed when joining, the phone sends only ${target}’s side once the call ends. A voice is made only after a spoken yes.`;
+      } else if (sample.reason === NO_RECORDING && (status === 'ended' || status === 'scored') && !windowPassed) {
+        // The phone uploads its recording only after the call has ended, so
+        // for a few minutes this is "not here yet", not "not made".
+        icon = <LoaderCircle size={20} className="lc-spin" aria-hidden />;
+        text = `Waiting for the recording from ${target}’s phone…`;
+        detail = `The phone sends only ${target}’s own side, once the call has ended. A voice is made only after a spoken yes.`;
       } else {
         text = 'Not made from this call';
-        detail = sample.reason ?? null;
+        detail = sample.reason === NO_RECORDING
+          ? `No recording arrived from ${target}’s phone, so nothing was made.`
+          : sample.reason ?? null;
       }
       break;
   }
