@@ -1,5 +1,5 @@
-// Start a practice: who to call, the story, whose voice, how hard, and when.
-// POST /api/practice-calls, then the live call screen.
+// Start a practice by hand: who to call, the story, whose voice, how hard,
+// and when. POST /api/practice-calls, then the live call screen.
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -110,16 +110,16 @@ export function PracticeForm({ familyId, members, week, scenarios, scenariosErro
   };
 
   return (
-    <section id="practice" className="content-panel practice-panel">
-      <div className="section-heading-row compact">
-        <div>
-          <span className="eyebrow">Start a practice</span>
-          <h2>Ring someone now</h2>
-        </div>
+    <section id="practice" className="fh-panel fh-practice" aria-labelledby="practice-title">
+      <div className="fh-panel-head">
+        <h2 id="practice-title">Practice call</h2>
       </div>
+      <p className="fh-panel-note">
+        Choose the person, the story, the voice and when. Drills choose by themselves; this is for one by hand.
+      </p>
 
-      <form className="practice-form" onSubmit={submit}>
-        <label className="input-stack">
+      <form className="fh-form" onSubmit={submit}>
+        <label className="fh-field">
           <span>Who to call</span>
           <select value={targetId} onChange={(event) => setTargetId(event.target.value)}>
             {members.map((member) => (
@@ -130,21 +130,21 @@ export function PracticeForm({ familyId, members, week, scenarios, scenariosErro
           </select>
         </label>
         {target && activeCall ? (
-          <small className="form-hint warn">
+          <small className="fh-hint warn">
             {target.name} {activeCall.status === 'ringing' ? 'has a call ringing now.' : 'is on a call now.'}{' '}
-            <Link to={`/calls/${activeCall.call_id}`} className="text-link">
+            <Link to={`/calls/${activeCall.call_id}`} className="fh-inline-link">
               Watch it
             </Link>
           </small>
         ) : target && !target.consent.practice ? (
-          <small className="form-hint warn">{target.name} hasn't agreed to practice calls yet.</small>
+          <small className="fh-hint warn">{target.name} hasn't agreed to practice calls yet.</small>
         ) : target && !target.phone_online ? (
-          <small className="form-hint warn">{target.name}'s phone page isn't open. Open it first, or the call can't ring.</small>
+          <small className="fh-hint warn">{target.name}'s phone page isn't open. Open it first, or the call can't ring.</small>
         ) : target ? (
-          <small className="form-hint good">{target.name}'s phone is open.</small>
+          <small className="fh-hint good">{target.name}'s phone is open.</small>
         ) : null}
 
-        <label className="input-stack">
+        <label className="fh-field">
           <span>The story</span>
           <select
             value={scenarioKey}
@@ -166,16 +166,9 @@ export function PracticeForm({ familyId, members, week, scenarios, scenariosErro
             })}
           </select>
         </label>
-        {scenariosError ? <small className="field-error">{scenariosError}</small> : null}
-        {scenario ? (
-          <small className="form-hint">
-            {usesClone
-              ? 'Uses a cloned family voice: the caller sounds like someone in the family.'
-              : "Uses a stranger's voice, so no family voice is cloned."}
-          </small>
-        ) : null}
+        {scenariosError ? <small className="fh-field-error">{scenariosError}</small> : null}
 
-        <label className="input-stack">
+        <label className="fh-field">
           <span>Whose voice</span>
           {usesClone ? (
             <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)} disabled={voices.length === 0}>
@@ -188,21 +181,21 @@ export function PracticeForm({ familyId, members, week, scenarios, scenariosErro
             </select>
           ) : (
             <select value="" disabled>
-              <option value="">None: a stranger's voice</option>
+              <option value="">A stranger's voice</option>
             </select>
           )}
         </label>
         {missingVoice ? (
-          <small className="form-hint warn">
-            This story needs a family voice.{' '}
-            <Link to={`/signup?family=${familyId}&step=voices`} className="text-link">
-              Record one
-            </Link>{' '}
-            or choose a stranger's story.
+          <small className="fh-hint warn">
+            This story needs a family voice. Voices are made from welcome calls, or{' '}
+            <Link to={`/signup?family=${familyId}&step=voices`} className="fh-inline-link">
+              record one
+            </Link>
+            . Or choose a stranger's story.
           </small>
         ) : null}
 
-        <fieldset className="segmented">
+        <fieldset className="fh-segmented">
           <legend>How hard the caller pushes</legend>
           {[1, 2, 3].map((level) => (
             <label key={level} className={difficulty === level ? 'on' : undefined}>
@@ -213,18 +206,18 @@ export function PracticeForm({ familyId, members, week, scenarios, scenariosErro
                 checked={difficulty === level}
                 onChange={() => setDifficulty(level)}
               />
-              <span>{level} · {DIFFICULTY_WORDS[level]}</span>
+              <span>{DIFFICULTY_WORDS[level]}</span>
             </label>
           ))}
         </fieldset>
 
-        <fieldset className="when-choice">
+        <fieldset className="fh-when">
           <legend>When</legend>
-          <label className="choice">
+          <label className="fh-choice">
             <input type="radio" name="when" checked={when === 'now'} onChange={() => setWhen('now')} />
             <span>Now</span>
           </label>
-          <label className="choice">
+          <label className="fh-choice">
             <input type="radio" name="when" checked={when === 'later'} onChange={() => setWhen('later')} />
             <span>In</span>
             <input
@@ -240,24 +233,24 @@ export function PracticeForm({ familyId, members, week, scenarios, scenariosErro
           </label>
         </fieldset>
         {when === 'later' ? (
-          <small className="form-hint">
+          <small className="fh-hint">
             The phone rings without warning, so {target?.name ?? 'they'} won't know when. Keep their phone page open.
           </small>
         ) : null}
 
-        {failure ? <div className="form-alert" role="alert">{failure}</div> : null}
+        {failure ? <div className="fh-alert" role="alert">{failure}</div> : null}
 
         <button
           type="submit"
-          className="button button-primary practice-submit"
+          className="button button-secondary fh-wide"
           disabled={sending || !target || !scenario || missingVoice}
         >
           <PhoneCall size={16} />
           {sending
             ? 'Starting…'
             : when === 'now'
-              ? `Ring ${target?.name ?? ''} now`.replace('  ', ' ')
-              : `Ring ${target?.name ?? ''} in ${delayMinutes} min`}
+              ? `Ring ${target?.name ?? 'them'} now`
+              : `Ring ${target?.name ?? 'them'} in ${delayMinutes} min`}
         </button>
       </form>
     </section>
