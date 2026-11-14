@@ -1,4 +1,4 @@
-// One member's plan: what they said, their weak spot, this week, the plan's
+// One person's plan: what they said, what to work on, this week, the plan's
 // steps, and their readiness item by item (before → now, each out of 2).
 
 import { ArrowRight, Quote } from 'lucide-react';
@@ -17,13 +17,10 @@ export function MemberPlan({ members, selected, scenarios, onSelect }: Props) {
   const { plan, readiness } = selected;
 
   return (
-    <section id="plan" className="content-panel plan-panel">
-      <div className="section-heading-row compact">
-        <div>
-          <span className="eyebrow">One person's plan</span>
-          <h2>{selected.name}'s plan</h2>
-        </div>
-        <div className="member-tabs" role="tablist" aria-label="Choose a person">
+    <section id="plan" className="fh-panel fh-plan" aria-labelledby="plan-title">
+      <div className="fh-panel-head wrap">
+        <h2 id="plan-title">Readiness and plans</h2>
+        <div className="fh-tabs" role="tablist" aria-label="Choose a person">
           {members.map((member) => (
             <button
               key={member.id}
@@ -39,38 +36,40 @@ export function MemberPlan({ members, selected, scenarios, onSelect }: Props) {
         </div>
       </div>
 
-      <div className="plan-grid">
-        <div className="plan-story">
+      <div className="fh-plan-grid" role="tabpanel" aria-label={`${selected.name}'s plan`}>
+        <div className="fh-plan-story">
           {selected.said ? (
-            <blockquote className="plan-quote">
-              <Quote size={18} />
+            <blockquote className="fh-plan-quote">
+              <Quote size={18} aria-hidden="true" />
               <p>{selected.said}</p>
               <cite>{selected.name}, on the welcome call</cite>
             </blockquote>
           ) : null}
 
           {selected.weak_spot ? (
-            <div className="plan-block">
-              <small>Weak spot</small>
+            <div className="fh-plan-block">
+              <h3>What to work on</h3>
               <p>{selected.weak_spot}</p>
             </div>
           ) : null}
 
           {plan ? (
             <>
-              <div className="plan-block this-week">
-                <small>This week</small>
-                <p>{plan.this_week}</p>
-              </div>
+              {plan.this_week ? (
+                <div className="fh-plan-block this-week">
+                  <h3>This week</h3>
+                  <p>{plan.this_week}</p>
+                </div>
+              ) : null}
               {plan.steps.length > 0 ? (
-                <ol className="plan-steps">
+                <ol className="fh-plan-steps">
                   {plan.steps.map((step, index) => (
                     <li key={index} className={step.status === 'done' ? 'done' : undefined}>
-                      <div className="plan-step-head">
+                      <div className="fh-plan-step-head">
                         <strong>{scenarioTitle(step.scenario, scenarios)}</strong>
-                        <span className={`step-status ${step.status}`}>{statusWords(step.status)}</span>
+                        <span className={`fh-step-status ${step.status}`}>{statusWords(step.status)}</span>
                       </div>
-                      <span className="plan-step-meta">
+                      <span className="fh-plan-step-meta">
                         {capitalise(step.when)} · {DIFFICULTY_WORDS[step.difficulty] ?? `Level ${step.difficulty}`}
                         {step.voice_of ? ` · in ${step.voice_of}'s voice` : ''}
                       </span>
@@ -81,26 +80,27 @@ export function MemberPlan({ members, selected, scenarios, onSelect }: Props) {
               ) : null}
             </>
           ) : (
-            <p className="plan-empty">
+            <p className="fh-empty">
               No plan yet. Callback writes {selected.name}'s plan after their welcome call or first practice.
             </p>
           )}
         </div>
 
-        <div className="plan-readiness">
-          <div className="plan-readiness-total">
-            <small>Readiness</small>
+        <div className="fh-plan-readiness">
+          <div className="fh-plan-total">
+            <span>Readiness</span>
             <strong>
-              {readiness.before} <ArrowRight size={20} /> {readiness.now}
+              {readiness.before} <ArrowRight size={20} aria-hidden="true" /> {readiness.now}
+              <small>/{readiness.max}</small>
             </strong>
-            <span>out of {readiness.max}, before practice and now</span>
+            <span>Before any practice, and now</span>
           </div>
-          <ul className="readiness-items">
+          <ul className="fh-readiness-items">
             {readiness.items.map((item) => (
               <li key={item.key}>
-                <div className="readiness-header">
+                <div className="fh-readiness-head">
                   <span>{item.label}</span>
-                  <span className="readiness-score">
+                  <span className="fh-readiness-score">
                     {item.before} → {item.now} <small>/ {item.max}</small>
                   </span>
                 </div>

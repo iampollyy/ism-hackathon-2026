@@ -1,75 +1,82 @@
-// The family page (/family/:familyId), on GET /api/families/{id}, refreshed
-// every 3 seconds. Laid out like the mock FamilyDashboardPage, with real data:
-// readiness out of 10, member cards, one person's plan, this week, starting a
-// practice, and the phone links. The family word itself never appears; only
-// whether the family has agreed one.
+// The organiser's home (/family/:familyId). GET /api/families/{id} every
+// 3 seconds, the protection settings every 5, each joined member's voice
+// from the welcome call every 6, and the plan once.
+//
+// Laid out as: the family and the way into the other screens; Protection
+// (the product's heart) beside the demo buttons; the family, one row each;
+// readiness and plans; a practice by hand; this week. The family word itself
+// never appears, only whether the family has agreed one.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { ArrowRight, KeyRound, Mic, ShieldCheck, Smartphone } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
-import type { FamilyView, ScenarioView } from '../../api/types';
-import { StatCard } from '../../components/molecules/StatCard';
+import type { FamilyPlanView, FamilyView, ProtectionView, ScenarioView, VoiceSampleStatus } from '../../api/types';
 import { forgetFamilyId, saveFamilyId } from '../FamilySignUpPage/familyStorage';
-import { FamilyMemberCard } from './FamilyMemberCard';
+import { DemoPanel } from './DemoPanel';
+import { FamilyHeader } from './FamilyHeader';
 import { MemberPlan } from './MemberPlan';
-import { PhoneLinks } from './PhoneLinks';
+import { MemberRoster } from './MemberRoster';
 import { PracticeForm } from './PracticeForm';
+import { ProtectionPanel } from './ProtectionPanel';
+import { usePoll } from './usePoll';
 import { WeekList } from './WeekList';
-import '../FamilySignUpPage/familyShared.scss';
 import './FamilyPage.scss';
 
-const REFRESH_MS = 3000;
+const FAMILY_MS = 3000;
+const PROTECTION_MS = 5000;
+const VOICE_MS = 6000;
 
-type LoadError = { notFound: boolean; message: string };
+const AVATAR_COLORS = ['#e76d52', '#1d8d64', '#213d52', '#b77a15', '#2f7ea8', '#8a5a44'];
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 export function FamilyPage() {
   const { familyId = '' } = useParams();
   const location = useLocation();
-  const [family, setFamily] = useState<FamilyView | null>(null);
-  const [loadError, setLoadError] = useState<LoadError | null>(null);
-  const [scenarios, setScenarios] = useState<ScenarioView[]>([]);
-  const [scenariosError, setScenariosError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const refreshRef = useRef<() => void>(() => undefined);
 
-  // Load the family, then again every few seconds (one request at a time).
-  // Answers for a family this page no longer shows are dropped.
+  const family = usePoll<FamilyView>(familyId, () => api.getFamily(familyId), FAMILY_MS, 'The family could not be loaded.');
+  const protection = usePoll<ProtectionView>(
+    familyId,
+    () => api.protection(familyId),
+    PROTECTION_MS,
+    'The protection settings could not be loaded.',
+  );
+
+  // The voice from each joined member's welcome call (and whether it happened).
+  const joinedKey = family.data?.members.filter((member) => member.joined).map((member) => member.id).join(',') ?? '';
+  const samples = usePoll<Record<string, VoiceSampleStatus>>(
+    joinedKey ? `${familyId}:${joinedKey}` : null,
+    async () => {
+      const ids = joinedKey.split(',');
+      const answers = await Promise.all(ids.map((id) => api.memberVoiceSample(id).catch(() => null)));
+      return Object.fromEntries(ids.flatMap((id, index) => (answers[index] ? [[id, answers[index]]] : [])));
+    },
+    VOICE_MS,
+    'The voices could not be checked.',
+  );
+
+  // The plan (trial, family, bank), once: a small chip in the header.
+  const [plan, setPlan] = useState<FamilyPlanView | null>(null);
   useEffect(() => {
     let live = true;
-    let inFlight = false;
-    setFamily(null);
-    setLoadError(null);
-    const load = async () => {
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        const next = await api.getFamily(familyId);
-        if (!live) return;
-        setFamily(next);
-        setLoadError(null);
-      } catch (error) {
-        if (!live) return;
-        setLoadError({
-          notFound: error instanceof ApiError && error.status === 404,
-          message: error instanceof ApiError ? error.message : 'The family could not be loaded.',
-        });
-      } finally {
-        inFlight = false;
-      }
-    };
-    refreshRef.current = () => void load();
-    void load();
-    const timer = window.setInterval(() => void load(), REFRESH_MS);
+    setPlan(null);
+    api.plan(familyId).then(
+      (answer) => live && setPlan(answer),
+      () => undefined, // the chip simply stays away
+    );
     return () => {
       live = false;
-      window.clearInterval(timer);
     };
   }, [familyId]);
-  const refresh = useCallback(() => refreshRef.current(), []);
 
-  // The stories for the practice form: retried every few seconds until they
-  // load, so a back end that restarts does not leave the form dead.
+  // The stories for the practice form, retried until they load.
+  const [scenarios, setScenarios] = useState<ScenarioView[]>([]);
+  const [scenariosError, setScenariosError] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
     let retry: number | undefined;
@@ -81,10 +88,8 @@ export function FamilyPage() {
         setScenariosError(null);
       } catch (error) {
         if (!live) return;
-        setScenariosError(
-          `${error instanceof ApiError ? error.message : 'The stories could not be loaded.'} Trying again…`,
-        );
-        retry = window.setTimeout(() => void load(), REFRESH_MS);
+        setScenariosError(`${error instanceof ApiError ? error.message : 'The stories could not be loaded.'} Trying again…`);
+        retry = window.setTimeout(() => void load(), FAMILY_MS);
       }
     };
     void load();
@@ -94,18 +99,24 @@ export function FamilyPage() {
     };
   }, []);
 
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const refreshAll = useCallback(() => {
+    family.refresh();
+    protection.refresh();
+    samples.refresh();
+  }, [family.refresh, protection.refresh, samples.refresh]);
+
   // Remember this family for the sidebar; forget it if it no longer exists.
-  const loadedId = family?.id;
+  const loadedId = family.data?.id;
+  const notFound = family.error?.status === 404;
   useEffect(() => {
     if (loadedId) saveFamilyId(loadedId);
   }, [loadedId]);
   useEffect(() => {
-    if (loadError?.notFound) forgetFamilyId(familyId);
-  }, [loadError, familyId]);
+    if (notFound) forgetFamilyId(familyId);
+  }, [notFound, familyId]);
 
-  // Sidebar links like /family/x#practice: scroll there once the page has
-  // content, and again when the same link is clicked twice (a new location
-  // key). A link without a hash (Overview) goes back to the top.
+  // Links like /family/x#protection: scroll there once the page has content.
   useEffect(() => {
     if (!loadedId) return;
     if (!location.hash) {
@@ -115,161 +126,94 @@ export function FamilyPage() {
     document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [loadedId, location.hash, location.key]);
 
-  if (!family) {
+  const members = family.data?.members;
+  const people = useMemo(
+    () =>
+      Object.fromEntries(
+        (members ?? []).map((member, index) => [
+          member.id,
+          { initials: initials(member.name), color: AVATAR_COLORS[index % AVATAR_COLORS.length] },
+        ]),
+      ),
+    [members],
+  );
+
+  if (!family.data || !members) {
     return (
-      <div className="family-live">
-        <section className="hero-summary surface-card family-hero">
-          {loadError?.notFound ? (
-            <div>
-              <span className="eyebrow">Family page</span>
+      <div className="fh">
+        <div className="fh-state" aria-busy={!family.error}>
+          {notFound ? (
+            <>
               <h1>We couldn't find this family</h1>
-              <p className="hero-sub">The link may be from another server, or the family was removed.</p>
-              <div className="hero-actions">
-                <Link to="/signup" className="button button-primary">
+              <p>The link may be from another server, or the family was removed.</p>
+              <div className="fh-state-actions">
+                <Link to="/families" className="button button-primary">
+                  Your families
+                </Link>
+                <Link to="/signup" className="button button-secondary">
                   Set up a family
                 </Link>
               </div>
-            </div>
-          ) : loadError ? (
-            <div>
-              <span className="eyebrow">Family page</span>
+            </>
+          ) : family.error ? (
+            <>
               <h1>Can't reach Callback</h1>
-              <p className="hero-sub">{loadError.message} Trying again every few seconds.</p>
-            </div>
+              <p>{family.error.message} Trying again every few seconds.</p>
+            </>
           ) : (
-            <div>
-              <span className="eyebrow">Family page</span>
-              <h1>Loading your family…</h1>
-            </div>
+            <>
+              <span className="fh-skeleton title" />
+              <span className="fh-skeleton line" />
+              <span className="fh-skeleton block" />
+              <span className="fh-visually-hidden">Loading your family…</span>
+            </>
           )}
-        </section>
+        </div>
       </div>
     );
   }
 
-  const members = family.members;
+  const data = family.data;
   const fallbackSelected =
-    members.find((member) => !member.is_organiser && member.plan) ??
-    members.find((member) => !member.is_organiser) ??
-    members[0];
+    members.find((member) => !member.is_organiser && member.plan) ?? members.find((member) => !member.is_organiser) ?? members[0];
   const selected = members.find((member) => member.id === selectedId) ?? fallbackSelected;
-  const voicesReady = members.filter((member) => member.voice_ready).length;
-  const phonesOpen = members.filter((member) => member.phone_online).length;
-  const { before, now, max } = family.readiness;
-
-  const select = (memberId: string) => {
-    setSelectedId(memberId);
-    document.getElementById('plan')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
 
   return (
-    <div className="family-live dashboard-main">
-      {loadError ? (
-        <div className="refresh-warning" role="status">
+    <div className="fh">
+      {family.error ? (
+        <div className="fh-stale" role="status">
           Can't reach Callback right now. Showing the last update; trying again every few seconds.
         </div>
       ) : null}
 
-      <section className="hero-summary surface-card family-hero">
-        <div>
-          <span className="eyebrow">Family page</span>
-          <h1>{family.name}</h1>
-          <p className="hero-sub">
-            Readiness <strong>{before} → {now}</strong> out of {max} · Family word:{' '}
-            <strong>{family.safe_word_set ? 'agreed' : 'not agreed yet'}</strong>
-          </p>
-        </div>
-        <div className="hero-actions">
-          <a href="#practice" className="button button-primary" onClick={(event) => {
-            event.preventDefault();
-            document.getElementById('practice')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}>
-            Start a practice <ArrowRight size={16} />
-          </a>
-          <Link to={`/signup?family=${family.id}&step=voices`} className="button button-secondary">
-            <Mic size={16} /> Record voices
-          </Link>
-        </div>
-      </section>
+      <FamilyHeader family={data} plan={plan} protectionOn={protection.data ? protection.data.enabled : null} />
 
-      <div className="dashboard-grid">
-        <div className="main-column">
-          <section className="content-panel">
-            <div className="section-heading-row">
-              <div>
-                <span className="eyebrow">Family readiness</span>
-                <h2>How ready is the family?</h2>
-              </div>
-            </div>
-            <div className="stats-grid family-stats">
-              <StatCard
-                label="Readiness"
-                value={`${before} → ${now}`}
-                note={`Out of ${max}: before practice, and now`}
-                icon={<ShieldCheck size={18} />}
-              />
-              <StatCard
-                label="Family word"
-                value={family.safe_word_set ? 'Agreed' : 'Not yet'}
-                note={family.safe_word_set ? 'Only that you have one. Never the word.' : 'Agree one together, out loud'}
-                icon={<KeyRound size={18} />}
-              />
-              <StatCard
-                label="Voices ready"
-                value={`${voicesReady} of ${members.length}`}
-                note="For calls in a family voice"
-                icon={<Mic size={18} />}
-              />
-              <StatCard
-                label="Phones open"
-                value={`${phonesOpen} of ${members.length}`}
-                note="A call can only ring on an open phone page"
-                icon={<Smartphone size={18} />}
-              />
-            </div>
-          </section>
-
-          <section id="members" className="content-panel">
-            <div className="section-heading-row compact">
-              <div>
-                <span className="eyebrow">Members</span>
-                <h2>Who is in the family</h2>
-              </div>
-            </div>
-            <div className="member-grid family-member-grid">
-              {members.map((member, index) => (
-                <FamilyMemberCard
-                  key={member.id}
-                  member={member}
-                  index={index}
-                  familyId={family.id}
-                  safeWordSet={family.safe_word_set}
-                  scenarios={scenarios}
-                  week={family.week}
-                  selected={member.id === selected?.id}
-                  onSelect={() => select(member.id)}
-                  onChanged={refresh}
-                />
-              ))}
-            </div>
-          </section>
-
+      <div className="fh-layout">
+        <div className="fh-main">
+          <ProtectionPanel familyId={data.id} poll={protection} people={people} />
+          <MemberRoster
+            family={data}
+            protection={protection.data}
+            samples={samples.data ?? {}}
+            people={people}
+            onChanged={refreshAll}
+          />
           {selected ? (
             <MemberPlan members={members} selected={selected} scenarios={scenarios} onSelect={setSelectedId} />
           ) : null}
         </div>
 
-        <div className="sidebar-column">
+        <aside className="fh-side" aria-label="Calls">
+          <DemoPanel familyId={data.id} members={members} protection={protection.data} />
+          <WeekList week={data.week} familyId={data.id} scenarios={scenarios} />
           <PracticeForm
-            familyId={family.id}
+            familyId={data.id}
             members={members}
-            week={family.week}
+            week={data.week}
             scenarios={scenarios}
             scenariosError={scenariosError}
           />
-          <WeekList week={family.week} />
-          <PhoneLinks members={members} />
-        </div>
+        </aside>
       </div>
     </div>
   );
