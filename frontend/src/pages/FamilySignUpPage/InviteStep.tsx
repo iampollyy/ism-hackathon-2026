@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, CircleCheck, Mic, Smartphone } from 'lucide-react';
 import type { FamilyView, MemberView } from '../../api/types';
 import { Avatar } from '../../components/atoms/Avatar';
+import { firstName } from '../../layouts/useMe';
 import { CopyButton, PhoneAddressNote, PhoneQrCode, ShareButton, phoneUrl, shownUrl, usePhoneAddress } from './phoneLinks';
 import { avatarColor, initials, type SignUpMember } from './signUpTypes';
 import { VoiceStep } from './VoiceStep';
@@ -35,6 +36,8 @@ export function InviteStep({ family, voicesOpen, onVoicesOpen, onVoiceReady, onN
   const members = family.members;
   const joined = members.filter((member) => member.joined).length;
   const hiddenLinks = members.some((member) => !member.invite_link);
+  const organiser = members.find((member) => member.is_organiser);
+  const from = organiser ? firstName(organiser.name) : null;
 
   // Opened from the family page's "Record a voice" link: go straight to the
   // recorder. Only on arrival; opening it later by hand should not jump the page.
@@ -50,6 +53,10 @@ export function InviteStep({ family, voicesOpen, onVoicesOpen, onVoiceReady, onN
     relationship: member.relationship,
     voiceStatus: member.voice_status,
     phoneOnline: member.phone_online,
+    isOrganiser: member.is_organiser,
+    // Their own yes to a copy of their voice, given on their phone. The organiser,
+    // before joining, is the one at this laptop: their recording opens with it.
+    voiceAllowed: member.consent.clone || (member.is_organiser && !member.joined),
   }));
 
   return (
@@ -108,6 +115,7 @@ export function InviteStep({ family, voicesOpen, onVoicesOpen, onVoiceReady, onN
             member={member}
             index={index}
             familyName={family.name}
+            from={from}
             base={base}
             onJoinHere={() => navigate(`/join/${member.id}`)}
           />
@@ -128,8 +136,8 @@ export function InviteStep({ family, voicesOpen, onVoicesOpen, onVoiceReady, onN
           <span>
             <strong>Or record a voice sample now</strong>
             <small>
-              Optional. Each person’s voice comes from their welcome call, after a spoken yes. If someone is with you,
-              they can read a one-minute text here instead.
+              Optional. Each person’s voice comes from their welcome call, after a spoken yes. If someone who has
+              allowed a copy of their voice is with you, they can read a one-minute text here instead.
             </small>
           </span>
           <span className="onb-voices-action">{voicesOpen ? 'Close' : 'Record'}</span>
@@ -155,11 +163,13 @@ type CardProps = {
   member: MemberView;
   index: number;
   familyName: string;
+  /** The organiser's first name, who sends the invites. */
+  from: string | null;
   base: string;
   onJoinHere: () => void;
 };
 
-function InviteCard({ member, index, familyName, base, onJoinHere }: CardProps) {
+function InviteCard({ member, index, familyName, from, base, onJoinHere }: CardProps) {
   const url = member.invite_link ? phoneUrl(member.invite_link, base) : '';
   const when = joinedWhen(member.joined_at);
 
@@ -210,7 +220,7 @@ function InviteCard({ member, index, familyName, base, onJoinHere }: CardProps) 
               </button>
             ) : null}
             <CopyButton text={url} label="Copy" owner={member.name} />
-            <ShareButton url={url} name={member.name} familyName={familyName} />
+            <ShareButton url={url} name={member.name} familyName={familyName} from={from} own={member.is_organiser} />
           </div>
         </>
       ) : null}

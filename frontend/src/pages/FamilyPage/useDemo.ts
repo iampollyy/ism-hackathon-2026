@@ -15,7 +15,13 @@ import { callErrorText } from './words';
 
 export const ANYONE = '';
 
-export type Drill = { callId: string; name: string; status: CallStatus | 'scheduled' };
+export type Drill = {
+  callId: string;
+  name: string;
+  status: CallStatus | 'scheduled';
+  /** When the back end will ring it (ISO), for the countdown while it is on its way. */
+  scheduledFor: string | null;
+};
 
 const LIVE: Drill['status'][] = ['scheduled', 'ringing', 'in_progress'];
 
@@ -95,7 +101,12 @@ export function useDemo(familyId: string, members: MemberView[], protection: Pro
     setDrillError(null);
     try {
       const created = await api.surpriseDrill(familyId, { member_id: drillFor || null, within_seconds: 60 });
-      setDrill({ callId: created.call_id, name: created.member.name, status: 'scheduled' });
+      setDrill({
+        callId: created.call_id,
+        name: created.member.name,
+        status: 'scheduled',
+        scheduledFor: created.scheduled_for,
+      });
     } catch (error) {
       setDrillError(callErrorText(error, drillTarget?.name ?? 'This person'));
     } finally {

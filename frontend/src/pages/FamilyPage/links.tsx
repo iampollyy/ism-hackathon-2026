@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Mail, MessageCircle, QrCode, Share2, Smartphone } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { publicUrl } from '../../api/client';
+import { inviteMessage } from '../FamilySignUpPage/phoneLinks';
 
 const BASE_KEY = 'callback.phoneAddress';
 
@@ -182,9 +183,12 @@ export function CopyButton({ text, owner, what = 'link' }: { text: string; owner
 }
 
 /** Share through the phone's or computer's share sheet; without one, offer WhatsApp, a text and an email. */
-export function ShareButton({ url, name, familyName }: { url: string; name: string; familyName: string }) {
+export function ShareButton({
+  url, name, familyName, from, own = false,
+}: { url: string; name: string; familyName: string; from?: string | null; own?: boolean }) {
   const [open, setOpen] = useState(false);
-  const text = `${name}, you're invited to ${familyName} on Callback: short practice calls that help the family spot voice-clone scams. Open this on your phone:`;
+  // In the organiser's own voice: a link from nowhere is what people learn to distrust.
+  const text = inviteMessage(name, from, own);
 
   const share = async () => {
     if (typeof navigator.share === 'function') {

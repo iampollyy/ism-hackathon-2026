@@ -1,6 +1,8 @@
 // Step 1: the family name, the family-word tick and one row per person.
 // Sends POST /api/families; the logged-in session links the family to the
-// account. The family word itself is never asked for.
+// account. The family word itself is never asked for. Only the organiser can
+// agree to practice calls here, for themselves: everyone else says yes on
+// their own phone when they join.
 
 import { useState, type FormEvent } from 'react';
 import { ArrowRight, KeyRound, LoaderCircle, Plus, Trash2 } from 'lucide-react';
@@ -91,7 +93,8 @@ export function FamilyStep({ organiserName = '', onCreated }: Props) {
         name: row.name.trim(),
         relationship: row.relationship.trim(),
         is_organiser: row.key === organiser,
-        consent_practice: row.consent,
+        // Nobody agrees for someone else.
+        consent_practice: row.key === organiser && row.consent,
       })),
     };
     setSending(true);
@@ -215,19 +218,18 @@ export function FamilyStep({ organiserName = '', onCreated }: Props) {
                   />
                   <span>This is me, the organiser</span>
                 </label>
-                <label className="onb-choice">
-                  <input
-                    type="checkbox"
-                    checked={row.consent}
-                    onChange={(event) => update(row.key, { consent: event.target.checked })}
-                  />
-                  <span>
-                    I agree to receive practice calls without knowing when
-                    {organiser !== row.key ? (
-                      <em> Only {row.name.trim() || 'they'} should tick this, if they’re with you.</em>
-                    ) : null}
-                  </span>
-                </label>
+                {organiser === row.key ? (
+                  <label className="onb-choice">
+                    <input
+                      type="checkbox"
+                      checked={row.consent}
+                      onChange={(event) => update(row.key, { consent: event.target.checked })}
+                    />
+                    <span>I agree to receive practice calls without knowing when</span>
+                  </label>
+                ) : (
+                  <span className="onb-choice-note">They agree on their own phone when they join.</span>
+                )}
               </div>
             </div>
           ))}

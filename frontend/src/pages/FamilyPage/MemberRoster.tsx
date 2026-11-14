@@ -2,6 +2,7 @@
 // for phones when the links would point at this laptop.
 
 import type { FamilyView, ProtectionView, VoiceSampleStatus } from '../../api/types';
+import { firstName } from '../../layouts/useMe';
 import { MemberRow } from './MemberRow';
 import type { Person } from './people';
 import { PhoneAddressNote, usePhoneAddress } from './links';
@@ -19,6 +20,7 @@ export function MemberRoster({ family, protection, samples, people, onChanged }:
   const members = family.members;
   const joined = members.filter((member) => member.joined).length;
   const waiting = members.length - joined;
+  const organiser = members.find((member) => member.is_organiser);
 
   return (
     <section id="members" className="fh-panel fh-roster" aria-labelledby="members-title">
@@ -31,7 +33,7 @@ export function MemberRoster({ family, protection, samples, people, onChanged }:
       <p className="fh-panel-note">
         {waiting > 0
           ? `Send each person their invite link. When they open it on their phone and join, the welcome call starts by itself.`
-          : "Everyone has joined. Each person can change their practice consent on their phone, and you can switch it here too."}
+          : "Everyone has joined. Each person says yes to practice calls on their own phone. You can switch anyone's off here."}
       </p>
       <PhoneAddressNote base={base} onChange={setBase} />
 
@@ -44,6 +46,7 @@ export function MemberRoster({ family, protection, samples, people, onChanged }:
             initials={people[member.id]?.initials ?? '?'}
             familyId={family.id}
             familyName={family.name}
+            organiserName={organiser ? firstName(organiser.name) : null}
             sample={member.joined ? samples[member.id] : undefined}
             week={family.week}
             left={protection?.members.find((entry) => entry.member_id === member.id)?.reason_if_not === 'Has left Callback.'}

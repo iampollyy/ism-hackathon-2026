@@ -3,6 +3,11 @@
 // the one in the address (/family/:familyId/...), else the last one opened on
 // this browser (if it belongs to the logged-in account), else the account's
 // first. The landing page (/) is shown on its own, without the app around it.
+// A family's pages and the call pages need the organiser's account: logged
+// out, they go to the log-in page and come back here after it (not after
+// logging out on purpose: on a shared laptop the next person starts afresh).
+// While the answer is loading, or the server cannot be reached, nothing
+// changes, so a restarting server never logs anyone out.
 
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, Outlet, matchPath, useLocation } from 'react-router-dom';
@@ -10,8 +15,11 @@ import { Menu } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { Sidebar, familyInitial, pageLabel } from '../components/organisms/Sidebar';
 import { forgetFamilyId, saveFamilyId, useStoredFamilyId } from '../pages/FamilySignUpPage/familyStorage';
-import { useMe, type MeState } from './useMe';
+import { authPath, useMe, type MeState } from './useMe';
 import './DashboardLayout.scss';
+
+/** Pages that show a family's people and calls: only for the logged-in organiser. */
+const ACCOUNT_ONLY = ['/family/*', '/calls/*'];
 
 function currentFamilyId(fromUrl: string | null, stored: string | null, meState: MeState): string | null {
   if (fromUrl) return fromUrl;
@@ -60,6 +68,12 @@ export function DashboardLayout() {
   const menuButton = useRef<HTMLButtonElement>(null);
   const drawer = useRef<HTMLDivElement>(null);
 
+  // Logged in on this page earlier: a later "out" is someone logging out on purpose.
+  const wasIn = useRef(false);
+  useEffect(() => {
+    if (meState.status === 'in') wasIn.current = true;
+  }, [meState.status]);
+
   // The family in the address becomes "the last one opened".
   useEffect(() => {
     if (fromUrl) saveFamilyId(fromUrl);
@@ -90,6 +104,9 @@ export function DashboardLayout() {
   // The landing page's "Sign in" still points at the old mock sign-in form,
   // which has made-up details in it; anyone following it gets the real one.
   if (location.pathname === '/signin') return <Navigate to="/login" replace />;
+  if (meState.status === 'out' && ACCOUNT_ONLY.some((pattern) => matchPath(pattern, location.pathname))) {
+    return <Navigate to={authPath('login', wasIn.current ? null : location.pathname + location.search)} replace />;
+  }
 
   const label = pageLabel(location.pathname, familyId);
 

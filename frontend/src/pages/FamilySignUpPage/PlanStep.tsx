@@ -8,7 +8,7 @@ import { ArrowLeft, ArrowRight, BadgeCheck, CalendarClock, CircleSlash } from 'l
 import { api } from '../../api/client';
 import type { FamilyPlanView } from '../../api/types';
 import { PlanPicker } from '../PlanPage/PlanPicker';
-import { longDate } from '../PlanPage/planWords';
+import { chosenForAfterTrial, longDate } from '../PlanPage/planWords';
 
 type Props = {
   familyId: string;
@@ -48,11 +48,21 @@ function banner(plan: FamilyPlanView | null, days: number): Banner {
     };
   }
   const ends = plan?.status === 'trialing' ? longDate(plan.trial_ends_at) : '';
+  if (plan && chosenForAfterTrial(plan)) {
+    return {
+      icon: BadgeCheck,
+      tone: 'active',
+      title: ends ? `${days} days free, then ${plan.plan_name}` : `Free trial, then ${plan.plan_name}`,
+      text: `${plan.plan_name}${plan.price ? ` (${plan.price})` : ''} starts${ends ? ` on ${ends}` : ' when the trial ends'}. Demo: nothing is ever charged. You can change it later from Plan in the menu.`,
+      action: 'Go to the family page',
+      primary: true,
+    };
+  }
   return {
     icon: CalendarClock,
     tone: 'trialing',
     title: ends ? `${days} days free, until ${ends}` : `${days} days free`,
-    text: 'Nothing is charged when the trial ends. Choose a plan now, or later from Plan in the menu.',
+    text: 'Demo: nothing is ever charged. Choose a plan now, or later from Plan in the menu.',
     action: `Start the ${days}-day free trial`,
     primary: true,
   };

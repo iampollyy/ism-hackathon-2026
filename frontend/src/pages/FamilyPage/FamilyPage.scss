@@ -925,6 +925,11 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     min-width: 0;
   }
 
+  .fh-demo-count {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
   .fh-demo-notice.wait .fh-demo-pulse,
   .fh-demo-notice.live .fh-demo-pulse { animation: fh-blink 1.2s ease-in-out infinite; }
 
@@ -1261,6 +1266,9 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
     > span { flex: 1 1 320px; font-size: 0.88rem; line-height: 1.45; }
     > div { display: flex; gap: 8px; }
+
+    &:focus { outline: none; }
+    &:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   }
 
   .fh-row-notice {

@@ -1,5 +1,7 @@
 // Step 2: each member reads a short text for one minute; the recording opens
-// with their spoken consent and is sent to POST /api/members/{id}/voice.
+// with their spoken consent and is sent to POST /api/members/{id}/voice. Only
+// for people who have allowed a copy of their voice (ticked on their own
+// phone): nobody can record someone else in, and the back end refuses too.
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, CircleAlert, LoaderCircle, Mic, RotateCcw, SkipForward, Square } from 'lucide-react';
@@ -46,6 +48,13 @@ function fileName(name: string, extension: string): string {
 
 const needsRecording = (state: VoiceState | undefined) => !state || state.kind === 'todo' || state.kind === 'failed';
 
+/** Someone this laptop may record now: they allowed it, and still need a voice. */
+const toRecord = (member: SignUpMember, state: VoiceState | undefined) => member.voiceAllowed && needsRecording(state);
+
+function noConsentText(name: string): string {
+  return `${name} hasn't agreed to a copy of their voice. They can tick it on their own phone; then record here together.`;
+}
+
 type Props = {
   members: SignUpMember[];
   /** Inside the invite step: no heading card and no footer of its own. */
@@ -62,7 +71,7 @@ export function VoiceStep({ members, embedded = false, onNext, onBack, onReady }
   );
   const statesRef = useRef(states);
   const [openId, setOpenId] = useState<string | null>(
-    () => members.find((member) => needsRecording(initialState(member)))?.id ?? null,
+    () => members.find((member) => toRecord(member, initialState(member)))?.id ?? null,
   );
   const [playback, setPlayback] = useState<Record<string, string>>({});
   const playbackRef = useRef(playback);
@@ -78,7 +87,7 @@ export function VoiceStep({ members, embedded = false, onNext, onBack, onReady }
 
   // After someone is done, open the next person who still needs to record.
   const openNext = (afterId: string, latest: VoiceStates) => {
-    const next = members.find((member) => member.id !== afterId && needsRecording(latest[member.id]));
+    const next = members.find((member) => member.id !== afterId && toRecord(member, latest[member.id]));
     setOpenId(next?.id ?? null);
   };
 
@@ -152,7 +161,9 @@ export function VoiceStep({ members, embedded = false, onNext, onBack, onReady }
         {members.map((member, index) => {
           const state = states[member.id] ?? { kind: 'todo' };
           const isRecording = recorder.memberId === member.id;
-          const showBody = isRecording || (openId === member.id && state.kind !== 'uploading');
+          const allowed = member.voiceAllowed;
+          const showBody = isRecording || (allowed && openId === member.id && state.kind !== 'uploading');
+          const noteId = `voice-consent-${member.id}`;
           const canStop = recorder.phase === 'recording' && recorder.elapsed >= MIN_SECONDS;
 
           return (
@@ -165,7 +176,7 @@ export function VoiceStep({ members, embedded = false, onNext, onBack, onReady }
                     {member.relationship ? <p>{member.relationship}</p> : null}
                   </div>
                 </div>
-                <VoiceBadge state={state} recording={isRecording} />
+                <VoiceBadge state={state} recording={isRecording} allowed={allowed} />
               </header>
 
               {showBody ? (
@@ -206,7 +217,7 @@ export function VoiceStep({ members, embedded = false, onNext, onBack, onReady }
                         type="button"
                         className="button button-primary"
                         onClick={() => void recorder.start(member.id)}
-                        disabled={busy || !recordingSupported}
+                        disabled={busy || !recordingSupported || !allowed}
                       >
                         {state.kind === 'ready' || state.kind === 'failed' ? <RotateCcw size={16} /> : <Mic size={16} />}
                         {state.kind === 'failed' ? 'Try again' : state.kind === 'ready' ? 'Record again' : 'Start recording'}
@@ -231,7 +242,11 @@ export function VoiceStep({ members, embedded = false, onNext, onBack, onReady }
 
               {!showBody && state.kind !== 'uploading' ? (
                 <div className="voice-card-foot">
-                  {state.kind === 'ready' ? (
+                  {!allowed && state.kind !== 'ready' ? (
+                    <span className="voice-note" id={noteId}>
+                      {noConsentText(member.name)}
+                    </span>
+                  ) : state.kind === 'ready' ? (
                     <span className="voice-note good">Voice ready. Callback can use it for practice calls inside this family.</span>
                   ) : state.kind === 'skipped' ? (
                     <span className="voice-note">Skipped. You can record {member.name} later from the family page.</span>
@@ -240,7 +255,13 @@ export function VoiceStep({ members, embedded = false, onNext, onBack, onReady }
                   ) : (
                     <span className="voice-note">Not recorded yet.</span>
                   )}
-                  <button type="button" className="text-button" onClick={() => setOpenId(member.id)} disabled={busy}>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => setOpenId(member.id)}
+                    disabled={busy || !allowed}
+                    aria-describedby={!allowed && state.kind !== 'ready' ? noteId : undefined}
+                  >
                     {state.kind === 'ready' ? 'Record again' : state.kind === 'failed' ? 'Try again' : 'Record now'}
                   </button>
                 </div>
@@ -280,8 +301,9 @@ export function VoiceStep({ members, embedded = false, onNext, onBack, onReady }
   );
 }
 
-function VoiceBadge({ state, recording }: { state: VoiceState; recording: boolean }) {
+function VoiceBadge({ state, recording, allowed }: { state: VoiceState; recording: boolean; allowed: boolean }) {
   if (recording) return <Badge tone="accent">Recording</Badge>;
+  if (!allowed && state.kind !== 'ready') return <Badge tone="neutral">Not agreed</Badge>;
   switch (state.kind) {
     case 'ready':
       return <Badge tone="good">Voice ready</Badge>;

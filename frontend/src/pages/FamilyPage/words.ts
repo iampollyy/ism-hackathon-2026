@@ -54,6 +54,17 @@ export function capitalise(text: string): string {
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 }
 
+const HER = /^(grand)?(mother|mum|mom|ma|daughter|sister|aunt(ie)?|niece|wife|gran(ny)?|nan(a|na)?|grandma|girlfriend)$/i;
+const HIS = /^(grand)?(father|dad|pa|son|brother|uncle|nephew|husband|grandpa|grandad|granddad|boyfriend)$/i;
+
+/** "her", "his" or "their", from how someone is related ("mother", "son", "friend"). */
+export function possessive(relationship: string): string {
+  const word = relationship.trim();
+  if (HER.test(word)) return 'her';
+  if (HIS.test(word)) return 'his';
+  return 'their';
+}
+
 // ---------------------------------------------------------------- the family's time zone
 
 /** The day (yyyy-mm-dd) and the hour of day (0 to 24, with minutes as a fraction) in a time zone. */
@@ -140,7 +151,7 @@ export function callErrorText(error: unknown, targetName: string, voiceName?: st
     case 'consent_missing':
       return /left Callback|opted out/i.test(error.message)
         ? `${targetName} has left Callback, so no calls go to them.`
-        : `${targetName} hasn't agreed to practice calls yet. When they say yes, switch on "Practice calls" in their row.`;
+        : `${targetName} hasn't agreed to practice calls yet. Ask ${targetName} to say yes from their own link.`;
     case 'voice_not_ready':
       return voiceName
         ? `${voiceName}'s voice isn't ready yet. It's made from their welcome call, or choose another voice.`
