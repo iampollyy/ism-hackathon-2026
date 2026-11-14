@@ -363,3 +363,20 @@ class DrillCall(Base):
     # The plan step the drill used, {"scenario", "when"}, so cancelling the
     # drill can set it back to planned; null when no plan step was used.
     plan_step_json: Mapped[str | None] = mapped_column(Text)
+
+
+# ---------------------------------------------------------------- track 4: review, learning, news
+
+
+class NewsRefresh(Base):
+    """One news refresh a family started (POST /api/families/{id}/news/refresh).
+    Written and committed before Firecrawl and the digest job run, so at most
+    one build runs per settings.news_refresh_seconds for all families together,
+    even while one is still running (services/news.py)."""
+
+    __tablename__ = "news_refreshes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, index=True)
+    outcome: Mapped[str | None] = mapped_column(String)  # refreshed | no_new_digest | failed; None while it runs
+    created_at: Mapped[str] = mapped_column(String, nullable=False)

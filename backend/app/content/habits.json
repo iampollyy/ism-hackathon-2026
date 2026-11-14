@@ -1,0 +1,22 @@
+[
+  {
+    "key": "hang_up_and_call_back",
+    "title": "Hang up and call back",
+    "line": "If a call asks for money or a code, hang up and ring the person on the number you already have."
+  },
+  {
+    "key": "ask_for_the_family_word",
+    "title": "Ask for the family word",
+    "line": "Your real relative knows the family word; a copy of their voice does not."
+  },
+  {
+    "key": "never_share_codes",
+    "title": "Never share codes",
+    "line": "Nobody who calls you needs a code, a PIN or a password: not your bank, and not family."
+  },
+  {
+    "key": "take_your_time",
+    "title": "Take your time",
+    "line": "Anything real can wait a few minutes while you check, so a rush is a sign to slow down."
+  }
+]

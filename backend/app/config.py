@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     # after cleaning, and no clone is made.
     voice_sample_min_seconds: float = 10.0
 
+    # Track 4 (review, learning, news): the least time between two news
+    # builds (POST /api/families/{id}/news/refresh), for all families
+    # together, since the digest is shared.
+    news_refresh_seconds: int = 600
+
     @property
     def push_enabled(self) -> bool:
         return bool(self.vapid_public_key and self.vapid_private_key)
