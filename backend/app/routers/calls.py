@@ -505,6 +505,7 @@ def call_view(db: DbSession, call: Call) -> schemas.CallView:
     voice = db.get(Member, call.voice_member_id) if call.voice_member_id else None
     stored = events.list_events(call.id, db=db)
     turns, tactics = turns_and_tactics(stored)
+    live = live_answers(stored)
     return schemas.CallView(
         id=call.id,
         kind=call.kind,
@@ -523,7 +524,25 @@ def call_view(db: DbSession, call: Call) -> schemas.CallView:
         answered_at=call.answered_at,
         ended_at=call.ended_at,
         ended_by=call.ended_by,
+        family_id=call.family_id,
+        live_outcome=live.get("outcome"),
+        live_seconds_to_challenge=live.get("seconds_to_challenge"),
+        consent_given=live.get("consent"),
     )
+
+
+def live_answers(stored: list[dict[str, Any]]) -> dict[str, Any]:
+    """The first outcome (with its seconds to the challenge) and the last
+    consent answer among the stored events, before any scoring."""
+    found: dict[str, Any] = {}
+    for event in stored:
+        data = event.get("data") or {}
+        if event.get("type") == "outcome" and "outcome" not in found and data.get("outcome") in schemas.OUTCOMES:
+            found["outcome"] = data["outcome"]
+            found["seconds_to_challenge"] = data.get("seconds_to_challenge")
+        elif event.get("type") == "consent" and isinstance(data.get("given"), bool):
+            found["consent"] = data["given"]
+    return found
 
 
 @router.get("/calls/{call_id}", response_model=schemas.CallView)

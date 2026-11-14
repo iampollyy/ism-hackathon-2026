@@ -342,6 +342,12 @@ class CallView(BaseModel):
     answered_at: str | None = None
     ended_at: str | None = None
     ended_by: EndedBy | None = None
+    family_id: str | None = None  # so a screen can link back to the family page
+    # The first outcome the agent reported and its seconds to the first
+    # challenge, as soon as it is stored (result only comes after scoring).
+    live_outcome: Outcome | None = None
+    live_seconds_to_challenge: float | None = None
+    consent_given: bool | None = None  # welcome calls: the last consent answer so far
 
 
 # ---------------------------------------------------------------- events from the phone
