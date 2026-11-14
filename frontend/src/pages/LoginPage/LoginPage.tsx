@@ -121,6 +121,7 @@ export function LoginPage() {
         <AuthField label="Password" htmlFor="login-password" error={errors.password}>
           <PasswordInput
             id="login-password"
+            autoFocus={Boolean(prefill)}
             value={password}
             autoComplete="current-password"
             onChange={(value) => {

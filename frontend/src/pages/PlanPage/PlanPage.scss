@@ -137,6 +137,8 @@
     color: var(--muted);
     font-size: 0.92rem;
     white-space: nowrap;
+
+    svg { flex-shrink: 0; }
   }
 
   dd {

@@ -160,14 +160,14 @@ function InviteCard({ member, index, familyName, base, onJoinHere }: CardProps) 
       <header className="onb-invite-head">
         <Avatar initials={initials(member.name)} color={avatarColor(index)} />
         <div className="onb-invite-who">
-          <h3>
-            {member.name}
+          <h3 title={member.name}>{member.name}</h3>
+          <p>
+            {member.relationship}
             {member.is_organiser ? <span className="onb-you">You</span> : null}
-          </h3>
-          <p>{member.relationship}</p>
+          </p>
         </div>
         <span className={`onb-state${member.joined ? ' joined' : member.phone_online ? ' open' : ''}`}>
-          {member.joined ? 'Joined' : member.phone_online ? 'Phone open' : 'Not joined yet'}
+          {member.joined ? 'Joined' : member.phone_online ? 'Phone open' : 'Not joined'}
         </span>
       </header>
 

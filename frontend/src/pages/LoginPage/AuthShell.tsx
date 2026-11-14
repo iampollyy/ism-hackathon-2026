@@ -86,9 +86,10 @@ type PasswordProps = {
   autoComplete: 'current-password' | 'new-password';
   invalid: boolean;
   describedBy?: string;
+  autoFocus?: boolean;
 };
 
-export function PasswordInput({ id, value, onChange, autoComplete, invalid, describedBy }: PasswordProps) {
+export function PasswordInput({ id, value, onChange, autoComplete, invalid, describedBy, autoFocus }: PasswordProps) {
   const [shown, setShown] = useState(false);
   return (
     <div className="auth-password">
@@ -102,6 +103,7 @@ export function PasswordInput({ id, value, onChange, autoComplete, invalid, desc
         aria-describedby={describedBy}
         spellCheck={false}
         maxLength={200}
+        autoFocus={autoFocus}
       />
       <button
         type="button"

@@ -105,7 +105,7 @@ export function DashboardLayout() {
           <img src="/icon-192.png" alt="" width={32} height={32} />
         </Link>
         <div className="app-topbar-title">
-          {familyId ? (
+          {fromUrl ? (
             <>
               <span className="app-topbar-mark" aria-hidden="true">{familyInitial(familyName)}</span>
               <span className="app-topbar-text">

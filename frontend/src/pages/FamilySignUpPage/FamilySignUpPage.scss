@@ -458,11 +458,12 @@
 
   .onb-invite-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
   }
 
   .onb-invite-card {
+    min-width: 0;
     display: grid;
     align-content: start;
     gap: 14px;
@@ -490,14 +491,21 @@
 
     h3 {
       margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    p {
+      margin: 2px 0 0;
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 1.05rem;
-      font-weight: 700;
+      color: var(--muted);
+      font-size: 0.9rem;
     }
-
-    p { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; }
   }
 
   .onb-you {
@@ -583,7 +591,8 @@
     flex-wrap: wrap;
     gap: 8px;
 
-    .copy-button { flex: 1; }
+    .copy-button { flex: 1; min-width: 0; }
+    .copy-button svg { flex-shrink: 0; }
   }
 
   .onb-join-here {

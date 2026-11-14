@@ -159,7 +159,7 @@ export function Sidebar({ familyId, familyName, meState, onClose }: Props) {
             })}
           </nav>
         </section>
-      ) : location.pathname === '/signup' ? null : (
+      ) : location.pathname === '/signup' || location.pathname === '/families' ? null : (
         <div className="sb-start">
           <strong>No family plan open</strong>
           <p>Set one up, then invite everyone with their own link.</p>

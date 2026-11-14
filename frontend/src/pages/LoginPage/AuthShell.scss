@@ -334,7 +334,10 @@
 // ---------------------------------------------------------------- smaller screens
 
 @media (max-width: 960px) {
-  .auth-page { grid-template-columns: 1fr; }
+  .auth-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
 
   .auth-brand {
     position: static;
