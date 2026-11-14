@@ -4,6 +4,7 @@
 // so a card turns green the moment that person joins. Recording a voice
 // sample here is optional: voices now come from the welcome call.
 
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, CircleCheck, Mic, Smartphone } from 'lucide-react';
 import type { FamilyView, MemberView } from '../../api/types';
@@ -34,6 +35,13 @@ export function InviteStep({ family, voicesOpen, onVoicesOpen, onVoiceReady, onN
   const members = family.members;
   const joined = members.filter((member) => member.joined).length;
   const hiddenLinks = members.some((member) => !member.invite_link);
+
+  // Opened from the family page's "Record a voice" link: go straight to the
+  // recorder. Only on arrival; opening it later by hand should not jump the page.
+  const openOnArrival = useRef(voicesOpen);
+  useEffect(() => {
+    if (openOnArrival.current) document.getElementById('voices')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   const voiceMembers: SignUpMember[] = members.map((member) => ({
     id: member.id,

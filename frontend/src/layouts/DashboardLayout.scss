@@ -48,6 +48,20 @@
 
 .app-topbar { display: none; }
 
+.app-page-loading {
+  height: 3px;
+  width: 160px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 200% 100%;
+  animation: app-loading 1s linear infinite;
+}
+
+@keyframes app-loading {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
 // ---------------------------------------------------------------- phones and small tablets
 
 @media (max-width: 960px) {

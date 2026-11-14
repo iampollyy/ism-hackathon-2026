@@ -4,7 +4,7 @@
 // this browser (if it belongs to the logged-in account), else the account's
 // first. The landing page (/) is shown on its own, without the app around it.
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Outlet, matchPath, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { api, ApiError } from '../api/client';
@@ -144,6 +144,10 @@ export function DashboardLayout() {
             aria-modal="true"
             aria-label="Menu"
             tabIndex={-1}
+            onClickCapture={(event) => {
+              // A link to the page already open changes nothing, so close here too.
+              if ((event.target as HTMLElement).closest('a')) setMenuOpen(false);
+            }}
           >
             <Sidebar
               familyId={familyId}
@@ -157,7 +161,10 @@ export function DashboardLayout() {
 
       <main id="app-main" className="app-main">
         <div className="app-content">
-          <Outlet />
+          {/* Pages load on demand; the navigation stays while one does. */}
+          <Suspense fallback={<div className="app-page-loading" aria-busy="true" aria-label="Loading" />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>

@@ -77,8 +77,10 @@ export function FamilyStep({ organiserName = '', onCreated }: Props) {
     setErrors(found);
     setFailure(null);
     if (Object.keys(found).length > 0) {
-      const first = document.querySelector<HTMLElement>('.onb-family [aria-invalid="true"]');
-      first?.focus();
+      // After the fields are marked, take the person to the first one.
+      window.requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>('.onb-family [aria-invalid="true"]')?.focus(),
+      );
       return;
     }
 
