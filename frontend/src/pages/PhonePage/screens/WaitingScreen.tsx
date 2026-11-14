@@ -68,7 +68,7 @@ export function WaitingScreen(props: WaitingScreenProps) {
     <main className="phone-screen phone-light phone-waiting has-tabs">
       <header className="phone-top">
         <span className="phone-brand">
-          <ShieldCheck size={20} aria-hidden="true" />
+          <img src="/icon-192.png" alt="" width={24} height={24} />
           Callback
         </span>
         {link === 'offline' ? (

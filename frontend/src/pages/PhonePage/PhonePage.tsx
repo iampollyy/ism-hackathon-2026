@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Link2Off } from 'lucide-react';
+import { api } from '../../api/client';
 import type { PhoneState } from '../../api/types';
 import { usePhone } from './usePhone';
 import { useMemberManifest } from './pwa';
@@ -61,6 +62,22 @@ function Phone({ memberId }: { memberId: string }) {
   useEffect(() => {
     if (location.state != null) navigate(location.pathname, { replace: true, state: null });
   }, [location.pathname, location.state, navigate]);
+  // The installed app always opens here (its manifest's start_url). Someone
+  // who installed it from their invite and hasn't joined yet goes back to the
+  // invite, so they join, and take the welcome call, inside the app.
+  useEffect(() => {
+    if (fromJoin) return;
+    let live = true;
+    api.getJoin(memberId).then(
+      (join) => {
+        if (live && !join.joined && !join.opted_out) navigate(`/join/${memberId}`, { replace: true });
+      },
+      () => undefined, // the phone page still works; the link check above covers a bad id
+    );
+    return () => {
+      live = false;
+    };
+  }, [fromJoin, memberId, navigate]);
   const [tab, setTab] = useState<PhoneTab>('home');
   const dark = view.name === 'ringing' || view.name === 'in_call' || view.name === 'family_line';
   useThemeColor(phone.shield?.warn ? WARNING_BAR : dark ? DARK_BAR : null);

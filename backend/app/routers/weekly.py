@@ -46,6 +46,8 @@ log = logging.getLogger("app.weekly")
 WARNING_URLS = [
     "https://consumer.ftc.gov/consumer-alerts",
     "https://www.actionfraud.police.uk/news",
+    "https://www.ic3.gov/PSA",  # the FBI's public alerts
+    "https://www.scamwatch.gov.au/news-alerts",
 ]
 
 # A stored digest whose sources are this marker is a fallback, not a real digest.

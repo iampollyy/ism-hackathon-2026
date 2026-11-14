@@ -15,6 +15,7 @@ import {
 import { ApiError, api } from '../../api/client';
 import type { JoinView } from '../../api/types';
 import { unlockAudioInTap } from '../PhonePage/audioUnlock';
+import { InstallFirst, wantsInstallFirst } from './InstallFirst';
 import './JoinPage.scss';
 
 type Load =
@@ -80,7 +81,7 @@ function Join({ memberId }: { memberId: string }) {
     <div className="join-page">
       <header className="join-top">
         <span className="join-brand">
-          <ShieldCheck size={20} aria-hidden="true" />
+          <img src="/icon-192.png" alt="" width={26} height={26} />
           Callback
         </span>
       </header>
@@ -111,6 +112,9 @@ function JoinReady({
 }) {
   const navigate = useNavigate();
   const { family, organiser, member } = view;
+  // On a phone browser, an invite opens with "put Callback on your Home
+  // Screen first"; in the installed app (or once dismissed) it doesn't.
+  const [installFirst, setInstallFirst] = useState(() => !view.joined && !view.opted_out && wantsInstallFirst());
 
   if (view.opted_out) {
     return (
@@ -134,6 +138,7 @@ function JoinReady({
 
   return (
     <main className={`join-main ${view.joined ? 'join-main--joined' : ''}`}>
+      {installFirst && <InstallFirst memberId={memberId} onContinue={() => setInstallFirst(false)} />}
       <section className="join-intro" aria-labelledby="join-title">
         {view.joined ? (
           <>
