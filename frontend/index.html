@@ -13,10 +13,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link id="manifest" rel="manifest" href="/manifest.webmanifest" />
     <script>
-      // On a phone page, install the app with that member's own manifest, so the
-      // home-screen icon opens their phone page and not the landing page.
+      // On a phone page or an invite, install the app with that member's own
+      // manifest, so the home-screen icon opens their phone (or, before they
+      // have joined, their invite) and not the landing page.
       (function () {
-        var match = location.pathname.match(/^\/phone\/([A-Za-z0-9_-]+)\/?$/);
+        var match = location.pathname.match(/^\/(?:phone|join)\/([A-Za-z0-9_-]+)\/?$/);
         if (match) document.getElementById('manifest').href = '/api/members/' + match[1] + '/manifest.webmanifest';
       })();
     </script>
