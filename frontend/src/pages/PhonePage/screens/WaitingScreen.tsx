@@ -9,6 +9,7 @@ const MESSAGE_KINDS: Record<PhoneMessage['kind'], string> = {
   weekly: 'This week',
   callback_notice: 'Family number',
   reminder: 'Reminder',
+  alert: 'Alert',
 };
 
 type WaitingScreenProps = {

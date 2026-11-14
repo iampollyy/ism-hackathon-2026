@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, CalendarClock, MessageSquare, Phone, PhoneCall, PhoneIncoming } from 'lucide-react';
+import { Bell, CalendarClock, MessageSquare, Phone, PhoneCall, PhoneIncoming, ShieldAlert } from 'lucide-react';
 import type { WeekItem } from '../../api/types';
 import { statusWords, whenWords } from './words';
 
@@ -13,6 +13,7 @@ const ICONS: Record<WeekItem['kind'], ReactNode> = {
   message: <MessageSquare size={16} />,
   reminder: <Bell size={16} />,
   weekly: <CalendarClock size={16} />,
+  alert: <ShieldAlert size={16} />,
 };
 
 const SHOWN = 8;

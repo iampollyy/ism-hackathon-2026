@@ -28,9 +28,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List Families */
+        get: operations["list_families_api_families_get"];
         put?: never;
-        /** Create Family */
+        /**
+         * Create Family
+         * @description Works without a log-in; with one, the family also belongs to the
+         *     account (family_owners, track 1).
+         */
         post: operations["create_family_api_families_post"];
         delete?: never;
         options?: never;
@@ -68,7 +73,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Family */
+        /**
+         * Get Family
+         * @description Readable by id without a log-in. For a family with an owner, only
+         *     the owner's session sees invite links and phone numbers (track 1).
+         */
         get: operations["get_family_api_families__family_id__get"];
         put?: never;
         post?: never;
@@ -247,8 +256,7 @@ export interface paths {
         put?: never;
         /**
          * Create Welcome Call
-         * @description Ring the member's phone page with the welcome agent. No consent is
-         *     needed: the welcome call is where consent is asked.
+         * @description Ring the member's phone page with the welcome agent (start_welcome_call).
          */
         post: operations["create_welcome_call_api_members__member_id__welcome_call_post"];
         delete?: never;
@@ -364,14 +372,498 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pricing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pricing */
+        get: operations["pricing_api_pricing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Plan */
+        get: operations["get_plan_api_families__family_id__plan_get"];
+        put?: never;
+        /** Choose Plan */
+        post: operations["choose_plan_api_families__family_id__plan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/plan/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Plan */
+        post: operations["cancel_plan_api_families__family_id__plan_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join Waitlist */
+        post: operations["join_waitlist_api_waitlist_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/waitlist/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Waitlist Count */
+        get: operations["waitlist_count_api_waitlist_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_api_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login */
+        post: operations["login_api_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Logout */
+        post: operations["logout_api_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Me */
+        get: operations["read_me_api_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/join/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Invite */
+        get: operations["read_invite_api_join__member_id__get"];
+        put?: never;
+        /** Join */
+        post: operations["join_api_join__member_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calls/{call_id}/voice-sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Voice Sample */
+        post: operations["upload_voice_sample_api_calls__call_id__voice_sample_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calls/{call_id}/voice-sample/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Voice Sample Status */
+        get: operations["voice_sample_status_api_calls__call_id__voice_sample_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{member_id}/voice-sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Member Voice Sample */
+        get: operations["member_voice_sample_api_members__member_id__voice_sample_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/protection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Protection */
+        get: operations["read_protection_api_families__family_id__protection_get"];
+        /** Update Protection */
+        put: operations["update_protection_api_families__family_id__protection_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{member_id}/drills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Pause Drills */
+        put: operations["pause_drills_api_members__member_id__drills_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/surprise-drill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Surprise Drill */
+        post: operations["surprise_drill_api_families__family_id__surprise_drill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/shield-call": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Shield Call */
+        post: operations["shield_call_api_families__family_id__shield_call_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{member_id}/alert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Alert Family */
+        post: operations["alert_family_api_members__member_id__alert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/drills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Family Drills */
+        get: operations["family_drills_api_families__family_id__drills_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Family Activity */
+        get: operations["family_activity_api_families__family_id__activity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{member_id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Member Progress */
+        get: operations["member_progress_api_members__member_id__progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learn/tactics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Learn Tactics */
+        get: operations["learn_tactics_api_learn_tactics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/learn/habits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Learn Habits */
+        get: operations["learn_habits_api_learn_habits_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/news": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Family News */
+        get: operations["family_news_api_families__family_id__news_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/news/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh News */
+        post: operations["refresh_news_api_families__family_id__news_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountView */
+        AccountView: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+        };
+        /** ActivityItem */
+        ActivityItem: {
+            /** When */
+            when: string;
+            member: components["schemas"]["PersonRef"] | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "joined" | "consent_given" | "consent_withdrawn" | "voice_consent" | "voice_ready" | "welcome_done" | "drill" | "drill_unanswered" | "family_line" | "alert" | "weekly_note" | "reminder" | "message" | "opted_out";
+            /** Text */
+            text: string;
+            /** Call Id */
+            call_id?: string | null;
+        };
+        /** ActivityView */
+        ActivityView: {
+            /** Items */
+            items: components["schemas"]["ActivityItem"][];
+        };
+        /** AlertRequest */
+        AlertRequest: {
+            /** Claimed Member Id */
+            claimed_member_id?: string | null;
+        };
+        /** AlertSent */
+        AlertSent: {
+            /** Alerted */
+            alerted: number;
+        };
         /** Body_upload_voice_api_members__member_id__voice_post */
         Body_upload_voice_api_members__member_id__voice_post: {
             /** Audio */
             audio: string;
+        };
+        /** Body_upload_voice_sample_api_calls__call_id__voice_sample_post */
+        Body_upload_voice_sample_api_calls__call_id__voice_sample_post: {
+            /** Audio */
+            audio: string;
+        };
+        /**
+         * CallBackContact
+         * @description Whom the Shield tells the person to call back.
+         */
+        CallBackContact: {
+            /** Member Id */
+            member_id: string;
+            /** Name */
+            name: string;
+            /** Phone Number */
+            phone_number?: string | null;
         };
         /** CallCreated */
         CallCreated: {
@@ -407,6 +899,18 @@ export interface components {
              */
             tactics_worked: ("new_number" | "urgency" | "secrecy" | "authority" | "emotional_appeal" | "small_ask_first" | "isolation" | "unusual_payment")[];
         };
+        /**
+         * CallShieldView
+         * @description GET /api/calls/{id}'s `shield`, for a laptop without the live stream.
+         */
+        CallShieldView: {
+            /** Alerted */
+            alerted: number;
+            /** Alerted At */
+            alerted_at?: string | null;
+            /** Alert Level */
+            alert_level?: ("green" | "yellow" | "red") | null;
+        };
         /** CallView */
         CallView: {
             /** Id */
@@ -438,6 +942,7 @@ export interface components {
              * @default []
              */
             risk: components["schemas"]["RiskPointView"][];
+            shield?: components["schemas"]["CallShieldView"] | null;
             result: components["schemas"]["CallResultView"] | null;
             /** Callback Seconds */
             callback_seconds: number | null;
@@ -447,6 +952,14 @@ export interface components {
             ended_at?: string | null;
             /** Ended By */
             ended_by?: ("agent" | "user" | "timeout" | "error") | null;
+            /** Family Id */
+            family_id?: string | null;
+            /** Live Outcome */
+            live_outcome?: ("asked_safe_word" | "hung_up" | "asked_personal_question" | "hesitated" | "agreed") | null;
+            /** Live Seconds To Challenge */
+            live_seconds_to_challenge?: number | null;
+            /** Consent Given */
+            consent_given?: boolean | null;
         };
         /** Caller */
         Caller: {
@@ -484,6 +997,71 @@ export interface components {
             /** Patterns */
             patterns: components["schemas"]["PatternView"][];
         };
+        /** DrillList */
+        DrillList: {
+            /** Drills */
+            drills: components["schemas"]["DrillView"][];
+        };
+        /** DrillPause */
+        DrillPause: {
+            /** Paused */
+            paused: boolean;
+        };
+        /** DrillStats */
+        DrillStats: {
+            /** Total */
+            total: number;
+            /** Safe */
+            safe: number;
+            /** Last Outcome */
+            last_outcome: ("asked_safe_word" | "hung_up" | "asked_personal_question" | "hesitated" | "agreed") | null;
+            /** Last Outcome Label */
+            last_outcome_label: string | null;
+            /** Safe Streak */
+            safe_streak: number;
+        };
+        /**
+         * DrillView
+         * @description One practice call for the review screen. The full replay is GET /api/calls/{id}.
+         */
+        DrillView: {
+            /** Call Id */
+            call_id: string;
+            member: components["schemas"]["PersonRef"];
+            voice_of: components["schemas"]["PersonRef"] | null;
+            /** Scenario */
+            scenario: string | null;
+            /** Scenario Title */
+            scenario_title: string | null;
+            /** Difficulty */
+            difficulty: number;
+            /** Status */
+            status: string;
+            /** Created At */
+            created_at: string;
+            /** Scheduled For */
+            scheduled_for: string | null;
+            /** Answered At */
+            answered_at: string | null;
+            /** Ended At */
+            ended_at: string | null;
+            /** Outcome */
+            outcome: ("asked_safe_word" | "hung_up" | "asked_personal_question" | "hesitated" | "agreed") | null;
+            /** Outcome Label */
+            outcome_label: string | null;
+            /** Safe */
+            safe: boolean;
+            /** Seconds To Challenge */
+            seconds_to_challenge: number | null;
+            /** Peak Risk Level */
+            peak_risk_level: ("green" | "yellow" | "red") | null;
+            /** Tactics */
+            tactics: components["schemas"]["TacticRef"][];
+            /** Lesson */
+            lesson: string | null;
+            /** Callback Seconds */
+            callback_seconds: number | null;
+        };
         /** EndRequest */
         EndRequest: {
             /**
@@ -495,7 +1073,7 @@ export interface components {
         /** EventsBatch */
         EventsBatch: {
             /** Events */
-            events: (components["schemas"]["TurnIn"] | components["schemas"]["TacticIn"] | components["schemas"]["OutcomeIn"] | components["schemas"]["RevealedIn"] | components["schemas"]["ConsentIn"])[];
+            events: (components["schemas"]["TurnIn"] | components["schemas"]["TacticIn"] | components["schemas"]["OutcomeIn"] | components["schemas"]["RevealedIn"] | components["schemas"]["ConsentIn"] | components["schemas"]["VoiceConsentIn"])[];
         };
         /** FamilyCreate */
         FamilyCreate: {
@@ -522,10 +1100,43 @@ export interface components {
             call_id: string;
             session: components["schemas"]["Session"];
         };
+        /** FamilyList */
+        FamilyList: {
+            /** Families */
+            families: components["schemas"]["FamilySummary"][];
+        };
         /** FamilyNumber */
         FamilyNumber: {
             /** Enabled */
             enabled: boolean;
+        };
+        /** FamilyPlanView */
+        FamilyPlanView: {
+            /**
+             * Plan
+             * @enum {string}
+             */
+            plan: "trial" | "family_monthly" | "family_yearly" | "bank";
+            /** Plan Name */
+            plan_name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "trialing" | "active" | "canceled";
+            /** Price */
+            price: string | null;
+            /** Trial Ends At */
+            trial_ends_at: string | null;
+            /** Started At */
+            started_at: string;
+            /** Bank Code */
+            bank_code: string | null;
+            /**
+             * Demo
+             * @default true
+             */
+            demo: boolean;
         };
         /** FamilyReadinessView */
         FamilyReadinessView: {
@@ -535,6 +1146,28 @@ export interface components {
             now: number;
             /** Max */
             max: number;
+        };
+        /** FamilyRef */
+        FamilyRef: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** FamilySummary */
+        FamilySummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Safe Word Set */
+            safe_word_set: boolean;
+            /** Created At */
+            created_at: string;
+            /** Member Count */
+            member_count: number;
+            /** Joined Count */
+            joined_count: number;
         };
         /** FamilyView */
         FamilyView: {
@@ -556,6 +1189,20 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** Habit */
+        Habit: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /** Line */
+            line: string;
+        };
+        /** Habits */
+        Habits: {
+            /** Habits */
+            habits: components["schemas"]["Habit"][];
+        };
         /** Health */
         Health: {
             /**
@@ -576,6 +1223,128 @@ export interface components {
              */
             kind: "welcome" | "practice";
             caller: components["schemas"]["Caller"];
+        };
+        /** JoinConsents */
+        JoinConsents: {
+            /** Practice */
+            practice: boolean;
+            /** Clone From Call */
+            clone_from_call: boolean;
+        };
+        /** JoinFamily */
+        JoinFamily: {
+            /** Name */
+            name: string;
+            /** Safe Word Set */
+            safe_word_set: boolean;
+        };
+        /** JoinIn */
+        JoinIn: {
+            /** Consent Practice */
+            consent_practice: boolean;
+            /** Consent Clone From Call */
+            consent_clone_from_call: boolean;
+            /** Phone Number */
+            phone_number?: string | null;
+        };
+        /** JoinMember */
+        JoinMember: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Relationship */
+            relationship: string;
+        };
+        /** JoinOrganiser */
+        JoinOrganiser: {
+            /** Name */
+            name: string;
+        };
+        /** JoinView */
+        JoinView: {
+            family: components["schemas"]["JoinFamily"];
+            organiser: components["schemas"]["JoinOrganiser"] | null;
+            member: components["schemas"]["JoinMember"];
+            /** Joined */
+            joined: boolean;
+            /** Joined At */
+            joined_at?: string | null;
+            /** Phone Number */
+            phone_number?: string | null;
+            /**
+             * Opted Out
+             * @default false
+             */
+            opted_out: boolean;
+            consents: components["schemas"]["JoinConsents"];
+            /** Phone Link */
+            phone_link: string;
+        };
+        /** Joined */
+        Joined: {
+            /** Phone Link */
+            phone_link: string;
+        };
+        /** LearnTactic */
+        LearnTactic: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "new_number" | "urgency" | "secrecy" | "authority" | "emotional_appeal" | "small_ask_first" | "isolation" | "unusual_payment" | "money_request" | "asks_for_code" | "refuses_callback";
+            /** Label */
+            label: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "tactic" | "signal";
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "yellow" | "red";
+            /** What It Sounds Like */
+            what_it_sounds_like: string[];
+            /** Why It Works */
+            why_it_works: string;
+            /** What To Do */
+            what_to_do: string;
+        };
+        /** LearnTactics */
+        LearnTactics: {
+            /** Tactics */
+            tactics: components["schemas"]["LearnTactic"][];
+        };
+        /** LessonView */
+        LessonView: {
+            /** Call Id */
+            call_id: string;
+            /** When */
+            when: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "asked_safe_word" | "hung_up" | "asked_personal_question" | "hesitated" | "agreed";
+            /** Outcome Label */
+            outcome_label: string;
+            /** Lesson */
+            lesson: string;
+        };
+        /** LoginIn */
+        LoginIn: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /** Me */
+        Me: {
+            account: components["schemas"]["AccountView"];
+            /** Families */
+            families: components["schemas"]["FamilyRef"][];
         };
         /** MemberCreate */
         MemberCreate: {
@@ -631,11 +1400,87 @@ export interface components {
             /** Said */
             said?: string | null;
             plan?: components["schemas"]["PlanView"] | null;
+            /**
+             * Invite Link
+             * @default
+             */
+            invite_link: string;
+            /**
+             * Joined
+             * @default false
+             */
+            joined: boolean;
+            /** Joined At */
+            joined_at?: string | null;
+            /** Phone Number */
+            phone_number?: string | null;
         };
         /** MessagesRead */
         MessagesRead: {
             /** Ids */
             ids?: number[] | null;
+        };
+        /** NewsNote */
+        NewsNote: {
+            member: components["schemas"]["PersonRef"];
+            /** Text */
+            text: string;
+            /** When */
+            when: string;
+        };
+        /** NewsPattern */
+        NewsPattern: {
+            /** Title */
+            title: string;
+            /** Summary */
+            summary: string;
+            /** Tactics */
+            tactics: components["schemas"]["TacticRef"][];
+            /** Closest Scenario */
+            closest_scenario: string | null;
+            /** Sources */
+            sources: components["schemas"]["NewsSource"][];
+        };
+        /** NewsRefreshed */
+        NewsRefreshed: {
+            /** Patterns */
+            patterns: components["schemas"]["NewsPattern"][];
+            /** Updated At */
+            updated_at: string | null;
+            /** Week */
+            week: string | null;
+            /** Fallback */
+            fallback: boolean;
+            /** Notes */
+            notes: components["schemas"]["NewsNote"][];
+            /** Next Refresh At */
+            next_refresh_at: string | null;
+            /** Refreshed */
+            refreshed: boolean;
+            /** Reason */
+            reason?: ("too_soon" | "fresh" | "no_new_digest" | "failed") | null;
+        };
+        /** NewsSource */
+        NewsSource: {
+            /** Url */
+            url: string;
+            /** Date */
+            date: string | null;
+        };
+        /** NewsView */
+        NewsView: {
+            /** Patterns */
+            patterns: components["schemas"]["NewsPattern"][];
+            /** Updated At */
+            updated_at: string | null;
+            /** Week */
+            week: string | null;
+            /** Fallback */
+            fallback: boolean;
+            /** Notes */
+            notes: components["schemas"]["NewsNote"][];
+            /** Next Refresh At */
+            next_refresh_at: string | null;
         };
         /** Ok */
         Ok: {
@@ -698,7 +1543,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "weekly" | "callback_notice" | "reminder";
+            kind: "weekly" | "callback_notice" | "reminder" | "alert";
             /** Text */
             text: string;
             /** Created At */
@@ -711,6 +1556,17 @@ export interface components {
             /** Messages */
             messages: components["schemas"]["PhoneMessage"][];
             family_number: components["schemas"]["FamilyNumber"];
+            shield?: components["schemas"]["ShieldState"] | null;
+        };
+        /** PlanChoice */
+        PlanChoice: {
+            /**
+             * Plan
+             * @enum {string}
+             */
+            plan: "family_monthly" | "family_yearly" | "bank";
+            /** Bank Code */
+            bank_code?: string | null;
         };
         /** PlanStepView */
         PlanStepView: {
@@ -765,6 +1621,106 @@ export interface components {
              * @default 0
              */
             delay_seconds: number;
+        };
+        /** PricePlan */
+        PricePlan: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Price */
+            price: string;
+            /** Price Eur */
+            price_eur: number | null;
+            /** Period */
+            period: ("month" | "year") | null;
+            /** Note */
+            note: string;
+            /** Features */
+            features: string[];
+            /** Cta */
+            cta: string;
+            /** Choosable */
+            choosable: boolean;
+        };
+        /** Pricing */
+        Pricing: {
+            /** Trial Days */
+            trial_days: number;
+            /** Currency */
+            currency: string;
+            /** Plans */
+            plans: components["schemas"]["PricePlan"][];
+            /** Demo Note */
+            demo_note: string;
+        };
+        /** ProgressView */
+        ProgressView: {
+            member: components["schemas"]["PersonRef"];
+            readiness: components["schemas"]["ReadinessView"];
+            drills: components["schemas"]["DrillStats"];
+            /** Lessons */
+            lessons: components["schemas"]["LessonView"][];
+            /** Weak Spot */
+            weak_spot: string | null;
+            /** Next Drill At */
+            next_drill_at: string | null;
+        };
+        /** ProtectionMemberView */
+        ProtectionMemberView: {
+            /** Member Id */
+            member_id: string;
+            /** Name */
+            name: string;
+            /** Eligible */
+            eligible: boolean;
+            /** Reason If Not */
+            reason_if_not?: string | null;
+            /** Paused */
+            paused: boolean;
+            /** Next Drill At */
+            next_drill_at?: string | null;
+            /** Drills Last 7 Days */
+            drills_last_7_days: number;
+        };
+        /**
+         * ProtectionUpdate
+         * @description Every field optional; a missing or null field keeps its value.
+         */
+        ProtectionUpdate: {
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Drills Per Week */
+            drills_per_week?: number | null;
+            /** Window Start Hour */
+            window_start_hour?: number | null;
+            /** Window End Hour */
+            window_end_hour?: number | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Shield Enabled */
+            shield_enabled?: boolean | null;
+        };
+        /** ProtectionView */
+        ProtectionView: {
+            /** Family Id */
+            family_id: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Drills Per Week */
+            drills_per_week: number;
+            /** Window Start Hour */
+            window_start_hour: number;
+            /** Window End Hour */
+            window_end_hour: number;
+            /** Timezone */
+            timezone: string;
+            /** Shield Enabled */
+            shield_enabled: boolean;
+            /** Updated At */
+            updated_at?: string | null;
+            /** Members */
+            members: components["schemas"]["ProtectionMemberView"][];
         };
         /** PushKeys */
         PushKeys: {
@@ -827,10 +1783,25 @@ export interface components {
             /** Items */
             items: components["schemas"]["ReadinessItemView"][];
         };
+        /** RegisterIn */
+        RegisterIn: {
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+        };
         /** Reveal */
         Reveal: {
             /** Voice Of */
             voice_of: string | null;
+            /**
+             * Kind
+             * @default practice
+             * @enum {string}
+             */
+            kind: "practice" | "shield";
         };
         /** RevealedIn */
         RevealedIn: {
@@ -908,6 +1879,76 @@ export interface components {
             max_seconds: number;
             reveal?: components["schemas"]["Reveal"] | null;
         };
+        /** ShieldCallCreated */
+        ShieldCallCreated: {
+            /** Call Id */
+            call_id: string;
+            member: components["schemas"]["PersonRef"];
+            /**
+             * Scenario
+             * @enum {string}
+             */
+            scenario: "relative_new_number" | "police" | "bank_security" | "hospital";
+        };
+        /** ShieldCallRequest */
+        ShieldCallRequest: {
+            /** Member Id */
+            member_id: string;
+            /** Voice Member Id */
+            voice_member_id?: string | null;
+            /** Scenario */
+            scenario?: ("relative_new_number" | "police" | "bank_security" | "hospital") | null;
+        };
+        /**
+         * ShieldState
+         * @description phone-state's `shield`: the live warning during a shield call.
+         */
+        ShieldState: {
+            /** Call Id */
+            call_id: string;
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "green" | "yellow" | "red";
+            /** Reason */
+            reason: string;
+            /**
+             * Signals
+             * @default []
+             */
+            signals: ("new_number" | "urgency" | "secrecy" | "authority" | "emotional_appeal" | "small_ask_first" | "isolation" | "unusual_payment" | "money_request" | "asks_for_code" | "refuses_callback")[];
+            /** Labels */
+            labels: string[];
+            /** Warn */
+            warn: boolean;
+            /** Message */
+            message?: string | null;
+            call_back?: components["schemas"]["CallBackContact"] | null;
+        };
+        /** SurpriseDrillCreated */
+        SurpriseDrillCreated: {
+            /** Call Id */
+            call_id: string;
+            member: components["schemas"]["PersonRef"];
+            /**
+             * Scenario
+             * @enum {string}
+             */
+            scenario: "relative_new_number" | "police" | "bank_security" | "hospital";
+            /** Scheduled For */
+            scheduled_for: string;
+        };
+        /** SurpriseDrillRequest */
+        SurpriseDrillRequest: {
+            /** Member Id */
+            member_id?: string | null;
+            /**
+             * Within Seconds
+             * @default 60
+             */
+            within_seconds: number;
+        };
         /** TacticIn */
         TacticIn: {
             /**
@@ -920,6 +1961,13 @@ export interface components {
              * @enum {string}
              */
             key: "new_number" | "urgency" | "secrecy" | "authority" | "emotional_appeal" | "small_ask_first" | "isolation" | "unusual_payment";
+        };
+        /** TacticRef */
+        TacticRef: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
         };
         /** TacticView */
         TacticView: {
@@ -975,10 +2023,77 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /**
+         * VoiceConsentIn
+         * @description Track 2: the welcome agent's voice_consent_result (may Callback use
+         *     their voice from this call?). Welcome calls only; see services/voice_sample.py.
+         */
+        VoiceConsentIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "voice_consent";
+            /** Given */
+            given: boolean;
+        };
         /** VoiceReady */
         VoiceReady: {
             /** Voice Ready */
             voice_ready: boolean;
+        };
+        /**
+         * VoiceSampleAccepted
+         * @description The answer to POST /api/calls/{id}/voice-sample, given at once.
+         */
+        VoiceSampleAccepted: {
+            /**
+             * Accepted
+             * @default true
+             */
+            accepted: boolean;
+            /** Cloning */
+            cloning: boolean;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** VoiceSampleStatus */
+        VoiceSampleStatus: {
+            /** Call Id */
+            call_id: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "none" | "waiting_for_consent" | "cloning" | "ready" | "failed";
+            /** Reason */
+            reason?: string | null;
+            /** Speech Seconds */
+            speech_seconds?: number | null;
+        };
+        /** WaitlistCount */
+        WaitlistCount: {
+            /** Families */
+            families: number;
+            /** Banks */
+            banks: number;
+        };
+        /** WaitlistIn */
+        WaitlistIn: {
+            /** Email */
+            email: string;
+            /**
+             * Kind
+             * @default family
+             * @enum {string}
+             */
+            kind: "family" | "bank";
+            /** Organisation */
+            organisation?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Source */
+            source?: string | null;
         };
         /** WeekItem */
         WeekItem: {
@@ -986,7 +2101,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "welcome" | "practice" | "family_line" | "message" | "reminder" | "weekly";
+            kind: "welcome" | "practice" | "family_line" | "message" | "reminder" | "weekly" | "alert";
             /** Member Id */
             member_id: string;
             /** Member Name */
@@ -1047,6 +2162,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    list_families_api_families_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyList"];
                 };
             };
         };
@@ -1732,6 +2867,851 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WeeklyRunResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pricing_api_pricing_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pricing"];
+                };
+            };
+        };
+    };
+    get_plan_api_families__family_id__plan_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyPlanView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    choose_plan_api_families__family_id__plan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanChoice"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyPlanView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_plan_api_families__family_id__plan_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyPlanView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    join_waitlist_api_waitlist_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaitlistIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    waitlist_count_api_waitlist_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitlistCount"];
+                };
+            };
+        };
+    };
+    register_api_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_api_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_api_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+        };
+    };
+    read_me_api_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    read_invite_api_join__member_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    join_api_join__member_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Joined"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_voice_sample_api_calls__call_id__voice_sample_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_voice_sample_api_calls__call_id__voice_sample_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceSampleAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    voice_sample_status_api_calls__call_id__voice_sample_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceSampleStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_voice_sample_api_members__member_id__voice_sample_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceSampleStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_protection_api_families__family_id__protection_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtectionView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_protection_api_families__family_id__protection_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtectionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtectionView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_drills_api_members__member_id__drills_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DrillPause"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtectionMemberView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    surprise_drill_api_families__family_id__surprise_drill_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SurpriseDrillRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurpriseDrillCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shield_call_api_families__family_id__shield_call_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShieldCallRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShieldCallCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    alert_family_api_members__member_id__alert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AlertRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertSent"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    family_drills_api_families__family_id__drills_get: {
+        parameters: {
+            query?: {
+                member_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DrillList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    family_activity_api_families__family_id__activity_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_progress_api_members__member_id__progress_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    learn_tactics_api_learn_tactics_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearnTactics"];
+                };
+            };
+        };
+    };
+    learn_habits_api_learn_habits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Habits"];
+                };
+            };
+        };
+    };
+    family_news_api_families__family_id__news_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_news_api_families__family_id__news_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsRefreshed"];
                 };
             };
             /** @description Validation Error */

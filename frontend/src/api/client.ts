@@ -6,8 +6,12 @@
 // as ApiError with that code and message, ready to show.
 
 import type {
-  CallCreated, CallView, ConsentUpdate, FamilyCreate, FamilyCreated, FamilyLineStarted, FamilyView,
-  Ok, PhoneEvent, PhoneState, PracticeCallCreate, ScenarioView, Session, VoiceReady, EndedBy,
+  ActivityView, AlertRequest, AlertSent, CallCreated, CallView, ConsentUpdate, DrillList, DrillPause, EndedBy,
+  FamilyCreate, FamilyCreated, FamilyLineStarted, FamilyList, FamilyPlanView, FamilyView, Habits, Joined, JoinIn,
+  JoinView, LearnTactics, LoginIn, Me, NewsRefreshed, NewsView, Ok, PhoneEvent, PhoneState, PlanChoice,
+  PracticeCallCreate, Pricing, ProgressView, ProtectionMemberView, ProtectionUpdate, ProtectionView, RegisterIn,
+  ScenarioView, Session, ShieldCallCreated, ShieldCallRequest, SurpriseDrillCreated, SurpriseDrillRequest,
+  VoiceReady, VoiceSampleAccepted, VoiceSampleStatus, WaitlistCount, WaitlistIn,
 } from './types';
 
 export class ApiError extends Error {
@@ -63,6 +67,56 @@ export const api = {
   sendEvents: (callId: string, events: PhoneEvent[]) => request<Ok>(`/calls/${callId}/events`, json({ events })),
   endCall: (callId: string, endedBy: EndedBy) => request<Ok>(`/calls/${callId}/end`, json({ ended_by: endedBy })),
   familyLine: (memberId: string) => request<FamilyLineStarted>(`/members/${memberId}/family-line`, { method: 'POST' }),
+
+  // organiser accounts (a cb_session cookie; same-origin fetch sends it)
+  register: (body: RegisterIn) => request<Me>('/auth/register', json(body)),
+  login: (body: LoginIn) => request<Me>('/auth/login', json(body)),
+  logout: () => request<Ok>('/auth/logout', { method: 'POST' }),
+  me: () => request<Me>('/auth/me'),
+  myFamilies: () => request<FamilyList>('/families'),
+
+  // joining by invite (/join/:memberId)
+  getJoin: (memberId: string) => request<JoinView>(`/join/${memberId}`),
+  join: (memberId: string, body: JoinIn) => request<Joined>(`/join/${memberId}`, json(body)),
+
+  // the member's voice from their own side of the welcome call
+  uploadVoiceSample: (callId: string, audio: Blob, filename: string) => {
+    const form = new FormData();
+    form.append('audio', audio, filename);
+    return request<VoiceSampleAccepted>(`/calls/${callId}/voice-sample`, { method: 'POST', body: form });
+  },
+  voiceSampleStatus: (callId: string) => request<VoiceSampleStatus>(`/calls/${callId}/voice-sample/status`),
+  memberVoiceSample: (memberId: string) => request<VoiceSampleStatus>(`/members/${memberId}/voice-sample`),
+
+  // protection, random drills and the Shield
+  protection: (familyId: string) => request<ProtectionView>(`/families/${familyId}/protection`),
+  setProtection: (familyId: string, body: ProtectionUpdate) =>
+    request<ProtectionView>(`/families/${familyId}/protection`, { method: 'PUT', body: JSON.stringify(body) }),
+  pauseDrills: (memberId: string, body: DrillPause) =>
+    request<ProtectionMemberView>(`/members/${memberId}/drills`, { method: 'PUT', body: JSON.stringify(body) }),
+  surpriseDrill: (familyId: string, body: SurpriseDrillRequest = { within_seconds: 60 }) =>
+    request<SurpriseDrillCreated>(`/families/${familyId}/surprise-drill`, json(body)),
+  shieldCall: (familyId: string, body: ShieldCallRequest) =>
+    request<ShieldCallCreated>(`/families/${familyId}/shield-call`, json(body)),
+  alertFamily: (memberId: string, body: AlertRequest = {}) => request<AlertSent>(`/members/${memberId}/alert`, json(body)),
+
+  // review, progress, learning, news
+  drills: (familyId: string, memberId?: string, limit = 50) =>
+    request<DrillList>(`/families/${familyId}/drills?${new URLSearchParams({ ...(memberId ? { member_id: memberId } : {}), limit: String(limit) })}`),
+  activity: (familyId: string, limit = 100) => request<ActivityView>(`/families/${familyId}/activity?limit=${limit}`),
+  progress: (memberId: string) => request<ProgressView>(`/members/${memberId}/progress`),
+  tactics: () => request<LearnTactics>('/learn/tactics'),
+  habits: () => request<Habits>('/learn/habits'),
+  news: (familyId: string) => request<NewsView>(`/families/${familyId}/news`),
+  refreshNews: (familyId: string) => request<NewsRefreshed>(`/families/${familyId}/news/refresh`, { method: 'POST' }),
+
+  // plans (demo mode: no payment, no card details) and the waitlist
+  pricing: () => request<Pricing>('/pricing'),
+  plan: (familyId: string) => request<FamilyPlanView>(`/families/${familyId}/plan`),
+  choosePlan: (familyId: string, body: PlanChoice) => request<FamilyPlanView>(`/families/${familyId}/plan`, json(body)),
+  cancelPlan: (familyId: string) => request<FamilyPlanView>(`/families/${familyId}/plan/cancel`, { method: 'POST' }),
+  joinWaitlist: (body: WaitlistIn) => request<Ok>('/waitlist', json(body)),
+  waitlistCount: () => request<WaitlistCount>('/waitlist/count'),
 };
 
 /** The live stream of a call, for the laptop (see StreamEventMap in types.ts). */

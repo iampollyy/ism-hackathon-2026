@@ -48,6 +48,41 @@ export type VoiceReady = S['VoiceReady'];
 export type Ok = S['Ok'];
 export type PushPublicKey = S['PushPublicKey'];
 
+// The full app (Saturday): accounts, joining, voice from the welcome call,
+// protection and the Shield, review, learning, news, plans, waitlist.
+export type Me = S['Me'];
+export type LoginIn = S['LoginIn'];
+export type RegisterIn = S['RegisterIn'];
+export type FamilyList = S['FamilyList'];
+export type JoinView = S['JoinView'];
+export type JoinIn = S['JoinIn'];
+export type Joined = S['Joined'];
+export type VoiceSampleAccepted = S['VoiceSampleAccepted'];
+export type VoiceSampleStatus = S['VoiceSampleStatus'];
+export type ProtectionView = S['ProtectionView'];
+export type ProtectionUpdate = S['ProtectionUpdate'];
+export type ProtectionMemberView = S['ProtectionMemberView'];
+export type DrillPause = S['DrillPause'];
+export type SurpriseDrillRequest = S['SurpriseDrillRequest'];
+export type SurpriseDrillCreated = S['SurpriseDrillCreated'];
+export type ShieldCallRequest = S['ShieldCallRequest'];
+export type ShieldCallCreated = S['ShieldCallCreated'];
+export type AlertRequest = S['AlertRequest'];
+export type AlertSent = S['AlertSent'];
+export type DrillList = S['DrillList'];
+export type ActivityView = S['ActivityView'];
+export type ProgressView = S['ProgressView'];
+export type LearnTactics = S['LearnTactics'];
+export type Habits = S['Habits'];
+export type NewsView = S['NewsView'];
+export type NewsRefreshed = S['NewsRefreshed'];
+export type Pricing = S['Pricing'];
+export type PricePlan = S['PricePlan'];
+export type FamilyPlanView = S['FamilyPlanView'];
+export type PlanChoice = S['PlanChoice'];
+export type WaitlistIn = S['WaitlistIn'];
+export type WaitlistCount = S['WaitlistCount'];
+
 // ---------------------------------------------------------------- fixed lists
 
 export type Tactic =
@@ -108,7 +143,8 @@ export type PhoneEvent =
   | { type: 'tactic'; key: Tactic }
   | { type: 'outcome'; outcome: Outcome }
   | { type: 'revealed' }
-  | { type: 'consent'; given: boolean };
+  | { type: 'consent'; given: boolean }
+  | { type: 'voice_consent'; given: boolean };
 
 // ---------------------------------------------------------------- the live stream (GET /api/calls/{id}/events)
 
@@ -144,8 +180,11 @@ export type StreamEventMap = {
     source: string;
     t: number | null;
   };
+  /** A shield call turned red: the family was alerted (once per call). */
+  'shield.alert': { alerted: number; level: RiskLevel; t: number | null };
 };
 export type StreamEventType = keyof StreamEventMap;
 export const STREAM_EVENT_TYPES: readonly StreamEventType[] = [
   'call.status', 'turn', 'tactic', 'outcome', 'revealed', 'consent', 'callback.connected', 'result', 'risk',
+  'shield.alert',
 ];
