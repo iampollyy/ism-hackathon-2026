@@ -1,5 +1,6 @@
 // The top of the organiser's home: the family's name, where things stand in
-// one line, the plan, and the way into the other family screens.
+// one line, the plan, and the way into the other family screens. On a phone
+// (compact) the tab bar is the way in, and the facts scroll in one row.
 
 import { Link } from 'react-router-dom';
 import { Activity, ArrowUpRight, BookOpen, KeyRound, ListChecks, Mic, Newspaper, ShieldCheck, ShieldOff, Smartphone, Users } from 'lucide-react';
@@ -11,6 +12,8 @@ type Props = {
   plan: FamilyPlanView | null;
   /** null while the protection settings load. */
   protectionOn: boolean | null;
+  /** For phones: no screen links, the facts in one scrolling row. */
+  compact?: boolean;
 };
 
 function planWords(plan: FamilyPlanView): string {
@@ -22,7 +25,7 @@ function planWords(plan: FamilyPlanView): string {
   return plan.price ? `${plan.plan_name} · ${plan.price}` : plan.plan_name;
 }
 
-export function FamilyHeader({ family, plan, protectionOn }: Props) {
+export function FamilyHeader({ family, plan, protectionOn, compact = false }: Props) {
   const members = family.members;
   const joined = members.filter((member) => member.joined).length;
   const voices = members.filter((member) => member.voice_ready).length;
@@ -38,7 +41,7 @@ export function FamilyHeader({ family, plan, protectionOn }: Props) {
   ];
 
   return (
-    <header className="fh-header">
+    <header className={`fh-header${compact ? ' compact' : ''}`}>
       <div className="fh-header-top">
         <h1>{family.name}</h1>
         {plan ? (
@@ -48,7 +51,12 @@ export function FamilyHeader({ family, plan, protectionOn }: Props) {
           </Link>
         ) : null}
       </div>
-      <ul className="fh-facts" aria-label="Where the family stands">
+      {/* Scrolls sideways on a phone: focusable, so a keyboard can scroll it too. */}
+      <ul
+        className={`fh-facts${compact ? ' scroll' : ''}`}
+        aria-label="Where the family stands"
+        tabIndex={compact ? 0 : undefined}
+      >
         <li className={protectionOn ? 'on' : undefined}>
           {protectionOn === false ? <ShieldOff size={16} /> : <ShieldCheck size={16} />}
           {protectionOn === null ? 'Protection…' : protectionOn ? 'Protection on' : 'Protection off'}
@@ -77,6 +85,7 @@ export function FamilyHeader({ family, plan, protectionOn }: Props) {
         </li>
       </ul>
 
+      {compact ? null : (
       <nav className="fh-quicklinks" aria-label="Family screens">
         {links.map(({ to, label, note, icon: Icon }) => (
           <Link key={to} to={to} className="fh-quicklink">
@@ -91,6 +100,7 @@ export function FamilyHeader({ family, plan, protectionOn }: Props) {
           </Link>
         ))}
       </nav>
+      )}
     </header>
   );
 }

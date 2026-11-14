@@ -3,13 +3,17 @@
 // consent, their voice, the welcome call, readiness before and now, and the
 // way to their own page.
 //
+// On a phone (compact) the row is a small card: the name, where things stand
+// as badges, one main action (Share the invite, or Open their page), and the
+// rest behind Details.
+//
 // Practice consent is the person's own: only they say yes, on their phone.
 // Here the organiser can only switch it off (after a short confirm); while it
 // is off the cell says what it is waiting for instead of offering a switch.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronRight, Link2, PhoneIncoming, QrCode } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, ChevronRight, Link2, PhoneIncoming, QrCode } from 'lucide-react';
 import { api } from '../../api/client';
 import type { MemberView, VoiceSampleStatus, WeekItem } from '../../api/types';
 import { Avatar } from '../../components/atoms/Avatar';
@@ -31,6 +35,8 @@ type Props = {
   left: boolean;
   base: string;
   onChanged: () => void;
+  /** A small card with details behind a toggle, for phones. */
+  compact?: boolean;
 };
 
 type Notice = { tone: 'good' | 'bad'; text: string; callId?: string };
@@ -60,8 +66,10 @@ function voiceState(member: MemberView, sample: VoiceSampleStatus | undefined, l
 }
 
 export function MemberRow({
-  member, color, initials, familyId, familyName, organiserName, sample, week, left, base, onChanged,
+  member, color, initials, familyId, familyName, organiserName, sample, week, left, base, onChanged, compact = false,
 }: Props) {
+  const detailsId = useId();
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   const rowRef = useRef<HTMLLIElement>(null);
@@ -228,167 +236,252 @@ export function MemberRow({
     );
   }
 
-  return (
-    <li ref={rowRef} className={`fh-member${member.joined ? '' : ' not-joined'}${left ? ' has-left' : ''}`}>
-      <div className="fh-member-main">
+  // The card on a phone: badges for where things stand, one main action.
+  const badges: { text: string; tone: 'good' | 'wait' | 'quiet' }[] = [
+    left
+      ? { text: 'Left Callback', tone: 'quiet' }
+      : member.joined
+        ? { text: 'Joined', tone: 'good' }
+        : { text: 'Not joined yet', tone: 'wait' },
+  ];
+  if (!left) {
+    badges.push(consent ? { text: 'Practice agreed', tone: 'good' } : { text: 'Practice not agreed yet', tone: 'quiet' });
+    badges.push(
+      voice.tone === 'good'
+        ? { text: 'Voice ready', tone: 'good' }
+        : { text: `Voice: ${voice.text.toLowerCase()}`, tone: voice.tone === 'quiet' ? 'quiet' : 'wait' },
+    );
+    if (member.joined) badges.push(member.phone_online ? { text: 'Phone open', tone: 'good' } : { text: 'Phone closed', tone: 'quiet' });
+  }
+
+  const openLink = (
+    <Link to={`/family/${familyId}/members/${member.id}`} className="fh-member-open" aria-label={`Open ${member.name}'s page`}>
+      <span>Open</span>
+      <ChevronRight size={16} aria-hidden="true" />
+    </Link>
+  );
+
+  const compactHead = (
+    <>
+      <div className="fh-mc">
         <Avatar initials={initials} color={color} size="md" />
-        <div className="fh-member-name">
+        <div className="fh-mc-who">
           <h3>{member.name}</h3>
           <span>{role}</span>
         </div>
-
-        <div className="fh-member-state">
-          {left ? (
-            <span className="fh-tag quiet">Left Callback</span>
-          ) : member.joined ? (
-            <span className="fh-tag good">
-              <Check size={13} aria-hidden="true" />
-              Joined{member.joined_at ? ` ${joinedFormat.format(new Date(member.joined_at))}` : ''}
-            </span>
+        <div className="fh-mc-action">
+          {!member.joined && !left && inviteUrl ? (
+            <ShareButton url={inviteUrl} name={member.name} familyName={familyName} from={organiserName} own={member.is_organiser} />
           ) : (
-            <span className="fh-tag wait">Invite not opened yet</span>
+            openLink
           )}
-          {member.joined && !left ? (
-            <span className={`fh-phone-dot${member.phone_online ? ' on' : ''}`}>
-              {member.phone_online ? 'Phone open' : 'Phone closed'}
-            </span>
-          ) : null}
-          {member.phone_number ? <span className="fh-phone-number">{member.phone_number}</span> : null}
         </div>
-
-        <div className="fh-member-ready" aria-label={`Readiness ${before} before practice, ${now} now, out of ${max}`}>
-          <span className="fh-member-ready-label">Readiness</span>
-          <strong>
-            {before}
-            <ArrowRight size={15} aria-hidden="true" />
-            <em>{now}</em>
-            <small>/{max}</small>
-          </strong>
-        </div>
-
-        <Link to={`/family/${familyId}/members/${member.id}`} className="fh-member-open" aria-label={`Open ${member.name}'s page`}>
-          <span>Open</span>
-          <ChevronRight size={16} aria-hidden="true" />
-        </Link>
       </div>
+      <ul className="fh-mc-badges" aria-label={`Where ${member.name} stands`}>
+        {badges.map((badge) => (
+          <li key={badge.text} className={`fh-tag ${badge.tone}`}>
+            {badge.tone === 'good' ? <Check size={13} aria-hidden="true" /> : null}
+            {badge.text}
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        className="fh-mc-toggle"
+        aria-expanded={detailsOpen}
+        aria-controls={detailsOpen ? detailsId : undefined}
+        onClick={() => setDetailsOpen((open) => !open)}
+      >
+        {detailsOpen ? 'Hide details' : !member.joined && !left ? 'Details, link and QR code' : 'Details'}
+        <ChevronDown size={16} aria-hidden="true" className={detailsOpen ? 'up' : undefined} />
+      </button>
+    </>
+  );
 
-      <dl className="fh-member-facts">
-        <div>
-          <dt>Practice calls</dt>
-          <dd>{practice}</dd>
-        </div>
-        <div>
-          <dt>Voice</dt>
-          <dd>
-            <span className={`fh-fact-value ${voice.tone}`}>
-              {voice.tone === 'good' ? <Check size={15} aria-hidden="true" /> : null}
-              {voice.text}
-              {member.voice_ready && !confirmRemove ? (
-                <button
-                  type="button"
-                  className="fh-text-button quiet"
-                  onClick={() => setConfirmRemove(true)}
-                  aria-label={`Remove ${member.name}'s cloned voice`}
-                >
-                  Remove
-                </button>
-              ) : null}
-            </span>
-            {voice.detail ? (
-              <small className="fh-fact-detail" title={voice.detail}>
-                {voice.detail}
-              </small>
+  const head = (
+    <>
+        <div className="fh-member-main">
+          <Avatar initials={initials} color={color} size="md" />
+          <div className="fh-member-name">
+            <h3>{member.name}</h3>
+            <span>{role}</span>
+          </div>
+
+          <div className="fh-member-state">
+            {left ? (
+              <span className="fh-tag quiet">Left Callback</span>
+            ) : member.joined ? (
+              <span className="fh-tag good">
+                <Check size={13} aria-hidden="true" />
+                Joined{member.joined_at ? ` ${joinedFormat.format(new Date(member.joined_at))}` : ''}
+              </span>
+            ) : (
+              <span className="fh-tag wait">Invite not opened yet</span>
+            )}
+            {member.joined && !left ? (
+              <span className={`fh-phone-dot${member.phone_online ? ' on' : ''}`}>
+                {member.phone_online ? 'Phone open' : 'Phone closed'}
+              </span>
             ) : null}
-          </dd>
+            {member.phone_number ? <span className="fh-phone-number">{member.phone_number}</span> : null}
+          </div>
+
+          <div className="fh-member-ready" aria-label={`Readiness ${before} before practice, ${now} now, out of ${max}`}>
+            <span className="fh-member-ready-label">Readiness</span>
+            <strong>
+              {before}
+              <ArrowRight size={15} aria-hidden="true" />
+              <em>{now}</em>
+              <small>/{max}</small>
+            </strong>
+          </div>
+
+          <Link to={`/family/${familyId}/members/${member.id}`} className="fh-member-open" aria-label={`Open ${member.name}'s page`}>
+            <span>Open</span>
+            <ChevronRight size={16} aria-hidden="true" />
+          </Link>
         </div>
-        <div>
-          <dt>Welcome call</dt>
-          <dd>{welcome}</dd>
-        </div>
-        {member.joined ? (
-          <div className="fh-fact-links">
-            <dt className="fh-visually-hidden">Links</dt>
+    </>
+  );
+
+  const details = (
+    <>
+        <dl className="fh-member-facts">
+          <div>
+            <dt>Practice calls</dt>
+            <dd>{practice}</dd>
+          </div>
+          <div>
+            <dt>Voice</dt>
             <dd>
-              <button
-                type="button"
-                className="fh-text-button"
-                onClick={() => setLinksOpen((open) => !open)}
-                aria-expanded={linksOpen}
-              >
-                <Link2 size={15} aria-hidden="true" /> Phone link
-              </button>
+              <span className={`fh-fact-value ${voice.tone}`}>
+                {voice.tone === 'good' ? <Check size={15} aria-hidden="true" /> : null}
+                {voice.text}
+                {member.voice_ready && !confirmRemove ? (
+                  <button
+                    type="button"
+                    className="fh-text-button quiet"
+                    onClick={() => setConfirmRemove(true)}
+                    aria-label={`Remove ${member.name}'s cloned voice`}
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </span>
+              {voice.detail ? (
+                <small className="fh-fact-detail" title={voice.detail}>
+                  {voice.detail}
+                </small>
+              ) : null}
             </dd>
           </div>
-        ) : null}
-      </dl>
-
-      {!member.joined && !left ? (
-        <div className="fh-invite">
-          {inviteUrl ? (
-            <>
-              <div className="fh-invite-text">
-                <strong>Invite link</strong>
-                <span>Send it to {member.name}. Opening it on their phone joins them and starts the welcome call.</span>
-              </div>
-              <code className="fh-link-text">{inviteUrl}</code>
-              <div className="fh-invite-actions">
-                <CopyButton text={inviteUrl} owner={member.name} what="invite link" />
-                <ShareButton
-                  url={inviteUrl}
-                  name={member.name}
-                  familyName={familyName}
-                  from={organiserName}
-                  own={member.is_organiser}
-                />
+          <div>
+            <dt>Welcome call</dt>
+            <dd>{welcome}</dd>
+          </div>
+          {member.joined ? (
+            <div className="fh-fact-links">
+              <dt className="fh-visually-hidden">Links</dt>
+              <dd>
                 <button
                   type="button"
-                  className="fh-chip-button"
-                  onClick={() => setQrOpen((open) => !open)}
-                  aria-expanded={qrOpen}
-                  aria-label={qrOpen ? `Hide ${member.name}'s QR code` : `Show ${member.name}'s QR code`}
+                  className="fh-text-button"
+                  onClick={() => setLinksOpen((open) => !open)}
+                  aria-expanded={linksOpen}
                 >
-                  <QrCode size={15} /> <span>{qrOpen ? 'Hide code' : 'QR code'}</span>
+                  <Link2 size={15} aria-hidden="true" /> Phone link
                 </button>
-              </div>
-              {qrOpen ? (
-                <div className="fh-qr">
-                  <LinkQrCode url={inviteUrl} owner={member.name} size={148} />
-                  <span>Scan with {member.name}'s phone camera.</span>
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <p className="fh-invite-text">
-              <span>
-                Invite links show only for the organiser.{' '}
-                <Link to="/login" className="fh-inline-link">
-                  Log in
-                </Link>{' '}
-                to send {member.name} theirs.
-              </span>
-            </p>
-          )}
-        </div>
-      ) : null}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
 
-      {member.joined && linksOpen ? (
-        <div className="fh-invite">
-          <div className="fh-invite-text">
-            <strong>Phone link</strong>
-            <span>{member.name}'s own page, where practice calls ring. Use it to open their phone again.</span>
+        {!member.joined && !left ? (
+          <div className="fh-invite">
+            {inviteUrl ? (
+              <>
+                <div className="fh-invite-text">
+                  <strong>Invite link</strong>
+                  <span>Send it to {member.name}. Opening it on their phone joins them and starts the welcome call.</span>
+                </div>
+                <code className="fh-link-text">{inviteUrl}</code>
+                <div className="fh-invite-actions">
+                  <CopyButton text={inviteUrl} owner={member.name} what="invite link" />
+                  <ShareButton
+                    url={inviteUrl}
+                    name={member.name}
+                    familyName={familyName}
+                    from={organiserName}
+                    own={member.is_organiser}
+                  />
+                  <button
+                    type="button"
+                    className="fh-chip-button"
+                    onClick={() => setQrOpen((open) => !open)}
+                    aria-expanded={qrOpen}
+                    aria-label={qrOpen ? `Hide ${member.name}'s QR code` : `Show ${member.name}'s QR code`}
+                  >
+                    <QrCode size={15} /> <span>{qrOpen ? 'Hide code' : 'QR code'}</span>
+                  </button>
+                </div>
+                {qrOpen ? (
+                  <div className="fh-qr">
+                    <LinkQrCode url={inviteUrl} owner={member.name} size={148} />
+                    <span>Scan with {member.name}'s phone camera.</span>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <p className="fh-invite-text">
+                <span>
+                  Invite links show only for the organiser.{' '}
+                  <Link to="/login" className="fh-inline-link">
+                    Log in
+                  </Link>{' '}
+                  to send {member.name} theirs.
+                </span>
+              </p>
+            )}
           </div>
-          <code className="fh-link-text">{phoneUrl}</code>
-          <div className="fh-invite-actions">
-            <CopyButton text={phoneUrl} owner={member.name} what="phone link" />
-            <a href={phoneUrl} target="_blank" rel="noreferrer" className="fh-chip-button">
-              Open here
-            </a>
+        ) : null}
+
+        {member.joined && linksOpen ? (
+          <div className="fh-invite">
+            <div className="fh-invite-text">
+              <strong>Phone link</strong>
+              <span>{member.name}'s own page, where practice calls ring. Use it to open their phone again.</span>
+            </div>
+            <code className="fh-link-text">{phoneUrl}</code>
+            <div className="fh-invite-actions">
+              <CopyButton text={phoneUrl} owner={member.name} what="phone link" />
+              <a href={phoneUrl} target="_blank" rel="noreferrer" className="fh-chip-button">
+                Open here
+              </a>
+            </div>
+            <div className="fh-qr">
+              <LinkQrCode url={phoneUrl} owner={member.name} size={132} />
+            </div>
           </div>
-          <div className="fh-qr">
-            <LinkQrCode url={phoneUrl} owner={member.name} size={132} />
+        ) : null}
+    </>
+  );
+
+  return (
+    <li ref={rowRef} className={`fh-member${member.joined ? '' : ' not-joined'}${left ? ' has-left' : ''}`}>
+      {compact ? compactHead : head}
+
+      {compact ? (
+        detailsOpen ? (
+          <div className="fh-member-details" id={detailsId}>
+            <p className="fh-mc-ready">
+              Readiness <strong>{before} → {now}</strong> of {max}
+            </p>
+            {details}
           </div>
-        </div>
-      ) : null}
+        ) : null
+      ) : (
+        details
+      )}
 
       {confirmWithdraw && consent && !left ? (
         <div

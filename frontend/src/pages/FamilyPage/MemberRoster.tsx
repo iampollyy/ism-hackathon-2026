@@ -1,8 +1,10 @@
 // Everyone in the family, one row each (MemberRow), with the address note
-// for phones when the links would point at this laptop.
+// for phones when the links would point at this laptop, and Add a person
+// (their invite straight away). On a phone the rows are compact cards.
 
 import type { FamilyView, ProtectionView, VoiceSampleStatus } from '../../api/types';
 import { firstName } from '../../layouts/useMe';
+import { AddPerson } from './AddPerson';
 import { MemberRow } from './MemberRow';
 import type { Person } from './people';
 import { PhoneAddressNote, usePhoneAddress } from './links';
@@ -13,17 +15,23 @@ type Props = {
   samples: Record<string, VoiceSampleStatus>;
   people: Record<string, Person>;
   onChanged: () => void;
+  /** The Add a person form is open. */
+  adding: boolean;
+  onAdding: (open: boolean) => void;
+  /** Compact cards, for phones. */
+  compact?: boolean;
 };
 
-export function MemberRoster({ family, protection, samples, people, onChanged }: Props) {
+export function MemberRoster({ family, protection, samples, people, onChanged, adding, onAdding, compact = false }: Props) {
   const [base, setBase] = usePhoneAddress();
   const members = family.members;
   const joined = members.filter((member) => member.joined).length;
   const waiting = members.length - joined;
   const organiser = members.find((member) => member.is_organiser);
+  const organiserName = organiser ? firstName(organiser.name) : null;
 
   return (
-    <section id="members" className="fh-panel fh-roster" aria-labelledby="members-title">
+    <section id="members" className={`fh-panel fh-roster${compact ? ' compact' : ''}`} aria-labelledby="members-title">
       <div className="fh-panel-head">
         <h2 id="members-title">The family</h2>
         <span className="fh-panel-count">
@@ -37,6 +45,18 @@ export function MemberRoster({ family, protection, samples, people, onChanged }:
       </p>
       <PhoneAddressNote base={base} onChange={setBase} />
 
+      <div className="fh-add-slot">
+        <AddPerson
+          familyId={family.id}
+          familyName={family.name}
+          organiserName={organiserName}
+          base={base}
+          open={adding}
+          onOpen={onAdding}
+          onAdded={onChanged}
+        />
+      </div>
+
       <ul className="fh-member-list">
         {members.map((member) => (
           <MemberRow
@@ -46,12 +66,13 @@ export function MemberRoster({ family, protection, samples, people, onChanged }:
             initials={people[member.id]?.initials ?? '?'}
             familyId={family.id}
             familyName={family.name}
-            organiserName={organiser ? firstName(organiser.name) : null}
+            organiserName={organiserName}
             sample={member.joined ? samples[member.id] : undefined}
             week={family.week}
             left={protection?.members.find((entry) => entry.member_id === member.id)?.reason_if_not === 'Has left Callback.'}
             base={base}
             onChanged={onChanged}
+            compact={compact}
           />
         ))}
       </ul>

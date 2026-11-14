@@ -5,7 +5,8 @@ import type { MemberView } from '../../api/types';
 
 export type Person = { initials: string; color: string; organiser: boolean };
 
-const AVATAR_COLORS = ['#e0475e', '#138653', '#4e38b2', '#b77a15', '#432fa8', '#8a5a44'];
+// Each at least 4.5:1 behind white initials; no red, which means a scam here.
+const AVATAR_COLORS = ['#735ac8', '#138653', '#4e38b2', '#a8457a', '#2f6f8f', '#8a5a44'];
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
