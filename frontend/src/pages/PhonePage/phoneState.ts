@@ -154,6 +154,11 @@ export const initialPhoneState: PhoneUiState = {
   welcomeOffer: 'unknown',
 };
 
+/** A practice that was declined or missed still tells them it was one. */
+export const DECLINED_PRACTICE =
+  'That was a Callback practice call. Not answering an unknown number is a safe choice.';
+export const MISSED_PRACTICE = 'You missed a Callback practice call. That’s fine.';
+
 /** Polls in a row that may fail before the page says the connection is gone. */
 const OFFLINE_AFTER = 3;
 
@@ -224,12 +229,12 @@ function finishedState(state: PhoneUiState, action: Extract<PhoneAction, { type:
       view: {
         ...state.view.reveal,
         startingFamilyLine: false,
-        familyLineError: 'The family line could not connect. Please try again.',
+        familyLineError: 'The practice line could not connect. Please try again.',
       },
     };
   }
   return action.endedBy === 'error'
-    ? withNotice(waiting, 'error', 'The family line could not connect.')
+    ? withNotice(waiting, 'error', 'The practice line could not connect.')
     : waiting;
 }
 
@@ -249,10 +254,11 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
       } else if (view.name === 'ringing' && incoming?.call_id !== view.call.call_id) {
         // It stopped ringing before an answer: missed, or cancelled.
         next = { ...next, view: { name: 'waiting' }, handled: remember(state.handled, view.call.call_id) };
+        // A missed practice still reveals itself: every practice tells them.
         next =
           view.call.kind === 'welcome'
             ? withNotice({ ...next, welcomeOffer: 'show' }, 'info', 'You missed your welcome call.', true)
-            : withNotice(next, 'info', `Missed call from ${view.call.caller.label}.`, true);
+            : withNotice(next, 'info', MISSED_PRACTICE, true);
       }
       // Forget hidden messages the back end no longer sends.
       const sent = new Set(action.phone.messages.map((message) => message.id));
@@ -291,14 +297,17 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
       return withNotice(next, 'error', action.message);
     }
 
-    case 'decline':
+    case 'decline': {
       if (view.name !== 'ringing' || view.call.call_id !== action.callId) return state;
-      return {
+      const declined: PhoneUiState = {
         ...state,
         view: { name: 'waiting' },
         handled: remember(state.handled, action.callId),
         welcomeOffer: view.call.kind === 'welcome' ? 'show' : state.welcomeOffer,
       };
+      // Declining is a safe choice, and a practice always reveals itself.
+      return view.call.kind === 'practice' ? withNotice(declined, 'good', DECLINED_PRACTICE) : declined;
+    }
 
     case 'connected':
       if ((view.name !== 'in_call' && view.name !== 'family_line') || view.callId !== action.callId) return state;

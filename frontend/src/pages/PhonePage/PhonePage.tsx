@@ -1,5 +1,6 @@
 // The phone page, /phone/:memberId: what a family member holds. Full screen,
-// mobile first. waiting -> ringing -> in call -> reveal -> family line,
+// mobile first. waiting -> ringing -> in call -> reveal -> practice line
+// (the family_line call: an AI helper, and it says so),
 // and after the welcome call its thank-you screen.
 // The logic lives in usePhone.ts; the screens are in ./screens.
 
@@ -11,7 +12,7 @@ import { usePhone } from './usePhone';
 import { WaitingScreen, type PhoneTab } from './screens/WaitingScreen';
 import { RingingScreen } from './screens/RingingScreen';
 import { CallScreen } from './screens/CallScreen';
-import { RevealScreen } from './screens/RevealScreen';
+import { PRACTICE_LINE_NOTE, RevealScreen } from './screens/RevealScreen';
 import { WelcomeDoneScreen } from './screens/WelcomeDoneScreen';
 import './PhonePage.scss';
 
@@ -100,8 +101,9 @@ function Phone({ memberId }: { memberId: string }) {
     case 'family_line':
       screen = (
         <CallScreen
-          title="Family line"
+          title="Callback practice line"
           number={null}
+          note={PRACTICE_LINE_NOTE}
           variant="family_line"
           startedAt={view.startedAt}
           connected={view.connected}

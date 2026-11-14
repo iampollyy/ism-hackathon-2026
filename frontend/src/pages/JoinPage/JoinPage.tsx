@@ -9,7 +9,8 @@
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Check, CircleAlert, KeyRound, Link2Off, LoaderCircle, LogOut, Mic, Phone, PhoneCall, RotateCw, ShieldCheck, Shuffle,
+  Check, CircleAlert, Eye, KeyRound, Link2Off, LoaderCircle, LogOut, Mic, Phone, PhoneCall, RotateCw, ShieldCheck,
+  Shuffle,
 } from 'lucide-react';
 import { ApiError, api } from '../../api/client';
 import type { JoinView } from '../../api/types';
@@ -196,7 +197,10 @@ function JoinReady({
             </span>
             <div>
               <h2>Callback Shield</h2>
-              <p>If a call ever sounds like a scam, your phone warns you while it happens, and your family is told.</p>
+              <p>
+                On calls that come through Callback, like a Shield demo call, your phone warns you while it happens, and
+                your family is told.
+              </p>
             </div>
           </li>
         </ol>
@@ -205,10 +209,19 @@ function JoinReady({
           <KeyRound size={20} aria-hidden="true" />
           <span>
             {family.safe_word_set
-              ? `${family.name} have a family word. Callback never asks for it and never stores it: keep it for real calls.`
-              : 'Agree a family word with your family, one only you know. Callback never asks for it.'}
+              ? `${family.name} have a family word. Callback never asks for it. Don’t say it on a practice call.`
+              : 'Agree a family word with your family, one only you know. Callback never asks for it. Don’t say it on a practice call.'}
           </span>
         </p>
+
+        <div className="join-word join-word--who">
+          <Eye size={20} aria-hidden="true" />
+          <p>
+            <strong>Who sees what. </strong>
+            {organiser ? organiser.name : 'Your family’s organiser'} sees how your calls went, including the
+            conversation, your results and your number. Your voice copy is made by our voice provider, ElevenLabs.
+          </p>
+        </div>
       </section>
 
       <JoinForm memberId={memberId} view={view} onChanged={onChanged} onOptedOut={onOptedOut} />
@@ -321,7 +334,7 @@ function JoinForm({
           type="tel"
           inputMode="tel"
           autoComplete="tel"
-          placeholder="+44 7700 900123"
+          placeholder="Your mobile number, e.g. +370…"
           value={phone}
           maxLength={24}
           aria-invalid={phoneError ? true : undefined}
@@ -359,6 +372,9 @@ function JoinForm({
               {busy ? 'Joining…' : 'Join and start my welcome call'}
             </span>
           </button>
+          <p className="join-hint join-hint--center join-hint--promise">
+            Nothing is turned on unless you say yes, here or on the welcome call.
+          </p>
           <p className="join-hint join-hint--center">
             <span>
               <Mic className="join-hint__icon" size={16} aria-hidden="true" />

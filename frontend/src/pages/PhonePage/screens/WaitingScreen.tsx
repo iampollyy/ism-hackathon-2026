@@ -11,6 +11,7 @@ import type { AlertState } from '../usePhone';
 import { AlertFamilyCard, NextSteps, WelcomeOfferCard, YourChoicesCard, useMemberChoices } from './HomeCards';
 import { LearnTab } from './LearnTab';
 import { NewsTab } from './NewsTab';
+import { PRACTICE_SOON } from './WelcomeDoneScreen';
 
 const MESSAGE_KINDS: Record<PhoneMessage['kind'], string> = {
   weekly: 'This week',
@@ -76,7 +77,9 @@ export function WaitingScreen(props: WaitingScreenProps) {
         ) : link === 'online' && practiceOff ? (
           <span className="status-pill phone-status-off">Practice off</span>
         ) : link === 'online' ? (
-          <span className="status-pill good phone-status-on">On</span>
+          // The phone is connected and can ring. Whether the family has
+          // switched protection on is not known here, so not "On".
+          <span className="status-pill good phone-status-on">Ready</span>
         ) : null}
       </header>
 
@@ -179,7 +182,7 @@ function HomeTab({
       )}
 
       <Card className={`phone-hero ${practiceOff ? 'phone-hero--off' : ''}`}>
-        <h1 className="phone-hero__title">{practiceOff ? 'Practice calls are off' : 'Callback is on'}</h1>
+        <h1 className="phone-hero__title">{practiceOff ? 'Practice calls are off' : 'You’re set up'}</h1>
         <p className="phone-hero__who">
           {phone ? (
             <>
@@ -195,7 +198,7 @@ function HomeTab({
             ? 'Your welcome call will ring on this page in a few seconds. Keep it open.'
             : practiceOff
               ? 'You won’t get practice calls. You can switch them on any time.'
-              : 'Keep this page open with the screen on. A call can come at any time.'}
+              : `${PRACTICE_SOON} Keep this page open with the screen on so a call can reach you.`}
         </p>
 
         {practiceOff && !awaitingWelcome ? (
@@ -230,7 +233,7 @@ function HomeTab({
       <YourChoicesCard memberId={memberId} choices={choices} error={choicesError} onReload={reload} />
 
       <p className="phone-habit-line">
-        If a call ever feels wrong: hang up and call back on the family number, or ask for the family word.
+        If a call ever feels wrong: hang up and call back on a number you already know, or ask for the family word.
       </p>
     </>
   );

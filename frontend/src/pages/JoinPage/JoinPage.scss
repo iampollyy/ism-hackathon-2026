@@ -192,6 +192,28 @@ $focus: rgba(29, 141, 100, 0.55);
   }
 }
 
+// Who sees what: plain facts, so a neutral card rather than the green one.
+.join-word--who {
+  background: var(--surface-strong);
+  border-color: var(--line);
+  color: var(--ink);
+
+  p {
+    margin: 0;
+    font-size: 0.97rem;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  strong {
+    color: var(--ink);
+  }
+
+  svg {
+    color: var(--navy);
+  }
+}
+
 // ---------------------------------------------------------------- the form
 
 .join-form {
@@ -352,6 +374,12 @@ $focus: rgba(29, 141, 100, 0.55);
   justify-content: center;
   text-align: center;
   text-wrap: balance;
+}
+
+// The one line that answers "what happens if I tick nothing?"
+.join-hint--promise {
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .join-hint__icon {

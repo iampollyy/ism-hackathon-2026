@@ -554,9 +554,11 @@ export function usePhone(memberId: string) {
     }
   }, [act, finish]);
 
-  /** "Call {name}" on the Shield's warning. With their number, the tel: link
-   * opens the phone's dialler and this ends the call here; without it, the
-   * family line starts once the call has ended. */
+  /** "Call {name}" on the Shield's warning: the tel: link opens the phone's
+   * dialler and this ends the call here. (With no number saved, the warning's
+   * button only hangs up, so they call on a number they know; hasNumber
+   * false, which would start the practice line after the reveal, is no
+   * longer sent from the warning.) */
   const callBackFromShield = useCallback(
     (hasNumber: boolean) => {
       const view = stateRef.current.view;
