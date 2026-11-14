@@ -34,7 +34,9 @@ function announce(text: string) {
 /** Focus the first visible element marked data-lp-focus="name" (works across React roots). */
 export function focusMark(name: string) {
   window.requestAnimationFrame(() => {
-    const els = Array.from(document.querySelectorAll<HTMLElement>(`[data-lp-focus="${name}"]`));
+    // While the phone-sized call dialog is open, focus stays inside it.
+    const scope: ParentNode = document.querySelector('.lp-overlay[aria-modal="true"]') ?? document;
+    const els = Array.from(scope.querySelectorAll<HTMLElement>(`[data-lp-focus="${name}"]`));
     const el = els.find((e) => {
       if (e.closest('[inert]')) return false;
       const r = e.getBoundingClientRect();

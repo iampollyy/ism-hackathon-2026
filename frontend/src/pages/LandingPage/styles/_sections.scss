@@ -612,7 +612,7 @@
     display: block;
     width: min(320px, 80%);
     height: 3px;
-    margin: 0 auto 12px;
+    margin: 0 0 12px;
     border-radius: 2px;
     background: var(--lp-line-dark);
     overflow: hidden;
@@ -625,8 +625,14 @@
       transform-origin: 0 50%;
     }
   }
+  // The phone sits at the right edge of its column, so the chips have room beside it
+  // and never cross the chapter text.
   .lp-story__sticky {
-    align-items: center;
+    align-items: flex-end;
+  }
+  .lp-story__progress {
+    align-self: flex-end;
+    width: calc(min(640px, 74vh) * 78 / 162);
   }
   .lp-story__phonebox {
     margin-right: 0;
@@ -635,6 +641,16 @@
     right: calc(100% + 12px);
     font-size: 14px;
     height: 32px;
+  }
+}
+
+@media (max-width: 859px) {
+  .lp-story__sticky {
+    align-items: center;
+  }
+  .lp-story__progress {
+    align-self: center;
+    width: min(320px, 80%);
   }
 }
 

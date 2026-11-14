@@ -14,7 +14,9 @@ export function Shield() {
   const raw = useLp((s) => s.shieldP);
   const reduced = useLp((s) => s.reducedMotion);
   const p = reduced ? 1 : raw;
-  const rise = ease(clamp01((p - 0.3) / 0.3));
+  // The section is centred at p ≈ 0.45 and reached from the nav at p ≈ 0.38: by then
+  // the warning is on Rasa's screen and the family alert is on Lukas's.
+  const rise = ease(clamp01((p - 0.16) / 0.2));
   return (
     <section id="shield" className="lp-sec lp-shield" aria-labelledby="shield-h" data-theme="dark">
       <div className="lp-wrap lp-split">
@@ -46,7 +48,7 @@ export function Shield() {
             style={{ transform: `translateY(${((1 - rise) * 60).toFixed(1)}px)`, opacity: rise }}
           >
             <Phone className="lp-phone--small" rings="off">
-              <LockScreen shown={p >= 0.55} />
+              <LockScreen shown={p >= 0.32} />
             </Phone>
           </div>
         </div>

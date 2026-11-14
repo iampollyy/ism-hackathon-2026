@@ -761,7 +761,8 @@ export function StoryScreen({ chapter, p }: { chapter: number; p: number }) {
 
 export function ShieldScreen({ p }: { p: number }) {
   const s = shield.screen;
-  const banner = range(p, 0.1, 0.3);
+  // Early in the section, so the whole scene is set by the time it is centred (or reached from the nav).
+  const banner = range(p, 0.05, 0.2);
   return (
     <div className="lp-scr lp-scr--incall lp-scr--shield">
       <StatusBar />

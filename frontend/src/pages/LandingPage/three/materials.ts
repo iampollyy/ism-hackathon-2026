@@ -49,11 +49,11 @@ export function ringsMaterial() {
         float d = sdRoundRect(p, vec2(0.39, 0.81), 0.11);
         float a = 0.0;
         for (int i = 0; i < 3; i++) {
-          float r = fract(uTime / 2.4 + float(i) / 3.0) * 1.5;
+          float r = fract(uTime / 2.4 + float(i) / 3.0) * 1.25;
           float x = abs(d - r);
           float band = smoothstep(0.014, 0.0, x);
           float glow = exp(-x * 20.0) * 0.3;
-          float fade = (1.0 - r / 1.5);
+          float fade = (1.0 - r / 1.25);
           a += fade * fade * (band + glow) * smoothstep(0.0, 0.06, r);
         }
         a *= uIntensity * 0.75;

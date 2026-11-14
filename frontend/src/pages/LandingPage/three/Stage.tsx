@@ -367,10 +367,11 @@ function Scene({
     }
 
     // Shield's end: both phones drift up as the night ends.
+    let nightEnd = 0;
     if (ka === 'shield' || kb === 'shield') {
-      const end = clamp01((s.shieldP - 0.85) / 0.15) * (ka === 'shield' ? 1 : ts);
-      py += 0.3 * end;
-      if (wrap.current) wrap.current.style.opacity = String(1 - end);
+      nightEnd = clamp01((s.shieldP - 0.85) / 0.15) * (ka === 'shield' ? 1 : ts);
+      py += 0.3 * nightEnd;
+      if (wrap.current) wrap.current.style.opacity = String(1 - nightEnd);
     } else if (wrap.current && wrap.current.style.opacity !== '') wrap.current.style.opacity = '';
 
     // Damped towards the targets (position faster than rotation).
@@ -450,6 +451,14 @@ function Scene({
       (heroW > 0 && s.call !== 'done' && s.call !== 'declined' && s.call !== 'stopped');
     const off = s.segment === 'after';
     if (wrap.current) wrap.current.classList.toggle('is-off', off);
+    // The glass's DOM lives in its own fixed layer: it fades and hides with the canvas.
+    const ui = portal.current;
+    if (ui) {
+      const o = off ? '0' : nightEnd > 0 ? String(1 - nightEnd) : '';
+      if (ui.style.opacity !== o) ui.style.opacity = o;
+      const v = off ? 'hidden' : '';
+      if (ui.style.visibility !== v) ui.style.visibility = v;
+    }
     if (animating && !off) invalidate();
 
     // Ready after a few frames with everything placed.
