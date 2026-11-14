@@ -92,9 +92,12 @@ export function numberWord(count: number): string {
   return WORDS[count] ?? String(count);
 }
 
+/** A timestamp, or a plain "2026-11-13" read as that day where the reader is
+ * (new Date() would take it as midnight UTC, the day before west of London). */
 function parse(iso: string | null | undefined): Date | null {
   if (!iso) return null;
-  const date = new Date(iso);
+  const day = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const date = day ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])) : new Date(iso);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -127,6 +130,11 @@ export function timeOrDay(iso: string | null | undefined): string {
 /** "Sara's" / "James'" */
 export function possessive(name: string): string {
   return name.endsWith('s') ? `${name}'` : `${name}'s`;
+}
+
+/** Smooth scrolling, unless the reader asked for less motion. */
+export function scrollBehaviour(): ScrollBehavior {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 }
 
 /** Fisher–Yates on a copy. */

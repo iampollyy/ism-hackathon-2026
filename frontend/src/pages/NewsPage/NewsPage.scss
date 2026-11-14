@@ -174,10 +174,11 @@
 
 // Where the family stands on this kind of call: who already practised it, and
 // the way to practise it. A quiet tinted band, so the briefing stays calm.
-// The way to practise sits beside the people when they fit, under them when not.
+// Two columns, so every band in the briefing has the same shape: the people
+// (wrapping inside their column) on the left, the way to practise on the right.
 .np-family {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px 20px;
   margin-top: 2px;
@@ -187,7 +188,6 @@
 }
 
 .np-family__body {
-  flex: 1 1 auto;
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -305,7 +305,9 @@
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  margin-left: auto;
+  grid-column: 2;
+  justify-self: end;
+  max-width: 300px;
   padding: 9px 14px;
   border-radius: 14px;
   background: var(--rd-surface);
@@ -471,7 +473,7 @@
   .np-paper { padding: 0 20px 4px; }
   .np-pattern { padding: 24px 0; }
   .np-pattern__summary { font-size: 1.02rem; }
-  .np-family { flex-direction: column; align-items: stretch; padding: 14px; }
+  .np-family { grid-template-columns: 1fr; align-items: stretch; padding: 14px; }
   .np-family__list li { flex: 1 1 100%; }
 
   // Name and day on the first line, what they did under it, the arrow on the right.
@@ -486,6 +488,6 @@
   }
 
   .np-family__go { grid-column: 2; grid-row: 1 / span 2; }
-  .np-practise { justify-content: space-between; margin-left: 0; }
+  .np-practise { grid-column: 1; justify-content: space-between; justify-self: stretch; max-width: none; }
   .np-aside { grid-template-columns: 1fr; }
 }

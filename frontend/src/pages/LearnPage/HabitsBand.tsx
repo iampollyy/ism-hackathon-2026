@@ -29,7 +29,7 @@ export function HabitsBand({ habits, familyName }: HabitsBandProps) {
         </h2>
         <p className="lp-habits__print-note">{familyName ? `${familyName} · ` : ''}Keep this by the phone.</p>
         <button type="button" className="lp-habits__print" onClick={() => window.print()}>
-          <Printer size={16} aria-hidden /> Print for by the phone
+          <Printer size={16} aria-hidden /> Print to keep by the phone
         </button>
       </div>
 

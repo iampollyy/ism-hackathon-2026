@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, Lightbulb, Phone, RotateCcw, ShieldCheck } from 'lucide-react';
-import { shuffle, type Habit, type LearnTactic } from './shared';
+import { scrollBehaviour, shuffle, type Habit, type LearnTactic } from './shared';
 
 const ROUND_LENGTH = 5;
 const CHOICES = 3;
@@ -12,17 +12,27 @@ const CHOICES = 3;
 type Question = { line: string; answer: LearnTactic; options: LearnTactic[] };
 
 // Pairs whose example lines a fair reader could file under either (a "send it
-// to my friend's account" is also asking for money). They never stand side by
-// side in one question, so a sensible pick is never marked "not quite".
+// to my friend's account" is also asking for money; "don't ring the bank" is
+// also stopping a call-back). They never stand side by side in one question,
+// so a sensible pick is never marked "not quite". Every tactic still keeps at
+// least two others to choose from.
 const CLOSE_PAIRS: readonly [string, string][] = [
   ['money_request', 'unusual_payment'],
   ['money_request', 'urgency'],
   ['secrecy', 'isolation'],
+  ['secrecy', 'urgency'],
+  ['isolation', 'refuses_callback'],
   ['asks_for_code', 'small_ask_first'],
   ['asks_for_code', 'unusual_payment'],
   ['urgency', 'refuses_callback'],
   ['emotional_appeal', 'refuses_callback'],
 ];
+
+/** True when any part of the element is outside the window. */
+function isOffScreen(element: Element): boolean {
+  const box = element.getBoundingClientRect();
+  return box.top < 0 || box.bottom > window.innerHeight;
+}
 
 function areClose(a: string, b: string): boolean {
   return CLOSE_PAIRS.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
@@ -54,9 +64,12 @@ export function SpotTheTactic({ tactics, habits }: SpotTheTacticProps) {
   const [round, setRound] = useState<Question[]>(() => makeRound(tactics));
   const [index, setIndex] = useState(0);
   const [picks, setPicks] = useState<(string | null)[]>(() => Array(ROUND_LENGTH).fill(null));
+  const sectionRef = useRef<HTMLElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   const startRef = useRef<HTMLButtonElement>(null);
   const callRef = useRef<HTMLElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  const doneRef = useRef<HTMLDivElement>(null);
   const moved = useRef(false);
 
   const finished = index >= round.length;
@@ -64,16 +77,31 @@ export function SpotTheTactic({ tactics, habits }: SpotTheTacticProps) {
   const picked = finished ? null : picks[index];
   const spotted = picks.filter((pick, i) => round[i] && pick === round[i].answer.key).length;
 
-  // After a pick, the way forward gets the focus (the feedback is read out by aria-live).
+  // After a pick, the way forward gets the focus (the feedback is read out by
+  // aria-live), and on a small screen the feedback scrolls up into sight.
   useEffect(() => {
-    if (picked) nextRef.current?.focus({ preventScroll: true });
+    if (!picked) return;
+    nextRef.current?.focus({ preventScroll: true });
+    feedbackRef.current?.scrollIntoView({ block: 'nearest', behavior: scrollBehaviour() });
   }, [picked]);
+  // The score replaces the taller feedback, so the page gets shorter: bring
+  // the quiz back into view if the score ended up off screen.
   useEffect(() => {
-    if (finished) startRef.current?.focus({ preventScroll: true });
+    if (!finished) return;
+    startRef.current?.focus({ preventScroll: true });
+    if (doneRef.current && isOffScreen(doneRef.current)) {
+      sectionRef.current?.scrollIntoView({ block: 'start', behavior: scrollBehaviour() });
+    }
   }, [finished]);
-  // Moving on to a new line puts the focus on it, so it is read out next.
+  // Moving on to a new line puts the focus on it, so it is read out next, and
+  // brings the quiz back into view: the feedback that was just removed may
+  // have left the new line above the screen.
   useEffect(() => {
-    if (moved.current) callRef.current?.focus({ preventScroll: true });
+    if (!moved.current || !callRef.current) return;
+    callRef.current.focus({ preventScroll: true });
+    if (isOffScreen(callRef.current)) {
+      sectionRef.current?.scrollIntoView({ block: 'start', behavior: scrollBehaviour() });
+    }
   }, [index, round]);
 
   if (tactics.length < 2 || round.length === 0) return null;
@@ -97,7 +125,7 @@ export function SpotTheTactic({ tactics, habits }: SpotTheTacticProps) {
   const isSpotted = question !== null && picked === question.answer.key;
 
   return (
-    <section className="lp-quiz" id="spot" aria-labelledby="lp-quiz-title">
+    <section className="lp-quiz" id="spot" aria-labelledby="lp-quiz-title" ref={sectionRef}>
       <div className="lp-quiz__intro">
         <h2 id="lp-quiz-title">Spot the tactic</h2>
         <p>A caller says one line. Which trick is it? {round.length} lines, no time limit, nobody sees your answers.</p>
@@ -163,7 +191,7 @@ export function SpotTheTactic({ tactics, habits }: SpotTheTacticProps) {
 
           <div className="lp-quiz__feedback" aria-live="polite">
             {picked ? (
-              <div className={`lp-feedback${isSpotted ? ' is-spotted' : ''}`}>
+              <div className={`lp-feedback${isSpotted ? ' is-spotted' : ''}`} ref={feedbackRef}>
                 <p className="lp-feedback__title">
                   {isSpotted ? (
                     <>
@@ -191,7 +219,7 @@ export function SpotTheTactic({ tactics, habits }: SpotTheTacticProps) {
           </div>
         </div>
       ) : (
-        <div className="lp-quiz__done" aria-live="polite">
+        <div className="lp-quiz__done" aria-live="polite" ref={doneRef}>
           <p className="lp-quiz__score">
             You spotted {spotted} of {round.length}.
           </p>

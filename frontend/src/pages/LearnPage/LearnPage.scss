@@ -156,6 +156,10 @@
   border-radius: var(--radius);
   background: var(--rd-surface);
   border: 1px solid var(--line);
+  // Room above and below when the quiz scrolls itself back into view.
+  scroll-margin-top: 16px;
+
+  .lp-feedback { scroll-margin-bottom: 16px; }
 }
 
 .lp-quiz__intro {

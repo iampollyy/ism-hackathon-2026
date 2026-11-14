@@ -4,14 +4,14 @@
 // (GET /api/families/{id}/drills). All words come from the API's content.
 // Other screens can link to one tactic with #tactic-<key>.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ArrowRight, BookOpen, Newspaper, RotateCcw } from 'lucide-react';
 import { HabitsBand } from './HabitsBand';
 import { SpotTheTactic } from './SpotTheTactic';
 import { TacticCard } from './TacticCard';
 import {
-  errorText, loadLearnContent, numberWord, useFamilyDrills, useFamilyName,
+  errorText, loadLearnContent, numberWord, scrollBehaviour, useFamilyDrills, useFamilyName,
   type Drill, type LearnContent, type LearnTactic,
 } from './shared';
 import './readingShared.scss';
@@ -54,24 +54,44 @@ export function LearnPage() {
     return map;
   }, [drills]);
 
-  // A link like /family/x/learn#tactic-urgency: scroll there once the content is
-  // in, and light the card up for a moment so the eye finds it.
+  // A link like /family/x/learn#tactic-urgency: scroll there once the layout has
+  // settled (the content and the family's practice calls, which add rows to the
+  // cards above), and light the card up for a moment so the eye finds it.
+  // Once per navigation: a later change to the drills does not scroll again.
+  const scrolledFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!content || !location.hash) return;
+    if (!content || drills === null || !location.hash) return;
+    const visit = `${location.key}${location.hash}`;
+    if (scrolledFor.current === visit) return;
     const id = decodeURIComponent(location.hash.slice(1));
-    const target = document.getElementById(id);
-    if (!target) return;
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    if (!id.startsWith('tactic-')) return;
-    setFlashKey(id.slice('tactic-'.length));
+    let cancelled = false;
+    // Wait a frame, so the rows the drills just added are laid out, and for the
+    // web fonts: on a first visit they swap in late and every card above grows.
+    const frame = window.requestAnimationFrame(() => {
+      void document.fonts.ready.then(() => {
+        const target = document.getElementById(id);
+        if (cancelled || !target) return;
+        scrolledFor.current = visit;
+        target.scrollIntoView({ behavior: scrollBehaviour(), block: 'start' });
+        if (id.startsWith('tactic-')) setFlashKey(id.slice('tactic-'.length));
+      });
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [content, drills, location.hash, location.key]);
+  useEffect(() => {
+    if (!flashKey) return;
     const timer = window.setTimeout(() => setFlashKey(null), 2400);
     return () => window.clearTimeout(timer);
-  }, [content, location.hash, location.key]);
+  }, [flashKey]);
 
   const notFound = family.notFound || drillsNotFound;
   const tactics = content?.tactics.filter((item) => item.kind === 'tactic') ?? [];
   const signals = content?.tactics.filter((item) => item.kind === 'signal') ?? [];
-  const metInDrills = (content?.tactics ?? []).filter((item) => drillsByTactic.has(item.key)).length;
+  // Only the pressure tactics: this line sits under their heading.
+  const metInDrills = tactics.filter((item) => drillsByTactic.has(item.key)).length;
 
   return (
     <div className="rd-page lp-page">

@@ -92,10 +92,16 @@ export function PatternItem({ pattern, familyId, scenarioTitle, practised }: Pat
             <p className="np-family__none">Nobody in the family has had this practice call yet.</p>
           )}
 
-          <Link to={`/family/${familyId}#practice`} className="np-practise">
+          {/* The practice form does not pick the story from the link yet, so the
+              words say which story to choose rather than promise it is chosen.
+              ?scenario= is there for the family page to read. */}
+          <Link
+            to={`/family/${familyId}?scenario=${encodeURIComponent(pattern.closest_scenario)}#practice`}
+            className="np-practise"
+          >
             <span>
-              Practise this one
-              <strong>{scenarioTitle ?? 'Choose who and when'}</strong>
+              Practise a call like this
+              <strong>{scenarioTitle ? `Choose the story “${scenarioTitle}”` : 'Choose who and when'}</strong>
             </span>
             <ArrowRight size={16} aria-hidden />
           </Link>

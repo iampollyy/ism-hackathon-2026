@@ -35,13 +35,41 @@ function kindOf(news: NewsView): Kind {
   return news.patterns.every((pattern) => pattern.sources.length === 0) ? 'examples' : 'earlier';
 }
 
-/** "2026-W46" -> "week 46". */
-function weekWords(week: string | null): string | null {
-  const match = week?.match(/W(\d{1,2})$/);
-  return match ? `week ${Number(match[1])}` : null;
+const DAY_MS = 86_400_000;
+
+/** "2026-W46" -> the Monday that ISO week starts on (as a UTC date), or null. */
+function weekStart(week: string | null): Date | null {
+  const match = week?.match(/^(\d{4})-W(\d{1,2})$/);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const firstMonday = jan4.getTime() - ((jan4.getUTCDay() + 6) % 7) * DAY_MS;
+  return new Date(firstMonday + (Number(match[2]) - 1) * 7 * DAY_MS);
 }
 
-/** What to say after a refresh; null when the briefing's own note already says it. */
+/** This week's Monday, in UTC like the server's ISO weeks. */
+function thisWeekStart(): Date {
+  const now = new Date();
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return new Date(today - ((now.getUTCDay() + 6) % 7) * DAY_MS);
+}
+
+/** When an earlier briefing is from, in words a reader knows: "the week of 9 Nov".
+ * null when it is unknown, or when it is this week's row (an earlier briefing
+ * carried over to this week, so its real week is not known). */
+function earlierWeekWords(week: string | null): string | null {
+  const start = weekStart(week);
+  if (!start) return null;
+  const current = thisWeekStart();
+  if (start.getTime() >= current.getTime()) return null;
+  const sameYear = start.getUTCFullYear() === current.getUTCFullYear();
+  const day = start.toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'short', timeZone: 'UTC', ...(sameYear ? {} : { year: 'numeric' }),
+  });
+  return `the week of ${day}`;
+}
+
+/** What to say after a refresh, worded for the briefing now on screen. */
 function noticeFor(answer: NewsRefreshed): Notice | null {
   if (answer.refreshed) return { tone: 'good', text: "Updated just now from this week's warnings." };
   // Nothing to show at all: never point at "the latest briefing".
@@ -63,8 +91,18 @@ function noticeFor(answer: NewsRefreshed): Notice | null {
     case 'fresh':
       return { tone: 'calm', text: 'This is already the latest briefing: it was updated a few minutes ago.' };
     case 'no_new_digest':
-      // Examples or an earlier week: the note at the top of the briefing explains it.
-      if (kindOf(answer) !== 'this-week') return null;
+      if (kindOf(answer) === 'examples') {
+        return {
+          tone: 'calm',
+          text: "We tried again just now but couldn't read this week's warnings, so these well-known examples stay for now.",
+        };
+      }
+      if (kindOf(answer) === 'earlier') {
+        return {
+          tone: 'calm',
+          text: "We tried again just now but this week's briefing isn't ready, so the earlier one stays for now.",
+        };
+      }
       return {
         tone: 'calm',
         text: "Callback couldn't write a new briefing just now, so this is the latest one we have. Please try again later.",
@@ -75,6 +113,21 @@ function noticeFor(answer: NewsRefreshed): Notice | null {
         text: 'Something went wrong while reading the warnings. This is the latest briefing we have; please try again later.',
       };
   }
+}
+
+/** What to say after looking again, a minute after "too soon". */
+function recheckNotice(later: NewsView | null, before: string | null): Notice {
+  if (!later) {
+    return { tone: 'calm', text: "We couldn't look again just now. Please refresh the page in a few minutes." };
+  }
+  if (later.updated_at && later.updated_at !== before) return { tone: 'good', text: 'The new briefing is in.' };
+  const when = later.next_refresh_at && Date.parse(later.next_refresh_at) > Date.now()
+    ? `from ${timeOrDay(later.next_refresh_at)}`
+    : 'now';
+  if (kindOf(later) === 'none') {
+    return { tone: 'calm', text: `Nothing new yet, so there's still no briefing. You can try again ${when}.` };
+  }
+  return { tone: 'calm', text: `Nothing new yet: this is the latest briefing. You can refresh again ${when}.` };
 }
 
 export function NewsPage() {
@@ -166,18 +219,18 @@ export function NewsPage() {
     try {
       const answer = await api.refreshNews(familyId);
       if (!live.current) return;
-      const before = news?.updated_at ?? null;
       setNews(answer);
       setNow(Date.now());
       setNotice(noticeFor(answer));
       if (answer.reason === 'too_soon') {
+        // "We'll look again in a minute": look once, then say what we found,
+        // so the promise never stays on screen.
+        const before = answer.updated_at;
         recheck.current = window.setTimeout(async () => {
           const later = await load();
           if (!live.current) return;
           setNow(Date.now());
-          if (later && later.updated_at && later.updated_at !== before) {
-            setNotice({ tone: 'good', text: 'The new briefing is in.' });
-          }
+          setNotice(recheckNotice(later, before));
         }, RECHECK_MS);
       }
     } catch (error) {
@@ -192,7 +245,9 @@ export function NewsPage() {
   };
 
   const kind = news ? kindOf(news) : 'none';
-  const week = weekWords(news?.week ?? null);
+  // An earlier week's briefing says when it is from; one carried over to
+  // this week (the weekly run keeps last week's when this week's fails) can't.
+  const earlierWeek = earlierWeekWords(news?.week ?? null);
   const notFound = Boolean(loadError?.notFound) || family.notFound;
   const title = TITLES[kind];
 
@@ -247,7 +302,9 @@ export function NewsPage() {
             {news && kind !== 'none' ? (
               <p className="rd-meta">
                 {kind === 'this-week' ? <span className="rd-tag rd-tag--good">This week</span> : null}
-                {kind === 'earlier' ? <span className="rd-tag">{week ? `From ${week}` : 'Earlier'}</span> : null}
+                {kind === 'earlier' ? (
+                  <span className="rd-tag">{earlierWeek ? `From ${earlierWeek}` : 'Earlier'}</span>
+                ) : null}
                 {kind === 'examples' ? <span className="rd-tag">Examples</span> : null}
                 {news.updated_at ? <span>Updated {dayAndTime(news.updated_at)}</span> : null}
               </p>
@@ -314,7 +371,9 @@ export function NewsPage() {
                 ) : null}
                 {kind === 'earlier' ? (
                   <p className="np-fallback">
-                    This briefing is from {week ?? 'an earlier week'}. This week's isn't ready yet; refresh to try again.
+                    {earlierWeek
+                      ? `This briefing is from ${earlierWeek}. This week's isn't ready yet; refresh to try again.`
+                      : "Carried over from an earlier briefing: this week's isn't ready yet. Refresh to try again."}
                   </p>
                 ) : null}
                 {news.patterns.map((pattern) => (
