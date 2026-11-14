@@ -114,10 +114,10 @@ flowchart LR
 
 ## The hard parts, and how we checked them
 
-- **A real conversation in a cloned voice, set per call, in the browser.** The three agents are created and configured from code (`backend/voice_agents/sync.py`), and scripted conversations run against the real agents on ElevenLabs (`voice_agents/agent_tests.py`): asking for the family word, hanging up to call back, agreeing to pay, and a yes and a no in the welcome call. On 13 Nov those five passed 5/5, with the right tool calls, the reveal word for word, and the agent hanging up. The welcome call has since gained the voice question; its updated scripts (six in all, see [voice_agents/README.md](backend/voice_agents/README.md)) have not been run against the real agents yet.
+- **A real conversation in a cloned voice, set per call, in the browser.** The three agents are created and configured from code (`backend/voice_agents/sync.py`), and scripted conversations run against the real agents on ElevenLabs (`voice_agents/agent_tests.py`): asking for the family word, hanging up to call back, agreeing to pay, and a yes and a no in the welcome call. On 13 Nov those five passed 5/5, with the right tool calls, the reveal word for word, and the agent hanging up. On 14 Nov the welcome call gained the voice question, and its three scripts (yes to both, yes to calls but no to the voice, no) pass against the real agent, each consent reported exactly once (see [voice_agents/README.md](backend/voice_agents/README.md)).
 - **An independent live risk check.** It never sees the agent's own tactic labels, so its agreement with them is a fair test. On ten written practice transcripts with the real models, it agreed with the agent's tactics with 0.80 precision and 0.87 recall, ended 8 calls red and 2 yellow, and answered in about 1.2 s (2.4 s at the 95th percentile).
 - **Scoring.** The scorer labels 9 of 10 test transcripts correctly.
-- **Tests.** 1,080 back-end tests run offline in about two minutes (including tests written independently from the spec), and a live group (`pytest -m live`) checks the real ElevenLabs agents, voices and tokens, every model job against its time limit, Firecrawl, and a whole practice path with real models.
+- **Tests.** 1,137 back-end tests run offline in about two minutes (including tests written independently from the spec), and a live group (`pytest -m live`) checks the real ElevenLabs agents, voices and tokens, every model job against its time limit, Firecrawl, and a whole practice path with real models.
 
 ## Repository
 

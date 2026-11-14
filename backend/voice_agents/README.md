@@ -78,8 +78,9 @@ reveal line word for word, `end_call`).
 | `welcome_voice_no` | says yes to practice calls, no to her voice | `consent_result` true, `voice_consent_result` false; accepts it and goes on |
 | `welcome_no` | says no | `consent_result` given false; accepts it and says nothing will be sent; never asks about the voice |
 
-Run them after every prompt change. Results on 13 Nov 2026 (gpt-6-luna): 5/5,
-before the voice question was added (full app, track 2); not yet run since.
+Run them after every prompt change. Results on 13 Nov 2026 (gpt-6-luna): 5/5.
+On 14 Nov, after the voice question was added: the three welcome scenarios pass
+(after a prompt fix so each consent is reported exactly once).
 
 ## Checks only a real call can do
 
