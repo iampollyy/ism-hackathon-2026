@@ -67,8 +67,8 @@ export function DemoPanel({ familyId, members, protection }: Props) {
   }, [drillId, drillOver]);
 
   const drillTarget = members.find((member) => member.id === drillFor);
-  // An error goes once what it was about changes: the person, or the drill on its way.
-  useEffect(() => setDrillError(null), [drillFor, drill?.status]);
+  // An error goes once what it was about changes: the person chosen, or a new drill on its way.
+  useEffect(() => setDrillError(null), [drillFor, drillId]);
 
   const surprise = async () => {
     setDrillBusy(true);
@@ -194,7 +194,7 @@ export function DemoPanel({ familyId, members, protection }: Props) {
             {members.map((member) => (
               <option key={member.id} value={member.id}>
                 {member.name}
-                {member.phone_online ? ' · phone open' : ''}
+                {!member.consent.practice ? ' · not agreed yet' : member.phone_online ? ' · phone open' : ''}
               </option>
             ))}
           </select>

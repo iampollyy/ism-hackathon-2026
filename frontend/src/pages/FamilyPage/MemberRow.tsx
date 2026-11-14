@@ -119,7 +119,7 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
     try {
       await api.deleteVoice(member.id);
       setConfirmRemove(false);
-      setNotice({ tone: 'good', text: `${member.name}'s cloned voice is deleted. Drills use a stranger's voice for them instead.` });
+      setNotice({ tone: 'good', text: `${member.name}'s cloned voice is deleted. No practice call will sound like ${member.name} now.` });
       onChanged();
     } catch (error) {
       setNotice({ tone: 'bad', text: errorText(error, `${member.name}'s voice wasn't deleted. Please try again.`) });
@@ -343,8 +343,8 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
       {confirmRemove && member.voice_ready ? (
         <div className="fh-row-confirm" role="group" aria-label={`Remove ${member.name}'s voice`}>
           <span>
-            Delete {member.name}'s cloned voice for good? Drills that would sound like {member.name} use a stranger's
-            voice instead, until they agree to a new one.
+            Delete {member.name}'s cloned voice for good? Practice calls stop sounding like {member.name} straight
+            away. A new voice needs {member.name}'s yes again.
           </span>
           <div>
             <button type="button" className="fh-chip-button danger" onClick={removeVoice} disabled={removing}>

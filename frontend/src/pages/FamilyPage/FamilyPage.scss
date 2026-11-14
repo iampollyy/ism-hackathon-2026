@@ -1095,12 +1095,11 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .fh-fact-detail {
-    max-width: 100%;
-    overflow: hidden;
+    max-width: 24ch;
     color: var(--muted);
     font-size: 0.78rem;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    line-height: 1.35;
+    text-wrap: pretty;
   }
 
   .fh-invite {
