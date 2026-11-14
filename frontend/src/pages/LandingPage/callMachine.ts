@@ -150,7 +150,7 @@ class CallMachine {
     const check = () => {
       if (id !== this.runId) return;
       if (callAudio.running) this.start(id, 'audio', false);
-      else if (tries++ > 8) this.start(id, 'perf', true);
+      else if (tries++ > 40) this.start(id, 'perf', true); // about 2 s: some browsers start audio slowly
       else window.setTimeout(check, 50);
     };
     check();
