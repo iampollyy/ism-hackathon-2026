@@ -45,9 +45,14 @@ def chunks(words: list[dict], max_words: int = 3, max_chars: int = 18, max_gap: 
     return groups
 
 
-def header(fmt: str) -> str:
+def header(fmt: str, position: str = "middle") -> str:
     width, height = SIZES[fmt]
-    if fmt == "reel":
+    alignment = 2  # bottom-centre, lifted by MarginV
+    if fmt == "reel" and position == "top":
+        # Above the head, for selfie framing where the face fills the middle;
+        # starts at 19% height, clear of Instagram's top bar.
+        size, margin_v, outline, alignment = 92, int(height * 0.19), 16, 8
+    elif fmt == "reel":
         size, margin_v, outline = 92, int(height * 0.36), 16   # baseline near 64% height: clear of IG's UI
     else:
         size, margin_v, outline = 72, int(height * 0.10), 12   # lower third
@@ -62,21 +67,26 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caption,Space Grotesk,{size},{white},{pink},{deep},{deep},-1,0,0,0,100,100,0,0,3,{outline},0,2,60,60,{margin_v},1
+Style: Caption,Space Grotesk,{size},{white},{pink},{deep},{deep},-1,0,0,0,100,100,0,0,3,{outline},0,{alignment},60,60,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
 
-def build(words: list[dict], fmt: str) -> str:
-    """One dialogue line per word: the phrase stays up, the current word turns pink."""
+def build(words: list[dict], fmt: str, position: str = "middle") -> str:
+    """One dialogue line per word: the phrase stays up, the current word turns pink.
+    A phrase never stays on screen into the next one (two would stack)."""
     pink = ass_colour(PINK)
-    lines = [header(fmt)]
-    for group in chunks(words):
+    lines = [header(fmt, position)]
+    groups = chunks(words)
+    for group_index, group in enumerate(groups):
+        next_start = groups[group_index + 1][0]["start"] if group_index + 1 < len(groups) else None
         for index, word in enumerate(group):
             start = word["start"]
             end = group[index + 1]["start"] if index + 1 < len(group) else max(word["end"], start + 0.25)
+            if next_start is not None:
+                end = min(end, next_start)
             parts = []
             for other_index, other in enumerate(group):
                 text = other["text"].replace("{", "(").replace("}", ")")

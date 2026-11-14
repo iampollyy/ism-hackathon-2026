@@ -1,0 +1,538 @@
+{
+ "lines": [
+  {
+   "id": "v01",
+   "start": 0.12,
+   "end": 3.105,
+   "words": [
+    {
+     "text": "This",
+     "start": 0.158,
+     "end": 0.365
+    },
+    {
+     "text": "is",
+     "start": 0.46,
+     "end": 0.573
+    },
+    {
+     "text": "what",
+     "start": 0.592,
+     "end": 0.686
+    },
+    {
+     "text": "a",
+     "start": 0.724,
+     "end": 0.804
+    },
+    {
+     "text": "scam",
+     "start": 0.856,
+     "end": 1.082
+    },
+    {
+     "text": "call",
+     "start": 1.158,
+     "end": 1.309
+    },
+    {
+     "text": "looks",
+     "start": 1.384,
+     "end": 1.611
+    },
+    {
+     "text": "like",
+     "start": 1.648,
+     "end": 1.931
+    },
+    {
+     "text": "from",
+     "start": 2.37,
+     "end": 2.502
+    },
+    {
+     "text": "the",
+     "start": 2.539,
+     "end": 2.619
+    },
+    {
+     "text": "inside",
+     "start": 2.653,
+     "end": 3.087
+    }
+   ]
+  },
+  {
+   "id": "v02",
+   "start": 3.265,
+   "end": 6.443,
+   "words": [
+    {
+     "text": "Anna's",
+     "start": 3.303,
+     "end": 3.548
+    },
+    {
+     "text": "phone",
+     "start": 3.605,
+     "end": 3.831
+    },
+    {
+     "text": "rings.",
+     "start": 3.888,
+     "end": 4.228
+    },
+    {
+     "text": "Unknown",
+     "start": 4.584,
+     "end": 4.924
+    },
+    {
+     "text": "number.",
+     "start": 4.981,
+     "end": 5.301
+    },
+    {
+     "text": "She",
+     "start": 5.707,
+     "end": 5.839
+    },
+    {
+     "text": "picks",
+     "start": 5.877,
+     "end": 6.084
+    },
+    {
+     "text": "up",
+     "start": 6.179,
+     "end": 6.349
+    }
+   ]
+  },
+  {
+   "id": "v03",
+   "start": 6.603,
+   "end": 8.622,
+   "words": [
+    {
+     "text": "Callback",
+     "start": 6.641,
+     "end": 7.056
+    },
+    {
+     "text": "Shield",
+     "start": 7.112,
+     "end": 7.546
+    },
+    {
+     "text": "is",
+     "start": 7.811,
+     "end": 7.999
+    },
+    {
+     "text": "listening",
+     "start": 8.056,
+     "end": 8.527
+    }
+   ]
+  },
+  {
+   "id": "v04",
+   "start": 8.882,
+   "end": 11.957,
+   "words": [
+    {
+     "text": "And",
+     "start": 8.92,
+     "end": 9.014
+    },
+    {
+     "text": "her",
+     "start": 9.071,
+     "end": 9.165
+    },
+    {
+     "text": "family",
+     "start": 9.297,
+     "end": 9.769
+    },
+    {
+     "text": "watches",
+     "start": 10.071,
+     "end": 10.561
+    },
+    {
+     "text": "the",
+     "start": 10.599,
+     "end": 10.712
+    },
+    {
+     "text": "call",
+     "start": 10.769,
+     "end": 11.108
+    },
+    {
+     "text": "live",
+     "start": 11.467,
+     "end": 11.863
+    }
+   ]
+  },
+  {
+   "id": "v05",
+   "start": 12.117,
+   "end": 18.28,
+   "words": [
+    {
+     "text": "Every",
+     "start": 12.155,
+     "end": 12.381
+    },
+    {
+     "text": "line",
+     "start": 12.476,
+     "end": 12.834
+    },
+    {
+     "text": "shows",
+     "start": 12.947,
+     "end": 13.249
+    },
+    {
+     "text": "up",
+     "start": 13.4,
+     "end": 13.627
+    },
+    {
+     "text": "as",
+     "start": 13.815,
+     "end": 13.91
+    },
+    {
+     "text": "it's",
+     "start": 13.947,
+     "end": 14.117
+    },
+    {
+     "text": "said.",
+     "start": 14.174,
+     "end": 14.457
+    },
+    {
+     "text": "The",
+     "start": 15.172,
+     "end": 15.266
+    },
+    {
+     "text": "fraud",
+     "start": 15.341,
+     "end": 15.549
+    },
+    {
+     "text": "team",
+     "start": 15.643,
+     "end": 15.832
+    },
+    {
+     "text": "from",
+     "start": 15.908,
+     "end": 16.058
+    },
+    {
+     "text": "your",
+     "start": 16.096,
+     "end": 16.176
+    },
+    {
+     "text": "bank,",
+     "start": 16.266,
+     "end": 16.587
+    },
+    {
+     "text": "the",
+     "start": 16.959,
+     "end": 17.039
+    },
+    {
+     "text": "light",
+     "start": 17.11,
+     "end": 17.374
+    },
+    {
+     "text": "turns",
+     "start": 17.506,
+     "end": 17.808
+    },
+    {
+     "text": "yellow",
+     "start": 17.884,
+     "end": 18.186
+    }
+   ]
+  },
+  {
+   "id": "v06",
+   "start": 18.54,
+   "end": 21.785,
+   "words": [
+    {
+     "text": "Move",
+     "start": 18.578,
+     "end": 18.766
+    },
+    {
+     "text": "your",
+     "start": 18.842,
+     "end": 18.922
+    },
+    {
+     "text": "savings",
+     "start": 19.031,
+     "end": 19.408
+    },
+    {
+     "text": "today.",
+     "start": 19.446,
+     "end": 19.785
+    },
+    {
+     "text": "Don't",
+     "start": 20.125,
+     "end": 20.314
+    },
+    {
+     "text": "tell",
+     "start": 20.351,
+     "end": 20.559
+    },
+    {
+     "text": "anyone.",
+     "start": 20.634,
+     "end": 21.031
+    },
+    {
+     "text": "Red",
+     "start": 21.408,
+     "end": 21.691
+    }
+   ]
+  },
+  {
+   "id": "v07",
+   "start": 22.065,
+   "end": 26.998,
+   "words": [
+    {
+     "text": "Within",
+     "start": 22.103,
+     "end": 22.348
+    },
+    {
+     "text": "seconds,",
+     "start": 22.48,
+     "end": 23.009
+    },
+    {
+     "text": "Anna's",
+     "start": 23.254,
+     "end": 23.499
+    },
+    {
+     "text": "screen",
+     "start": 23.537,
+     "end": 23.839
+    },
+    {
+     "text": "turns",
+     "start": 23.914,
+     "end": 24.178
+    },
+    {
+     "text": "red.",
+     "start": 24.273,
+     "end": 24.556
+    },
+    {
+     "text": "\"This",
+     "start": 24.575,
+     "end": 25.055
+    },
+    {
+     "text": "sounds",
+     "start": 25.111,
+     "end": 25.356
+    },
+    {
+     "text": "like",
+     "start": 25.394,
+     "end": 25.507
+    },
+    {
+     "text": "a",
+     "start": 25.564,
+     "end": 25.644
+    },
+    {
+     "text": "scam.",
+     "start": 25.658,
+     "end": 26.036
+    },
+    {
+     "text": "Hang",
+     "start": 26.451,
+     "end": 26.658
+    },
+    {
+     "text": "up.\"",
+     "start": 26.734,
+     "end": 26.904
+    }
+   ]
+  },
+  {
+   "id": "v08",
+   "start": 27.258,
+   "end": 31.164,
+   "words": [
+    {
+     "text": "And",
+     "start": 27.296,
+     "end": 27.39
+    },
+    {
+     "text": "the",
+     "start": 27.428,
+     "end": 27.522
+    },
+    {
+     "text": "family",
+     "start": 27.56,
+     "end": 27.862
+    },
+    {
+     "text": "is",
+     "start": 27.881,
+     "end": 27.994
+    },
+    {
+     "text": "alerted",
+     "start": 28.05,
+     "end": 28.541
+    },
+    {
+     "text": "automatically.",
+     "start": 28.673,
+     "end": 29.352
+    },
+    {
+     "text": "Nobody",
+     "start": 29.447,
+     "end": 29.786
+    },
+    {
+     "text": "has",
+     "start": 29.824,
+     "end": 30.013
+    },
+    {
+     "text": "to",
+     "start": 30.069,
+     "end": 30.182
+    },
+    {
+     "text": "tap",
+     "start": 30.22,
+     "end": 30.579
+    },
+    {
+     "text": "a",
+     "start": 30.635,
+     "end": 30.715
+    },
+    {
+     "text": "thing.",
+     "start": 30.749,
+     "end": 31.069
+    }
+   ]
+  },
+  {
+   "id": "v09",
+   "start": 31.464,
+   "end": 37.395,
+   "words": [
+    {
+     "text": "And",
+     "start": 31.501,
+     "end": 31.596
+    },
+    {
+     "text": "afterwards",
+     "start": 31.671,
+     "end": 32.143
+    },
+    {
+     "text": "how",
+     "start": 32.388,
+     "end": 32.539
+    },
+    {
+     "text": "you",
+     "start": 32.596,
+     "end": 32.69
+    },
+    {
+     "text": "did.",
+     "start": 32.728,
+     "end": 32.935
+    },
+    {
+     "text": "Red",
+     "start": 33.332,
+     "end": 33.521
+    },
+    {
+     "text": "light,",
+     "start": 33.559,
+     "end": 33.823
+    },
+    {
+     "text": "warning",
+     "start": 34.125,
+     "end": 34.464
+    },
+    {
+     "text": "signs.",
+     "start": 34.559,
+     "end": 34.898
+    },
+    {
+     "text": "Hung",
+     "start": 35.565,
+     "end": 35.735
+    },
+    {
+     "text": "up",
+     "start": 35.791,
+     "end": 35.905
+    },
+    {
+     "text": "after",
+     "start": 35.98,
+     "end": 36.244
+    },
+    {
+     "text": "24",
+     "start": 36.452,
+     "end": 36.848
+    },
+    {
+     "text": "seconds",
+     "start": 36.905,
+     "end": 37.301
+    }
+   ]
+  }
+ ],
+ "voEnd": 37.395
+}

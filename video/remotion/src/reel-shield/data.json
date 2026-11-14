@@ -1,0 +1,573 @@
+{
+ "groups": [
+  {
+   "startMs": 973,
+   "endMs": 12833,
+   "speaker": "ai",
+   "kind": "cap",
+   "pages": [
+    {
+     "startMs": 973,
+     "endMs": 3893,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "Denis?",
+       "startMs": 973,
+       "endMs": 3393
+      }
+     ]
+    },
+    {
+     "startMs": 3893,
+     "endMs": 4667,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "It's",
+       "startMs": 3893,
+       "endMs": 4053
+      },
+      {
+       "text": "me.",
+       "startMs": 4113,
+       "endMs": 4313
+      }
+     ]
+    },
+    {
+     "startMs": 4747,
+     "endMs": 5547,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "I",
+       "startMs": 4747,
+       "endMs": 4807
+      },
+      {
+       "text": "broke",
+       "startMs": 4847,
+       "endMs": 5007
+      },
+      {
+       "text": "my",
+       "startMs": 5067,
+       "endMs": 5167
+      },
+      {
+       "text": "phone",
+       "startMs": 5287,
+       "endMs": 5507
+      }
+     ]
+    },
+    {
+     "startMs": 5547,
+     "endMs": 6247,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "this",
+       "startMs": 5547,
+       "endMs": 5747
+      },
+      {
+       "text": "morning,",
+       "startMs": 5767,
+       "endMs": 6087
+      }
+     ]
+    },
+    {
+     "startMs": 6247,
+     "endMs": 7207,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "so",
+       "startMs": 6247,
+       "endMs": 6467
+      },
+      {
+       "text": "I'm",
+       "startMs": 6607,
+       "endMs": 6707
+      },
+      {
+       "text": "borrowing",
+       "startMs": 6767,
+       "endMs": 7147
+      }
+     ]
+    },
+    {
+     "startMs": 7207,
+     "endMs": 7907,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "this",
+       "startMs": 7207,
+       "endMs": 7367
+      },
+      {
+       "text": "one,",
+       "startMs": 7447,
+       "endMs": 7667
+      }
+     ]
+    },
+    {
+     "startMs": 7907,
+     "endMs": 8547,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "and",
+       "startMs": 7907,
+       "endMs": 7987
+      },
+      {
+       "text": "I",
+       "startMs": 8047,
+       "endMs": 8127
+      },
+      {
+       "text": "can't",
+       "startMs": 8187,
+       "endMs": 8387
+      },
+      {
+       "text": "get",
+       "startMs": 8427,
+       "endMs": 8507
+      }
+     ]
+    },
+    {
+     "startMs": 8547,
+     "endMs": 9833,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "into",
+       "startMs": 8547,
+       "endMs": 8707
+      },
+      {
+       "text": "my",
+       "startMs": 8747,
+       "endMs": 8867
+      },
+      {
+       "text": "banking",
+       "startMs": 8967,
+       "endMs": 9327
+      },
+      {
+       "text": "app.",
+       "startMs": 9427,
+       "endMs": 9667
+      }
+     ]
+    },
+    {
+     "startMs": 9920,
+     "endMs": 10720,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "Could",
+       "startMs": 9920,
+       "endMs": 10020
+      },
+      {
+       "text": "you",
+       "startMs": 10060,
+       "endMs": 10180
+      },
+      {
+       "text": "transfer",
+       "startMs": 10220,
+       "endMs": 10680
+      }
+     ]
+    },
+    {
+     "startMs": 10720,
+     "endMs": 11740,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "a",
+       "startMs": 10720,
+       "endMs": 10760
+      },
+      {
+       "text": "few",
+       "startMs": 10820,
+       "endMs": 11000
+      },
+      {
+       "text": "hundred",
+       "startMs": 11040,
+       "endMs": 11280
+      },
+      {
+       "text": "euros",
+       "startMs": 11360,
+       "endMs": 11700
+      }
+     ]
+    },
+    {
+     "startMs": 11740,
+     "endMs": 12833,
+     "speaker": "ai",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "to",
+       "startMs": 11740,
+       "endMs": 11800
+      },
+      {
+       "text": "my",
+       "startMs": 11840,
+       "endMs": 11960
+      },
+      {
+       "text": "friend's",
+       "startMs": 12000,
+       "endMs": 12200
+      },
+      {
+       "text": "account?",
+       "startMs": 12240,
+       "endMs": 12660
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "startMs": 13053,
+   "endMs": 15633,
+   "speaker": "denis",
+   "kind": "cap",
+   "pages": [
+    {
+     "startMs": 13053,
+     "endMs": 14413,
+     "speaker": "denis",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "That",
+       "startMs": 13053,
+       "endMs": 13273
+      },
+      {
+       "text": "was",
+       "startMs": 13333,
+       "endMs": 13493
+      },
+      {
+       "text": "an",
+       "startMs": 13553,
+       "endMs": 13653
+      },
+      {
+       "text": "AI",
+       "startMs": 13733,
+       "endMs": 13953
+      },
+      {
+       "text": "copy",
+       "startMs": 14053,
+       "endMs": 14353
+      }
+     ]
+    },
+    {
+     "startMs": 14413,
+     "endMs": 15633,
+     "speaker": "denis",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "of",
+       "startMs": 14413,
+       "endMs": 14533
+      },
+      {
+       "text": "my",
+       "startMs": 14573,
+       "endMs": 14733
+      },
+      {
+       "text": "friend's",
+       "startMs": 14773,
+       "endMs": 15093
+      },
+      {
+       "text": "voice.",
+       "startMs": 15153,
+       "endMs": 15453
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "startMs": 15853,
+   "endMs": 16733,
+   "speaker": "denis",
+   "kind": "beat",
+   "pages": [
+    {
+     "startMs": 15853,
+     "endMs": 16733,
+     "speaker": "denis",
+     "kind": "beat",
+     "tokens": [
+      {
+       "text": "It",
+       "startMs": 15853,
+       "endMs": 15973
+      },
+      {
+       "text": "listens.",
+       "startMs": 16033,
+       "endMs": 16493
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "startMs": 16853,
+   "endMs": 18333,
+   "speaker": "denis",
+   "kind": "beat",
+   "pages": [
+    {
+     "startMs": 16853,
+     "endMs": 18333,
+     "speaker": "denis",
+     "kind": "beat",
+     "tokens": [
+      {
+       "text": "It",
+       "startMs": 16853,
+       "endMs": 16953
+      },
+      {
+       "text": "warns",
+       "startMs": 17033,
+       "endMs": 17273
+      },
+      {
+       "text": "you",
+       "startMs": 17313,
+       "endMs": 17393
+      },
+      {
+       "text": "in",
+       "startMs": 17413,
+       "endMs": 17473
+      },
+      {
+       "text": "seconds.",
+       "startMs": 17573,
+       "endMs": 18053
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "startMs": 18467,
+   "endMs": 20000,
+   "speaker": "denis",
+   "kind": "beat",
+   "pages": [
+    {
+     "startMs": 18467,
+     "endMs": 20000,
+     "speaker": "denis",
+     "kind": "beat",
+     "tokens": [
+      {
+       "text": "It",
+       "startMs": 18467,
+       "endMs": 18587
+      },
+      {
+       "text": "tells",
+       "startMs": 18627,
+       "endMs": 18827
+      },
+      {
+       "text": "your",
+       "startMs": 18887,
+       "endMs": 18987
+      },
+      {
+       "text": "family.",
+       "startMs": 19107,
+       "endMs": 19467
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "startMs": 20113,
+   "endMs": 25567,
+   "speaker": "team",
+   "kind": "cap",
+   "pages": [
+    {
+     "startMs": 20113,
+     "endMs": 20833,
+     "speaker": "team",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "Hi",
+       "startMs": 20113,
+       "endMs": 20273
+      },
+      {
+       "text": "everyone,",
+       "startMs": 20373,
+       "endMs": 20713
+      }
+     ]
+    },
+    {
+     "startMs": 20833,
+     "endMs": 21567,
+     "speaker": "team",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "we",
+       "startMs": 20833,
+       "endMs": 20913
+      },
+      {
+       "text": "are",
+       "startMs": 20933,
+       "endMs": 21033
+      },
+      {
+       "text": "Plan C.",
+       "startMs": 21093,
+       "endMs": 21533
+      }
+     ]
+    },
+    {
+     "startMs": 21660,
+     "endMs": 22400,
+     "speaker": "team",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "That's",
+       "startMs": 21660,
+       "endMs": 21840
+      },
+      {
+       "text": "why",
+       "startMs": 21880,
+       "endMs": 22100
+      }
+     ]
+    },
+    {
+     "startMs": 22400,
+     "endMs": 23520,
+     "speaker": "team",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "you",
+       "startMs": 22400,
+       "endMs": 22500
+      },
+      {
+       "text": "need",
+       "startMs": 22560,
+       "endMs": 22780
+      },
+      {
+       "text": "Callback",
+       "startMs": 22900,
+       "endMs": 23340
+      }
+     ]
+    },
+    {
+     "startMs": 23520,
+     "endMs": 24960,
+     "speaker": "team",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "on",
+       "startMs": 23520,
+       "endMs": 23680
+      },
+      {
+       "text": "your",
+       "startMs": 23740,
+       "endMs": 23920
+      },
+      {
+       "text": "family's",
+       "startMs": 24200,
+       "endMs": 24620
+      },
+      {
+       "text": "phone",
+       "startMs": 24640,
+       "endMs": 24880
+      }
+     ]
+    },
+    {
+     "startMs": 24960,
+     "endMs": 25567,
+     "speaker": "team",
+     "kind": "cap",
+     "tokens": [
+      {
+       "text": "right",
+       "startMs": 24960,
+       "endMs": 25160
+      },
+      {
+       "text": "now.",
+       "startMs": 25200,
+       "endMs": 25420
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,706 @@
+[
+{
+"text": " Hey,",
+"startMs": 120,
+"endMs": 400,
+"timestampMs": 120,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " it's",
+"startMs": 600,
+"endMs": 800,
+"timestampMs": 600,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " me.",
+"startMs": 860,
+"endMs": 1020,
+"timestampMs": 860,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " Listen,",
+"startMs": 1560,
+"endMs": 2020,
+"timestampMs": 1560,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " I'm",
+"startMs": 2280,
+"endMs": 2400,
+"timestampMs": 2280,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " in",
+"startMs": 2440,
+"endMs": 2560,
+"timestampMs": 2440,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " a",
+"startMs": 2560,
+"endMs": 2680,
+"timestampMs": 2560,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " bit",
+"startMs": 2660,
+"endMs": 2820,
+"timestampMs": 2660,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " of",
+"startMs": 2880,
+"endMs": 3000,
+"timestampMs": 2880,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " trouble.",
+"startMs": 3060,
+"endMs": 3440,
+"timestampMs": 3060,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " My",
+"startMs": 3960,
+"endMs": 4120,
+"timestampMs": 3960,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " phone",
+"startMs": 4140,
+"endMs": 4380,
+"timestampMs": 4140,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " broke,",
+"startMs": 4440,
+"endMs": 4800,
+"timestampMs": 4440,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " so",
+"startMs": 4980,
+"endMs": 5220,
+"timestampMs": 4980,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " this",
+"startMs": 5380,
+"endMs": 5540,
+"timestampMs": 5380,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " is",
+"startMs": 5600,
+"endMs": 5720,
+"timestampMs": 5600,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " a",
+"startMs": 5780,
+"endMs": 5900,
+"timestampMs": 5780,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " friend's",
+"startMs": 5900,
+"endMs": 6240,
+"timestampMs": 5900,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " number.",
+"startMs": 6280,
+"endMs": 6620,
+"timestampMs": 6280,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " Can",
+"startMs": 7200,
+"endMs": 7340,
+"timestampMs": 7200,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " you",
+"startMs": 7380,
+"endMs": 7500,
+"timestampMs": 7380,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " send",
+"startMs": 7560,
+"endMs": 7780,
+"timestampMs": 7560,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " me",
+"startMs": 7820,
+"endMs": 7980,
+"timestampMs": 7820,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " 300",
+"startMs": 8200,
+"endMs": 8640,
+"timestampMs": 8200,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " euros",
+"startMs": 8700,
+"endMs": 9000,
+"timestampMs": 8700,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " today?",
+"startMs": 9040,
+"endMs": 9400,
+"timestampMs": 9040,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " Please",
+"startMs": 9960,
+"endMs": 10340,
+"timestampMs": 9960,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " don't",
+"startMs": 10500,
+"endMs": 10740,
+"timestampMs": 10500,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " tell",
+"startMs": 10760,
+"endMs": 10920,
+"timestampMs": 10760,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " anyone.",
+"startMs": 10980,
+"endMs": 11420,
+"timestampMs": 10980,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " I'll",
+"startMs": 11640,
+"endMs": 11760,
+"timestampMs": 11640,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " explain",
+"startMs": 11780,
+"endMs": 12200,
+"timestampMs": 11780,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " everything",
+"startMs": 12260,
+"endMs": 12620,
+"timestampMs": 12260,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " later.",
+"startMs": 12720,
+"endMs": 13100,
+"timestampMs": 12720,
+"confidence": 1,
+"speaker": "avatar"
+},
+{
+"text": " I'm",
+"startMs": 15830,
+"endMs": 15950,
+"timestampMs": 15830,
+"confidence": 1,
+"speaker": "denis"
+},
+{
+"text": " Denis.",
+"startMs": 16030,
+"endMs": 16390,
+"timestampMs": 16030,
+"confidence": 1,
+"speaker": "denis"
+},
+{
+"text": " Nice",
+"startMs": 16810,
+"endMs": 17030,
+"timestampMs": 16810,
+"confidence": 1,
+"speaker": "denis"
+},
+{
+"text": " to",
+"startMs": 17070,
+"endMs": 17190,
+"timestampMs": 17070,
+"confidence": 1,
+"speaker": "denis"
+},
+{
+"text": " meet",
+"startMs": 17190,
+"endMs": 17310,
+"timestampMs": 17190,
+"confidence": 1,
+"speaker": "denis"
+},
+{
+"text": " you.",
+"startMs": 17310,
+"endMs": 17430,
+"timestampMs": 17310,
+"confidence": 1,
+"speaker": "denis"
+},
+{
+"text": " That's",
+"startMs": 20280,
+"endMs": 20440,
+"timestampMs": 20280,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " why",
+"startMs": 20460,
+"endMs": 20580,
+"timestampMs": 20460,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " we",
+"startMs": 20600,
+"endMs": 20720,
+"timestampMs": 20600,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " built",
+"startMs": 20740,
+"endMs": 20900,
+"timestampMs": 20740,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " Callback.",
+"startMs": 20980,
+"endMs": 21420,
+"timestampMs": 20980,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " It",
+"startMs": 21900,
+"endMs": 22020,
+"timestampMs": 21900,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " listens",
+"startMs": 22080,
+"endMs": 22460,
+"timestampMs": 22080,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " with",
+"startMs": 22500,
+"endMs": 22640,
+"timestampMs": 22500,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " you",
+"startMs": 22700,
+"endMs": 22820,
+"timestampMs": 22700,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " right",
+"startMs": 23200,
+"endMs": 23440,
+"timestampMs": 23200,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " there",
+"startMs": 23480,
+"endMs": 23640,
+"timestampMs": 23480,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " during",
+"startMs": 23720,
+"endMs": 23960,
+"timestampMs": 23720,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " the",
+"startMs": 24000,
+"endMs": 24120,
+"timestampMs": 24000,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " call.",
+"startMs": 24140,
+"endMs": 24340,
+"timestampMs": 24140,
+"confidence": 1,
+"speaker": "gangbi"
+},
+{
+"text": " get",
+"startMs": 24540,
+"endMs": 24660,
+"timestampMs": 24540,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " into",
+"startMs": 24680,
+"endMs": 24840,
+"timestampMs": 24680,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " my",
+"startMs": 24880,
+"endMs": 25000,
+"timestampMs": 24880,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " banking",
+"startMs": 25100,
+"endMs": 25460,
+"timestampMs": 25100,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " app.",
+"startMs": 25540,
+"endMs": 25780,
+"timestampMs": 25540,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " I",
+"startMs": 26120,
+"endMs": 26240,
+"timestampMs": 26120,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " need",
+"startMs": 26200,
+"endMs": 26320,
+"timestampMs": 26200,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " to",
+"startMs": 26360,
+"endMs": 26480,
+"timestampMs": 26360,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " pay",
+"startMs": 26540,
+"endMs": 26740,
+"timestampMs": 26540,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " for",
+"startMs": 26800,
+"endMs": 26940,
+"timestampMs": 26800,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " something.",
+"startMs": 26980,
+"endMs": 27280,
+"timestampMs": 26980,
+"confidence": 1,
+"speaker": "caller"
+},
+{
+"text": " The",
+"startMs": 27200,
+"endMs": 27320,
+"timestampMs": 27200,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " moment",
+"startMs": 27300,
+"endMs": 27560,
+"timestampMs": 27300,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " a",
+"startMs": 27600,
+"endMs": 27720,
+"timestampMs": 27600,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " caller",
+"startMs": 27700,
+"endMs": 27980,
+"timestampMs": 27700,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " asks",
+"startMs": 28060,
+"endMs": 28300,
+"timestampMs": 28060,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " for",
+"startMs": 28340,
+"endMs": 28480,
+"timestampMs": 28340,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " money",
+"startMs": 28520,
+"endMs": 28740,
+"timestampMs": 28520,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " today",
+"startMs": 28800,
+"endMs": 29300,
+"timestampMs": 28800,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " or",
+"startMs": 29340,
+"endMs": 29460,
+"timestampMs": 29340,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " to",
+"startMs": 29500,
+"endMs": 29620,
+"timestampMs": 29500,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " keep",
+"startMs": 29620,
+"endMs": 29760,
+"timestampMs": 29620,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " it",
+"startMs": 29780,
+"endMs": 29900,
+"timestampMs": 29780,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " secret,",
+"startMs": 29940,
+"endMs": 30300,
+"timestampMs": 29940,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " your",
+"startMs": 30860,
+"endMs": 31000,
+"timestampMs": 30860,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " screen",
+"startMs": 31080,
+"endMs": 31380,
+"timestampMs": 31080,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " turns",
+"startMs": 31420,
+"endMs": 31740,
+"timestampMs": 31420,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " red",
+"startMs": 31800,
+"endMs": 32060,
+"timestampMs": 31800,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " and",
+"startMs": 32360,
+"endMs": 32480,
+"timestampMs": 32360,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " your",
+"startMs": 32480,
+"endMs": 32600,
+"timestampMs": 32480,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " family",
+"startMs": 32640,
+"endMs": 32940,
+"timestampMs": 32640,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " gets",
+"startMs": 32980,
+"endMs": 33140,
+"timestampMs": 32980,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " an",
+"startMs": 33180,
+"endMs": 33300,
+"timestampMs": 33180,
+"confidence": 1,
+"speaker": "polina"
+},
+{
+"text": " alert.",
+"startMs": 33300,
+"endMs": 33600,
+"timestampMs": 33300,
+"confidence": 1,
+"speaker": "polina"
+}
+]

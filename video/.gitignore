@@ -17,3 +17,11 @@ tools/.venv/
 tools/node_modules/
 remotion/node_modules/
 __pycache__/
+
+# Pitch video media (team footage, cloned-voice voice-over): never in the repo
+remotion/public/pitch/
+remotion/public/hero/
+remotion/public/reel-shield/
+remotion/public/reel-team/
+remotion/public/reel-live/
+remotion/public/linkedin/

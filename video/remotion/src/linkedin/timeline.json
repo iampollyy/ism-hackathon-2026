@@ -1,0 +1,1425 @@
+{
+ "total": 74.0,
+ "marks": {
+  "problem": 7.0,
+  "team": 20.3,
+  "gangbi": 25.02,
+  "polina": 28.05,
+  "polinaLine": 31.15,
+  "broll": 32.75,
+  "phone": 36.27,
+  "live": 44.6,
+  "result": 49.05,
+  "drills": 52.4,
+  "next": 57.5,
+  "close": 66.65,
+  "closeWide": 70.6,
+  "end": 72.2,
+  "total": 74.0
+ },
+ "audio": [
+  {
+   "src": "clips/c00.wav",
+   "from": 0,
+   "to": 3.07,
+   "at": 0.0,
+   "kind": "caller"
+  },
+  {
+   "src": "clips/c01.wav",
+   "from": 0,
+   "to": 3.52,
+   "at": 3.25,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c02.wav",
+   "from": 0,
+   "to": 4.95,
+   "at": 7.05,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c03.wav",
+   "from": 0,
+   "to": 7.78,
+   "at": 12.25,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c04.wav",
+   "from": 0,
+   "to": 4.72,
+   "at": 20.3,
+   "kind": "team"
+  },
+  {
+   "src": "clips/c05.wav",
+   "from": 0,
+   "to": 3.03,
+   "at": 25.02,
+   "kind": "team"
+  },
+  {
+   "src": "clips/c06.wav",
+   "from": 0,
+   "to": 2.96,
+   "at": 28.05,
+   "kind": "team"
+  },
+  {
+   "src": "clips/c07.wav",
+   "from": 0,
+   "to": 1.6,
+   "at": 31.15,
+   "kind": "team"
+  },
+  {
+   "src": "clips/c08.wav",
+   "from": 0,
+   "to": 1.56,
+   "at": 32.75,
+   "kind": "team"
+  },
+  {
+   "src": "clips/c09.wav",
+   "from": 0,
+   "to": 1.86,
+   "at": 34.41,
+   "kind": "caller"
+  },
+  {
+   "src": "clips/c10.wav",
+   "from": 0,
+   "to": 3.55,
+   "at": 36.5,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c11.wav",
+   "from": 0,
+   "to": 6.22,
+   "at": 40.3,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c12.wav",
+   "from": 0,
+   "to": 2.15,
+   "at": 46.75,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c13.wav",
+   "from": 0,
+   "to": 3.14,
+   "at": 49.05,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c14.wav",
+   "from": 0,
+   "to": 5.04,
+   "at": 52.4,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c15.wav",
+   "from": 0,
+   "to": 3.3,
+   "at": 57.65,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c16.wav",
+   "from": 0,
+   "to": 2.48,
+   "at": 61.1,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c17.wav",
+   "from": 0,
+   "to": 2.7,
+   "at": 63.7,
+   "kind": "denis"
+  },
+  {
+   "src": "clips/c18.wav",
+   "from": 0,
+   "to": 3.95,
+   "at": 66.65,
+   "kind": "team"
+  },
+  {
+   "src": "clips/c19.wav",
+   "from": 0,
+   "to": 1.4,
+   "at": 70.6,
+   "kind": "team"
+  }
+ ],
+ "captions": [
+  {
+   "text": "Could",
+   "startMs": 170,
+   "endMs": 290,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "you",
+   "startMs": 310,
+   "endMs": 410,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "transfer",
+   "startMs": 450,
+   "endMs": 830,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "a",
+   "startMs": 970,
+   "endMs": 1010,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "few",
+   "startMs": 1070,
+   "endMs": 1250,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "hundred",
+   "startMs": 1290,
+   "endMs": 1530,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "euros",
+   "startMs": 1610,
+   "endMs": 1950,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "to",
+   "startMs": 1990,
+   "endMs": 2030,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "my",
+   "startMs": 2070,
+   "endMs": 2210,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "friend's",
+   "startMs": 2250,
+   "endMs": 2450,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "account?",
+   "startMs": 2490,
+   "endMs": 2890,
+   "kind": "caller",
+   "clip": 0
+  },
+  {
+   "text": "A",
+   "startMs": 3390,
+   "endMs": 3450,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "copy",
+   "startMs": 3590,
+   "endMs": 3950,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "of",
+   "startMs": 4030,
+   "endMs": 4150,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "your",
+   "startMs": 4210,
+   "endMs": 4350,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "voice",
+   "startMs": 4450,
+   "endMs": 4850,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "is",
+   "startMs": 5010,
+   "endMs": 5170,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "all",
+   "startMs": 5210,
+   "endMs": 5390,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "a",
+   "startMs": 5410,
+   "endMs": 5490,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "scammer",
+   "startMs": 5570,
+   "endMs": 6070,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "needs",
+   "startMs": 6130,
+   "endMs": 6410,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "now",
+   "startMs": 6510,
+   "endMs": 6690,
+   "kind": "denis",
+   "clip": 1
+  },
+  {
+   "text": "In",
+   "startMs": 7150,
+   "endMs": 7250,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "Lithuania,",
+   "startMs": 7330,
+   "endMs": 8030,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "phone",
+   "startMs": 8290,
+   "endMs": 8510,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "scammers",
+   "startMs": 8590,
+   "endMs": 9110,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "took",
+   "startMs": 9230,
+   "endMs": 9450,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "20",
+   "startMs": 9630,
+   "endMs": 9870,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "million",
+   "startMs": 9910,
+   "endMs": 10270,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "euros",
+   "startMs": 10350,
+   "endMs": 10810,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "in",
+   "startMs": 10870,
+   "endMs": 10970,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "a",
+   "startMs": 11010,
+   "endMs": 11050,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "single",
+   "startMs": 11150,
+   "endMs": 11470,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "year.",
+   "startMs": 11570,
+   "endMs": 11830,
+   "kind": "denis",
+   "clip": 2
+  },
+  {
+   "text": "In",
+   "startMs": 12350,
+   "endMs": 12450,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "the",
+   "startMs": 12530,
+   "endMs": 12610,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "US,",
+   "startMs": 12690,
+   "endMs": 13150,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "people",
+   "startMs": 13370,
+   "endMs": 13670,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "over",
+   "startMs": 13750,
+   "endMs": 14030,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "60",
+   "startMs": 14310,
+   "endMs": 14590,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "reported",
+   "startMs": 14830,
+   "endMs": 15390,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "losing",
+   "startMs": 15470,
+   "endMs": 15810,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "$4.88",
+   "startMs": 15930,
+   "endMs": 17230,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "billion",
+   "startMs": 17410,
+   "endMs": 17830,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "in",
+   "startMs": 18510,
+   "endMs": 18630,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "2024.",
+   "startMs": 18810,
+   "endMs": 19690,
+   "kind": "denis",
+   "clip": 3
+  },
+  {
+   "text": "Hi",
+   "startMs": 20380,
+   "endMs": 20540,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "everyone,",
+   "startMs": 20640,
+   "endMs": 20980,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "we",
+   "startMs": 21100,
+   "endMs": 21180,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "are",
+   "startMs": 21200,
+   "endMs": 21300,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "Plan",
+   "startMs": 21360,
+   "endMs": 21580,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "C,",
+   "startMs": 21680,
+   "endMs": 21800,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "and",
+   "startMs": 21880,
+   "endMs": 21980,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "today",
+   "startMs": 22020,
+   "endMs": 22320,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "we",
+   "startMs": 22380,
+   "endMs": 22460,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "introduce",
+   "startMs": 22500,
+   "endMs": 23000,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "our",
+   "startMs": 23060,
+   "endMs": 23200,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "app,",
+   "startMs": 23280,
+   "endMs": 23440,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "Callback.",
+   "startMs": 23519,
+   "endMs": 24040,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "I'm",
+   "startMs": 24300,
+   "endMs": 24420,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "Denis.",
+   "startMs": 24460,
+   "endMs": 24840,
+   "kind": "team",
+   "clip": 4
+  },
+  {
+   "text": "My",
+   "startMs": 25100,
+   "endMs": 25220,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "name",
+   "startMs": 25260,
+   "endMs": 25400,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "is",
+   "startMs": 25460,
+   "endMs": 25620,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "Gangbi",
+   "startMs": 25660,
+   "endMs": 26000,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "Park.",
+   "startMs": 26080,
+   "endMs": 26300,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "I",
+   "startMs": 26560,
+   "endMs": 26600,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "also",
+   "startMs": 26680,
+   "endMs": 26900,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "study",
+   "startMs": 26980,
+   "endMs": 27220,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "Data",
+   "startMs": 27260,
+   "endMs": 27460,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "Science",
+   "startMs": 27560,
+   "endMs": 28000,
+   "kind": "team",
+   "clip": 5
+  },
+  {
+   "text": "My",
+   "startMs": 28110,
+   "endMs": 28230,
+   "kind": "team",
+   "clip": 6
+  },
+  {
+   "text": "name",
+   "startMs": 28270,
+   "endMs": 28430,
+   "kind": "team",
+   "clip": 6
+  },
+  {
+   "text": "is",
+   "startMs": 28470,
+   "endMs": 28590,
+   "kind": "team",
+   "clip": 6
+  },
+  {
+   "text": "Polina.",
+   "startMs": 28610,
+   "endMs": 29090,
+   "kind": "team",
+   "clip": 6
+  },
+  {
+   "text": "I'm",
+   "startMs": 29370,
+   "endMs": 29550,
+   "kind": "team",
+   "clip": 6
+  },
+  {
+   "text": "a",
+   "startMs": 29890,
+   "endMs": 29950,
+   "kind": "team",
+   "clip": 6
+  },
+  {
+   "text": "front-end",
+   "startMs": 30010,
+   "endMs": 30410,
+   "kind": "team",
+   "clip": 6
+  },
+  {
+   "text": "engineer",
+   "startMs": 30450,
+   "endMs": 30910,
+   "kind": "team",
+   "clip": 6
+  },
+  {
+   "text": "so",
+   "startMs": 31230,
+   "endMs": 31430,
+   "kind": "team",
+   "clip": 7
+  },
+  {
+   "text": "Callback",
+   "startMs": 31570,
+   "endMs": 31910,
+   "kind": "team",
+   "clip": 7
+  },
+  {
+   "text": "actually",
+   "startMs": 31990,
+   "endMs": 32330,
+   "kind": "team",
+   "clip": 7
+  },
+  {
+   "text": "catches",
+   "startMs": 32390,
+   "endMs": 32710,
+   "kind": "team",
+   "clip": 7
+  },
+  {
+   "text": "the",
+   "startMs": 32790,
+   "endMs": 32850,
+   "kind": "team",
+   "clip": 8
+  },
+  {
+   "text": "call",
+   "startMs": 32970,
+   "endMs": 33190,
+   "kind": "team",
+   "clip": 8
+  },
+  {
+   "text": "while",
+   "startMs": 33310,
+   "endMs": 33530,
+   "kind": "team",
+   "clip": 8
+  },
+  {
+   "text": "it's",
+   "startMs": 33630,
+   "endMs": 33750,
+   "kind": "team",
+   "clip": 8
+  },
+  {
+   "text": "happening.",
+   "startMs": 33790,
+   "endMs": 34250,
+   "kind": "team",
+   "clip": 8
+  },
+  {
+   "text": "and",
+   "startMs": 34430,
+   "endMs": 34510,
+   "kind": "caller",
+   "clip": 9
+  },
+  {
+   "text": "I",
+   "startMs": 34570,
+   "endMs": 34650,
+   "kind": "caller",
+   "clip": 9
+  },
+  {
+   "text": "can't",
+   "startMs": 34710,
+   "endMs": 34930,
+   "kind": "caller",
+   "clip": 9
+  },
+  {
+   "text": "get",
+   "startMs": 34950,
+   "endMs": 35050,
+   "kind": "caller",
+   "clip": 9
+  },
+  {
+   "text": "into",
+   "startMs": 35090,
+   "endMs": 35250,
+   "kind": "caller",
+   "clip": 9
+  },
+  {
+   "text": "my",
+   "startMs": 35290,
+   "endMs": 35390,
+   "kind": "caller",
+   "clip": 9
+  },
+  {
+   "text": "banking",
+   "startMs": 35510,
+   "endMs": 35870,
+   "kind": "caller",
+   "clip": 9
+  },
+  {
+   "text": "app.",
+   "startMs": 35950,
+   "endMs": 36190,
+   "kind": "caller",
+   "clip": 9
+  },
+  {
+   "text": "Money",
+   "startMs": 36580,
+   "endMs": 36880,
+   "kind": "denis",
+   "clip": 10
+  },
+  {
+   "text": "today,",
+   "startMs": 36980,
+   "endMs": 37360,
+   "kind": "denis",
+   "clip": 10
+  },
+  {
+   "text": "secrecy,",
+   "startMs": 37860,
+   "endMs": 38560,
+   "kind": "denis",
+   "clip": 10
+  },
+  {
+   "text": "a",
+   "startMs": 39100,
+   "endMs": 39160,
+   "kind": "denis",
+   "clip": 10
+  },
+  {
+   "text": "new",
+   "startMs": 39240,
+   "endMs": 39400,
+   "kind": "denis",
+   "clip": 10
+  },
+  {
+   "text": "number.",
+   "startMs": 39460,
+   "endMs": 39900,
+   "kind": "denis",
+   "clip": 10
+  },
+  {
+   "text": "Within",
+   "startMs": 40440,
+   "endMs": 40780,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "seconds,",
+   "startMs": 40920,
+   "endMs": 41320,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "the",
+   "startMs": 41420,
+   "endMs": 41500,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "screen",
+   "startMs": 41560,
+   "endMs": 41860,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "turns",
+   "startMs": 41940,
+   "endMs": 42240,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "red",
+   "startMs": 42340,
+   "endMs": 42660,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "and",
+   "startMs": 43200,
+   "endMs": 43300,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "the",
+   "startMs": 43360,
+   "endMs": 43420,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "rest",
+   "startMs": 43480,
+   "endMs": 43700,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "of",
+   "startMs": 43760,
+   "endMs": 43860,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "the",
+   "startMs": 43920,
+   "endMs": 43980,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "family",
+   "startMs": 44100,
+   "endMs": 44520,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "is",
+   "startMs": 44680,
+   "endMs": 44800,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "alerted",
+   "startMs": 44860,
+   "endMs": 45380,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "automatically",
+   "startMs": 45580,
+   "endMs": 46460,
+   "kind": "denis",
+   "clip": 11
+  },
+  {
+   "text": "The",
+   "startMs": 46910,
+   "endMs": 46970,
+   "kind": "denis",
+   "clip": 12
+  },
+  {
+   "text": "family",
+   "startMs": 47070,
+   "endMs": 47430,
+   "kind": "denis",
+   "clip": 12
+  },
+  {
+   "text": "sees",
+   "startMs": 47550,
+   "endMs": 47810,
+   "kind": "denis",
+   "clip": 12
+  },
+  {
+   "text": "the",
+   "startMs": 47870,
+   "endMs": 47930,
+   "kind": "denis",
+   "clip": 12
+  },
+  {
+   "text": "call",
+   "startMs": 48030,
+   "endMs": 48270,
+   "kind": "denis",
+   "clip": 12
+  },
+  {
+   "text": "live.",
+   "startMs": 48370,
+   "endMs": 48710,
+   "kind": "denis",
+   "clip": 12
+  },
+  {
+   "text": "Afterwards,",
+   "startMs": 49190,
+   "endMs": 49750,
+   "kind": "denis",
+   "clip": 13
+  },
+  {
+   "text": "a",
+   "startMs": 49830,
+   "endMs": 49850,
+   "kind": "denis",
+   "clip": 13
+  },
+  {
+   "text": "traffic",
+   "startMs": 49950,
+   "endMs": 50350,
+   "kind": "denis",
+   "clip": 13
+  },
+  {
+   "text": "light",
+   "startMs": 50430,
+   "endMs": 50670,
+   "kind": "denis",
+   "clip": 13
+  },
+  {
+   "text": "shows",
+   "startMs": 50750,
+   "endMs": 51070,
+   "kind": "denis",
+   "clip": 13
+  },
+  {
+   "text": "how",
+   "startMs": 51110,
+   "endMs": 51250,
+   "kind": "denis",
+   "clip": 13
+  },
+  {
+   "text": "it",
+   "startMs": 51290,
+   "endMs": 51430,
+   "kind": "denis",
+   "clip": 13
+  },
+  {
+   "text": "went.",
+   "startMs": 51470,
+   "endMs": 51790,
+   "kind": "denis",
+   "clip": 13
+  },
+  {
+   "text": "With",
+   "startMs": 52480,
+   "endMs": 52620,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "consent,",
+   "startMs": 52700,
+   "endMs": 53160,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "it",
+   "startMs": 53220,
+   "endMs": 53340,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "also",
+   "startMs": 53420,
+   "endMs": 53680,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "runs",
+   "startMs": 53800,
+   "endMs": 54060,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "practice",
+   "startMs": 54180,
+   "endMs": 54620,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "calls",
+   "startMs": 54740,
+   "endMs": 55060,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "in",
+   "startMs": 55100,
+   "endMs": 55200,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "a",
+   "startMs": 55280,
+   "endMs": 55320,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "loved",
+   "startMs": 55440,
+   "endMs": 55720,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "one's",
+   "startMs": 55840,
+   "endMs": 56180,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "cloned",
+   "startMs": 56340,
+   "endMs": 56720,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "voice",
+   "startMs": 56860,
+   "endMs": 57300,
+   "kind": "denis",
+   "clip": 14
+  },
+  {
+   "text": "Next,",
+   "startMs": 57750,
+   "endMs": 58070,
+   "kind": "denis",
+   "clip": 15
+  },
+  {
+   "text": "it",
+   "startMs": 58210,
+   "endMs": 58350,
+   "kind": "denis",
+   "clip": 15
+  },
+  {
+   "text": "answers",
+   "startMs": 58430,
+   "endMs": 58830,
+   "kind": "denis",
+   "clip": 15
+  },
+  {
+   "text": "unknown",
+   "startMs": 58930,
+   "endMs": 59250,
+   "kind": "denis",
+   "clip": 15
+  },
+  {
+   "text": "numbers",
+   "startMs": 59310,
+   "endMs": 59770,
+   "kind": "denis",
+   "clip": 15
+  },
+  {
+   "text": "for",
+   "startMs": 59950,
+   "endMs": 60050,
+   "kind": "denis",
+   "clip": 15
+  },
+  {
+   "text": "your",
+   "startMs": 60110,
+   "endMs": 60170,
+   "kind": "denis",
+   "clip": 15
+  },
+  {
+   "text": "parents.",
+   "startMs": 60270,
+   "endMs": 60750,
+   "kind": "denis",
+   "clip": 15
+  },
+  {
+   "text": "Banks",
+   "startMs": 61180,
+   "endMs": 61480,
+   "kind": "denis",
+   "clip": 16
+  },
+  {
+   "text": "can",
+   "startMs": 61580,
+   "endMs": 61720,
+   "kind": "denis",
+   "clip": 16
+  },
+  {
+   "text": "pay",
+   "startMs": 61820,
+   "endMs": 61960,
+   "kind": "denis",
+   "clip": 16
+  },
+  {
+   "text": "to",
+   "startMs": 62040,
+   "endMs": 62140,
+   "kind": "denis",
+   "clip": 16
+  },
+  {
+   "text": "protect",
+   "startMs": 62180,
+   "endMs": 62540,
+   "kind": "denis",
+   "clip": 16
+  },
+  {
+   "text": "their",
+   "startMs": 62560,
+   "endMs": 62740,
+   "kind": "denis",
+   "clip": 16
+  },
+  {
+   "text": "customers,",
+   "startMs": 62780,
+   "endMs": 63420,
+   "kind": "denis",
+   "clip": 16
+  },
+  {
+   "text": "and",
+   "startMs": 63800,
+   "endMs": 63920,
+   "kind": "denis",
+   "clip": 17
+  },
+  {
+   "text": "families",
+   "startMs": 64040,
+   "endMs": 64540,
+   "kind": "denis",
+   "clip": 17
+  },
+  {
+   "text": "pay",
+   "startMs": 64640,
+   "endMs": 64800,
+   "kind": "denis",
+   "clip": 17
+  },
+  {
+   "text": "€4.99",
+   "startMs": 64880,
+   "endMs": 65800,
+   "kind": "denis",
+   "clip": 17
+  },
+  {
+   "text": "a",
+   "startMs": 65860,
+   "endMs": 65880,
+   "kind": "denis",
+   "clip": 17
+  },
+  {
+   "text": "month",
+   "startMs": 65980,
+   "endMs": 66280,
+   "kind": "denis",
+   "clip": 17
+  },
+  {
+   "text": "That's",
+   "startMs": 66710,
+   "endMs": 66890,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "why",
+   "startMs": 66930,
+   "endMs": 67150,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "you",
+   "startMs": 67450,
+   "endMs": 67550,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "need",
+   "startMs": 67610,
+   "endMs": 67830,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "Callback",
+   "startMs": 67950,
+   "endMs": 68390,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "on",
+   "startMs": 68570,
+   "endMs": 68730,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "your",
+   "startMs": 68790,
+   "endMs": 68970,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "family's",
+   "startMs": 69250,
+   "endMs": 69670,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "phone",
+   "startMs": 69690,
+   "endMs": 69930,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "right",
+   "startMs": 70010,
+   "endMs": 70210,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "now.",
+   "startMs": 70250,
+   "endMs": 70470,
+   "kind": "team",
+   "clip": 18
+  },
+  {
+   "text": "Callbaaaack!",
+   "startMs": 70760,
+   "endMs": 71740,
+   "kind": "team",
+   "clip": 19
+  }
+ ],
+ "tags": [
+  {
+   "from": 0.02,
+   "to": 3.14,
+   "kind": "caller"
+  },
+  {
+   "from": 3.24,
+   "to": 19.94,
+   "kind": "denis"
+  },
+  {
+   "from": 34.28,
+   "to": 36.44,
+   "kind": "caller"
+  },
+  {
+   "from": 36.43,
+   "to": 66.53,
+   "kind": "denis"
+  }
+ ]
+}

@@ -7,6 +7,7 @@ EDL (JSON):
   "name": "reel1-the-call",          # output file name (default: the EDL's name)
   "format": "reel",                  # "reel" 1080x1920 or "wide" 1920x1080
   "captions": true,                  # burn word-by-word captions from work/<clip>.words.json
+  "caption_position": "middle",      # or "top": above the head, for selfie framing
   "endcard": true,                   # brand end card for 2 s at the end
   "music": "music/track.mp3",        # optional, mixed under speech
   "music_volume": 0.12,
@@ -170,7 +171,7 @@ def render(edl_path: Path) -> Path:
 
     video = "[0:v]null[vout]"
     if edl.get("captions", True) and words:
-        (job / "captions.ass").write_text(captions.build(words, fmt))
+        (job / "captions.ass").write_text(captions.build(words, fmt, edl.get("caption_position", "middle")))
         fonts = os.path.relpath(FONTS, job)
         video = f"[0:v]subtitles=captions.ass:fontsdir={fonts}[vout]"
     OUT.mkdir(exist_ok=True)
