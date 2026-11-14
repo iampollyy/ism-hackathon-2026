@@ -278,3 +278,26 @@ class MemberJoin(Base):
     member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), primary_key=True)
     joined_at: Mapped[str] = mapped_column(String, nullable=False)
     phone_number: Mapped[str | None] = mapped_column(String)
+
+
+# ---------------------------------------------------------------- track 2: the member's voice from the welcome call
+
+
+class VoiceSample(Base):
+    """The member's own side of one welcome call, recorded by the phone page
+    and uploaded when the call ends, and what became of it (the rules are in
+    services/voice_sample.py). One row per welcome call.
+
+    state: none (nothing kept) | waiting_for_consent | cloning | ready | failed.
+    path is the stored upload while it may still be used, then None."""
+
+    __tablename__ = "voice_samples"
+
+    call_id: Mapped[str] = mapped_column(ForeignKey("calls.id"), primary_key=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), nullable=False, index=True)
+    state: Mapped[str] = mapped_column(String, nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+    path: Mapped[str | None] = mapped_column(String)
+    speech_seconds: Mapped[float | None] = mapped_column(Float)  # the sound left after cleaning
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False)

@@ -14,6 +14,9 @@ from urllib.parse import urlsplit
 
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
+
+from pydantic import AfterValidator, BaseModel, Field, StrictBool
+
 # ---------------------------------------------------------------- fixed lists
 
 Tactic = Literal[
@@ -36,6 +39,7 @@ ReadinessKey = Literal["verify_first", "safe_word", "trusted_contact", "payment_
 EventType = Literal[
     "call.status", "turn", "tactic", "outcome", "revealed", "callback.connected", "result", "consent",
     "risk",
+    "voice_consent",  # track 2: the welcome agent's voice_consent_result
 ]
 # The live risk check (agents/risk.py): the tactics, plus three signs that a
 # call is a scam. Code maps the signals to the level.
@@ -364,8 +368,16 @@ class ConsentIn(BaseModel):
     given: bool
 
 
+class VoiceConsentIn(BaseModel):
+    """Track 2: the welcome agent's voice_consent_result (may Callback use
+    their voice from this call?). Welcome calls only; see services/voice_sample.py."""
+
+    type: Literal["voice_consent"]
+    given: StrictBool  # true only for a clear yes; JSON true or false only, never "yes" or 1
+
+
 EventIn = Annotated[
-    Union[TurnIn, TacticIn, OutcomeIn, RevealedIn, ConsentIn],
+    Union[TurnIn, TacticIn, OutcomeIn, RevealedIn, ConsentIn, VoiceConsentIn],
     Field(discriminator="type"),
 ]
 
@@ -690,3 +702,26 @@ class JoinIn(BaseModel):
 
 class Joined(BaseModel):
     phone_link: str
+
+
+# ---------------------------------------------------------------- track 2: the member's voice from the welcome call
+
+# none: nothing is kept from this call (yet); waiting_for_consent: the
+# recording is kept until the spoken yes arrives; cloning: the clone is being
+# made; ready: a clone was made from this call; failed: it could not be.
+VoiceSampleState = Literal["none", "waiting_for_consent", "cloning", "ready", "failed"]
+
+
+class VoiceSampleAccepted(BaseModel):
+    """The answer to POST /api/calls/{id}/voice-sample, given at once."""
+
+    accepted: bool = True
+    cloning: bool  # True: both consents and the recording are in; the clone is being made now
+    reason: str | None = None  # why it is not cloning (yet), in plain words; None when cloning
+
+
+class VoiceSampleStatus(BaseModel):
+    call_id: str | None  # the welcome call; None when the member has had none
+    state: VoiceSampleState
+    reason: str | None = None  # plain words for the screen; None when cloning or ready
+    speech_seconds: float | None = None  # seconds of their voice heard, once measured

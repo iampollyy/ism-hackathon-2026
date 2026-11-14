@@ -88,6 +88,11 @@ class Settings(BaseSettings):
     # True: a joined member's first phone-state poll starts their welcome call
     auto_welcome_call: bool = True
 
+    # Track 2: the member's voice from their own side of the welcome call
+    # (services/voice_sample.py). Fewer seconds of their voice than this,
+    # after cleaning, and no clone is made.
+    voice_sample_min_seconds: float = 10.0
+
     @property
     def push_enabled(self) -> bool:
         return bool(self.vapid_public_key and self.vapid_private_key)
