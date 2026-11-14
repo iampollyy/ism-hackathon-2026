@@ -12,6 +12,7 @@ import type {
   PracticeCallCreate, Pricing, ProgressView, ProtectionMemberView, ProtectionUpdate, ProtectionView, RegisterIn,
   ScenarioView, Session, ShieldCallCreated, ShieldCallRequest, SurpriseDrillCreated, SurpriseDrillRequest,
   VoiceReady, VoiceSampleAccepted, VoiceSampleStatus, WaitlistCount, WaitlistIn, MemberAdd, MemberAdded,
+  LiveCallCreated, LiveSide, LiveSignalKind, LiveSignals, ScribeToken,
 } from './types';
 import type { PushPublicKey } from './types';
 
@@ -102,6 +103,16 @@ export const api = {
   shieldCall: (familyId: string, body: ShieldCallRequest) =>
     request<ShieldCallCreated>(`/families/${familyId}/shield-call`, json(body)),
   alertFamily: (memberId: string, body: AlertRequest = {}) => request<AlertSent>(`/members/${memberId}/alert`, json(body)),
+
+  // live calls: a person calls a member, browser to browser, and the Shield listens
+  startLiveCall: (familyId: string, memberId: string) =>
+    request<LiveCallCreated>(`/families/${familyId}/live-call`, json({ member_id: memberId })),
+  answerLive: (callId: string) => request<Ok>(`/calls/${callId}/live/answer`, { method: 'POST' }),
+  sendSignal: (callId: string, side: LiveSide, kind: LiveSignalKind, data: Record<string, unknown> = {}) =>
+    request<Ok>(`/calls/${callId}/live/signal`, json({ side, kind, data })),
+  signals: (callId: string, side: LiveSide, after: number) =>
+    request<LiveSignals>(`/calls/${callId}/live/signal?side=${side}&after=${after}`),
+  scribeToken: (callId: string) => request<ScribeToken>(`/calls/${callId}/live/scribe-token`, { method: 'POST' }),
 
   // review, progress, learning, news
   drills: (familyId: string, memberId?: string, limit = 50) =>

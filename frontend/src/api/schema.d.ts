@@ -832,6 +832,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/families/{family_id}/live-call": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start */
+        post: operations["start_api_families__family_id__live_call_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calls/{call_id}/live/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer */
+        post: operations["answer_api_calls__call_id__live_answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calls/{call_id}/live/signal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Signals */
+        get: operations["read_signals_api_calls__call_id__live_signal_get"];
+        put?: never;
+        /** Send Signal */
+        post: operations["send_signal_api_calls__call_id__live_signal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calls/{call_id}/live/scribe-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Scribe Token */
+        post: operations["scribe_token_api_calls__call_id__live_scribe_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1260,6 +1329,11 @@ export interface components {
              */
             kind: "welcome" | "practice";
             caller: components["schemas"]["Caller"];
+            /**
+             * Live
+             * @default false
+             */
+            live: boolean;
         };
         /** JoinConsents */
         JoinConsents: {
@@ -1370,6 +1444,52 @@ export interface components {
             /** Lesson */
             lesson: string;
         };
+        /** LiveCallCreated */
+        LiveCallCreated: {
+            /** Call Id */
+            call_id: string;
+            member: components["schemas"]["PersonRef"];
+        };
+        /** LiveCallRequest */
+        LiveCallRequest: {
+            /** Member Id */
+            member_id: string;
+        };
+        /** LiveSignal */
+        LiveSignal: {
+            /** N */
+            n: number;
+            /** Kind */
+            kind: string;
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+        };
+        /** LiveSignalIn */
+        LiveSignalIn: {
+            /**
+             * Side
+             * @enum {string}
+             */
+            side: "caller" | "callee";
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "offer" | "answer" | "ice" | "bye";
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
+        };
+        /** LiveSignals */
+        LiveSignals: {
+            /** Messages */
+            messages: components["schemas"]["LiveSignal"][];
+            /** Status */
+            status: string;
+        };
         /** LoginIn */
         LoginIn: {
             /** Email */
@@ -1419,6 +1539,11 @@ export interface components {
              * @default false
              */
             consent_practice: boolean;
+            /**
+             * Consent Clone From Call
+             * @default false
+             */
+            consent_clone_from_call: boolean;
         };
         /** MemberLink */
         MemberLink: {
@@ -1916,6 +2041,16 @@ export interface components {
             caller_label: string;
             /** Allowed Tactics */
             allowed_tactics: ("new_number" | "urgency" | "secrecy" | "authority" | "emotional_appeal" | "small_ask_first" | "isolation" | "unusual_payment")[];
+        };
+        /** ScribeToken */
+        ScribeToken: {
+            /** Token */
+            token: string;
+            /**
+             * Model Id
+             * @default scribe_v2_realtime
+             */
+            model_id: string;
         };
         /**
          * Session
@@ -3811,6 +3946,172 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NewsRefreshed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_api_families__family_id__live_call_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveCallRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveCallCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_api_calls__call_id__live_answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_signals_api_calls__call_id__live_signal_get: {
+        parameters: {
+            query: {
+                side: string;
+                after?: number;
+            };
+            header?: never;
+            path: {
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveSignals"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_signal_api_calls__call_id__live_signal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveSignalIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scribe_token_api_calls__call_id__live_scribe_token_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScribeToken"];
                 };
             };
             /** @description Validation Error */

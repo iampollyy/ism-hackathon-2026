@@ -478,6 +478,11 @@ export function usePhone(memberId: string) {
     const call = view.call;
     soundRef.current?.stopRinging();
     const at = Date.now();
+    if (call.live) {
+      // A person is calling (live/peer.ts): LiveCallScreen takes it from here.
+      act({ type: 'live_answer', call, at });
+      return;
+    }
     act({ type: 'answer', call, at });
     const pending: PendingAnswer = { callId: call.call_id, cancelledBy: null };
     pendingRef.current = pending;
@@ -807,7 +812,7 @@ export function usePhone(memberId: string) {
   // The Shield: phone-state.shield belongs to the call on screen. Its
   // warning buzzes the phone once, when it first appears.
   const shieldNow = state.phone?.shield ?? null;
-  const inCallId = state.view.name === 'in_call' ? state.view.callId : null;
+  const inCallId = state.view.name === 'in_call' || state.view.name === 'live_call' ? state.view.callId : null;
   const shield = shieldNow && inCallId && shieldNow.call_id === inCallId ? shieldNow : null;
   const warningFor = shield?.warn ? shield.call_id : null;
   useEffect(() => {
@@ -859,8 +864,15 @@ export function usePhone(memberId: string) {
     };
   }, [act, scoringCallId]);
 
+  /** A live call is over (LiveCallScreen): back to waiting, with an optional notice. */
+  const liveEnded = useCallback(
+    (callId: string, message: string | null = null) => act({ type: 'live_end', callId, message }),
+    [act],
+  );
+
   return {
     state,
+    liveEnded,
     sound,
     soundBusy,
     shield,
