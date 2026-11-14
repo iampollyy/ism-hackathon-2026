@@ -1,0 +1,170 @@
+// The organiser app's frame (DashboardLayout.tsx). Wide screens: a sticky
+// navigation rail and the page. Under 960px: a compact top bar and a drawer.
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  color: var(--ink);
+
+  ::selection { background: rgba(231, 109, 82, 0.22); }
+}
+
+.app-skip {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 600;
+
+  &:focus { top: 12px; }
+}
+
+.app-rail {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: rgba(247, 250, 249, 0.92);
+  border-right: 1px solid rgba(17, 34, 49, 0.08);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(17, 34, 49, 0.18) transparent;
+}
+
+.app-main {
+  min-width: 0;
+  padding: 32px 40px 64px;
+}
+
+.app-content {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.app-topbar { display: none; }
+
+// ---------------------------------------------------------------- phones and small tablets
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+
+  .app-rail { display: none; }
+
+  .app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 10px 16px;
+    padding-top: max(10px, env(safe-area-inset-top));
+    background: rgba(247, 250, 249, 0.94);
+    border-bottom: 1px solid rgba(17, 34, 49, 0.08);
+    backdrop-filter: saturate(1.4) blur(10px);
+  }
+
+  .app-topbar-logo img {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+
+  .app-topbar-title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .app-topbar-mark {
+    display: none;
+  }
+
+  .app-topbar-text {
+    min-width: 0;
+    display: grid;
+    line-height: 1.2;
+
+    strong, small {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    strong { font-size: 0.98rem; }
+    small { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+  }
+
+  .app-menu-button {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid rgba(17, 34, 49, 0.12);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 0.92rem;
+    cursor: pointer;
+
+    &:focus-visible { outline: 2px solid var(--navy-soft); outline-offset: 2px; }
+  }
+
+  .app-main { padding: 20px 16px 48px; }
+}
+
+// ---------------------------------------------------------------- the drawer
+
+.app-drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.app-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 34, 49, 0.42);
+  animation: app-fade 0.2s ease-out;
+}
+
+.app-drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(320px, 88vw);
+  overflow-y: auto;
+  background: #f7faf9;
+  box-shadow: 16px 0 40px rgba(17, 34, 49, 0.18);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: app-slide 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+@keyframes app-fade {
+  from { opacity: 0; }
+}
+
+@keyframes app-slide {
+  from { transform: translateX(-100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-drawer, .app-drawer-backdrop { animation: none; }
+}

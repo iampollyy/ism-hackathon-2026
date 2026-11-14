@@ -4,7 +4,7 @@
 // HTTPS address phones reach (the tunnel) and the links use that instead.
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Copy, QrCode } from 'lucide-react';
+import { Check, Copy, MessageCircle, QrCode, Share2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { publicUrl } from '../../api/client';
 
@@ -170,4 +170,55 @@ export function PhoneQrCode({ url, owner, size }: { url: string; owner: string; 
     );
   }
   return <QRCodeSVG value={url} size={size} level="M" marginSize={1} title={`${owner}'s phone link`} />;
+}
+
+/** A link without its https:// prefix, for showing (copying uses the full link). */
+export function shownUrl(url: string): string {
+  return url.replace(/^https?:\/\//, '');
+}
+
+type ShareProps = {
+  url: string;
+  /** Who the link is for. */
+  name: string;
+  familyName: string;
+};
+
+/**
+ * Share a link with the phone's or laptop's own share sheet (WhatsApp, SMS,
+ * email...). Where the browser has none, it opens WhatsApp with the message.
+ */
+export function ShareButton({ url, name, familyName }: ShareProps) {
+  const text = `${name}, here is your own link to join ${familyName} on Callback. Open it on your phone:`;
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
+  if (!canShare) {
+    return (
+      <a
+        className="button button-secondary copy-button"
+        href={`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Send ${name}'s link on WhatsApp`}
+      >
+        <MessageCircle size={15} aria-hidden="true" />
+        <span>WhatsApp</span>
+      </a>
+    );
+  }
+
+  const share = async () => {
+    try {
+      await navigator.share({ title: `Join ${familyName} on Callback`, text, url });
+    } catch {
+      // Closed the share sheet, or the browser refused: nothing to do.
+    }
+  };
+
+  return (
+    <button type="button" className="button button-secondary copy-button" onClick={() => void share()} aria-label={`Share ${name}'s link`}>
+      <Share2 size={15} aria-hidden="true" />
+      <span>Share</span>
+    </button>
+  );
 }

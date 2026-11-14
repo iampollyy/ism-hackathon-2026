@@ -1,0 +1,238 @@
+// /family/:familyId/plan. Scoped to .plan-page; the cards are PlanPicker.scss.
+
+.plan-page {
+  display: grid;
+  gap: 24px;
+  max-width: 1120px;
+
+  .button { gap: 8px; }
+  .button:focus-visible,
+  button:focus-visible,
+  a:focus-visible { outline: 2px solid var(--navy-soft); outline-offset: 3px; }
+}
+
+.plan-head {
+  h1 {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.25rem;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+
+  p {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 1.02rem;
+    max-width: 62ch;
+  }
+}
+
+.plan-notice {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--good-soft);
+  color: #17734f;
+  font-weight: 600;
+}
+
+.plan-current {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 1fr);
+  gap: 24px 40px;
+  padding: 28px 30px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(17, 34, 49, 0.08);
+  box-shadow: 0 1px 2px rgba(17, 34, 49, 0.04);
+
+  &.skeleton {
+    min-height: 210px;
+    background: linear-gradient(90deg, #fff, #f2f6f4, #fff);
+    background-size: 200% 100%;
+    animation: pp-shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+.plan-current-main {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+
+  h2 {
+    margin: 8px 0 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2rem;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+}
+
+.plan-status {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(17, 34, 49, 0.06);
+  color: #3d5262;
+
+  &.active { background: var(--good-soft); color: #17734f; }
+  &.trialing { background: rgba(245, 185, 77, 0.2); color: #8a5a0c; }
+  &.canceled { background: rgba(17, 34, 49, 0.07); color: #3d5262; }
+}
+
+.plan-price {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+
+.plan-trial {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+  max-width: 460px;
+
+  small { color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+}
+
+.plan-trial-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(17, 34, 49, 0.08);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    min-width: 6px;
+    border-radius: inherit;
+    background: var(--warning);
+  }
+}
+
+.plan-facts {
+  margin: 0;
+  display: grid;
+  align-content: start;
+  gap: 0;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 11px 0;
+    border-top: 1px solid var(--line);
+
+    &:first-child { border-top: 0; padding-top: 4px; }
+  }
+
+  dt {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.92rem;
+    white-space: nowrap;
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+    font-weight: 600;
+    font-size: 0.94rem;
+  }
+}
+
+.plan-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+
+.plan-cancel {
+  grid-column: 1 / -1;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.plan-text-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
+  color: #a3412c;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
+
+.plan-confirm {
+  display: grid;
+  gap: 12px;
+
+  p { margin: 0; line-height: 1.55; max-width: 64ch; }
+}
+
+.plan-confirm-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  .button { padding: 0.75rem 1.1rem; }
+  .button:disabled { opacity: 0.55; cursor: progress; transform: none; }
+}
+
+.plan-cancel-button {
+  background: #fff;
+  border-color: rgba(196, 85, 62, 0.45);
+  color: #a3412c;
+
+  &:hover { background: var(--accent-soft); }
+}
+
+.plan-error {
+  color: #a3412c;
+  font-weight: 600;
+}
+
+.plan-choose {
+  display: grid;
+  gap: 14px;
+
+  h2 {
+    margin: 8px 0 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: -0.02em;
+  }
+}
+
+.plan-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: #8f3a28;
+  font-weight: 600;
+
+  span { flex: 1; min-width: 200px; }
+  .button { padding: 0.6rem 1rem; background: #fff; }
+}
+
+@media (max-width: 900px) {
+  .plan-head h1 { font-size: 1.85rem; }
+
+  .plan-current {
+    grid-template-columns: 1fr;
+    padding: 22px 20px;
+  }
+
+  .plan-confirm-buttons .button { flex: 1; }
+}

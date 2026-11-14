@@ -1,292 +1,675 @@
-// Sign-up (/signup). Builds on the auth-card, input-stack and checkbox-row
-// styles in index.scss. The small pieces the family page shares are in
-// familyShared.scss.
+// Setting up a family plan (/signup). Everything is scoped to .onb (the root
+// also keeps .signup-flow, so the shared pieces in familyShared.scss apply).
 
-.signup-flow {
+.onb {
   display: grid;
-  gap: 20px;
+  gap: 24px;
   max-width: 1180px;
-}
 
-// Everything below is scoped to the sign-up page.
-.signup-flow {
-  .signup-header {
+  .button { gap: 8px; }
+
+  .button:focus-visible,
+  button:focus-visible,
+  a:focus-visible { outline: 2px solid var(--navy-soft); outline-offset: 2px; }
+
+  // ---------------------------------------------------------------- header and steps
+
+  .onb-head {
     display: flex;
-    justify-content: space-between;
     align-items: flex-end;
-    gap: 20px;
+    justify-content: space-between;
+    gap: 18px 32px;
     flex-wrap: wrap;
+  }
+
+  .onb-head-text {
+    max-width: 660px;
 
     h1 {
-      margin: 10px 0 0;
+      margin: 0;
       font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(2rem, 3.4vw, 3rem);
-      letter-spacing: -0.05em;
-      line-height: 1.02;
+      font-size: 2.25rem;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.55;
+
+      strong { color: var(--ink); }
     }
   }
 
-  .stepper {
-    display: flex;
-    gap: 8px;
+  .onb-steps {
     margin: 0;
     padding: 0;
     list-style: none;
+    display: flex;
+    gap: 6px;
 
-    li {
+    li { display: flex; }
+
+    button,
+    .onb-step-static {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 14px 8px 8px;
+      padding: 6px 14px 6px 6px;
       border-radius: 999px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid transparent;
+      background: transparent;
       color: var(--muted);
-      font-weight: 600;
       font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
     }
 
-    li.current {
-      border-color: rgba(231, 109, 82, 0.35);
-      background: var(--surface-strong);
+    button { cursor: pointer; }
+    button:hover { background: rgba(17, 34, 49, 0.05); color: var(--ink); }
+
+    li.current .onb-step-static {
+      background: #fff;
+      border-color: rgba(17, 34, 49, 0.12);
       color: var(--ink);
-      box-shadow: 0 8px 20px rgba(17, 34, 49, 0.08);
+      box-shadow: 0 1px 2px rgba(17, 34, 49, 0.06);
     }
 
-    li.done {
-      color: var(--good);
-    }
+    li.done button,
+    li.done .onb-step-static { color: #17734f; }
   }
 
-  .stepper-number {
+  .onb-step-number {
     width: 26px;
     height: 26px;
     border-radius: 50%;
     display: grid;
     place-items: center;
-    background: rgba(17, 34, 49, 0.06);
-    font-size: 0.8rem;
-    font-weight: 800;
-
-  }
-
-  .stepper li.current .stepper-number {
-    background: var(--accent);
-    color: white;
-  }
-
-  .stepper li.done .stepper-number {
-    background: var(--good-soft);
-    color: var(--good);
-  }
-
-  .signup-existing {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-    padding: 12px 16px;
-    border-radius: 16px;
-    background: var(--good-soft);
+    background: rgba(17, 34, 49, 0.07);
     color: var(--ink);
-    font-size: 0.95rem;
-
-    .text-link { font-weight: 700; color: var(--good); }
+    font-size: 0.8rem;
+    font-weight: 700;
   }
 
-  .signup-loading {
-    color: var(--muted);
+  li.current .onb-step-number { background: var(--navy); color: #fff; }
+  li.done .onb-step-number { background: var(--good-soft); color: var(--good); }
+
+  // ---------------------------------------------------------------- shared parts
+
+  .onb-card {
+    padding: 28px 30px;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid rgba(17, 34, 49, 0.08);
+    box-shadow: 0 1px 2px rgba(17, 34, 49, 0.04);
   }
 
-  .signup-card {
-    box-shadow: var(--shadow);
+  .onb-skeleton {
+    min-height: 320px;
+    background: linear-gradient(90deg, #fff, #f2f6f4, #fff);
+    background-size: 200% 100%;
+    animation: onb-shimmer 1.4s ease-in-out infinite;
   }
 
-  .step-intro {
-    margin: 0;
-    color: var(--muted);
-    line-height: 1.6;
-    max-width: 760px;
-  }
-
-  // ---------------------------------------------------------------- step 1
-
-  .signup-family-grid {
+  .onb-field {
     display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.7fr);
-    gap: 20px;
+    gap: 7px;
+    min-width: 0;
+
+    label { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+
+    input {
+      width: 100%;
+      height: 48px;
+      padding: 0 14px;
+      border: 1px solid rgba(18, 33, 47, 0.2);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 1rem;
+      outline: none;
+      caret-color: var(--accent);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+      &:hover { border-color: rgba(18, 33, 47, 0.32); }
+      &:focus { border-color: var(--navy-soft); box-shadow: 0 0 0 4px rgba(33, 61, 82, 0.12); }
+      &[aria-invalid='true'] { border-color: #c4553e; }
+    }
+  }
+
+  .onb-how-icon {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: rgba(33, 61, 82, 0.08);
+    color: var(--navy-soft);
+  }
+
+  .onb-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 4px 0;
+
+    > span { color: var(--muted); margin-right: auto; }
+    > .button-secondary:first-child { margin-right: auto; }
+  }
+
+  .onb-existing {
+    margin: 0;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(33, 61, 82, 0.06);
+    color: var(--ink);
+    line-height: 1.5;
+
+    a { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  }
+
+  // ---------------------------------------------------------------- logged out
+
+  .onb-gate {
+    max-width: 640px;
+
+    h2 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+    }
+
+    p { margin: 10px 0 0; color: var(--muted); line-height: 1.6; }
+  }
+
+  .onb-gate-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  // ---------------------------------------------------------------- step 1: the family
+
+  .onb-family-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.75fr);
+    gap: 24px;
     align-items: start;
   }
 
-  .signup-aside {
-    justify-content: flex-start;
-    position: sticky;
-    top: 20px;
-  }
-
-  .signup-how {
-    margin: 16px 0 0;
-    padding: 0;
-    list-style: none;
-    counter-reset: how;
+  .onb-family {
     display: grid;
-    gap: 18px;
-
-    li {
-      counter-increment: how;
-      display: grid;
-      grid-template-columns: 30px 1fr;
-      column-gap: 12px;
-      row-gap: 4px;
-    }
-
-    li::before {
-      content: counter(how);
-      grid-row: span 2;
-      width: 30px;
-      height: 30px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-weight: 800;
-    }
-
-    strong { font-size: 1rem; }
-    span { color: var(--muted); line-height: 1.55; font-size: 0.94rem; }
+    gap: 22px;
   }
 
-  .checkbox-row {
-    color: var(--ink);
+  .onb-word {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(17, 34, 49, 0.12);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+
+    input { width: 20px; height: 20px; margin: 2px 0 0; flex-shrink: 0; }
 
     strong { display: block; font-size: 1rem; }
 
     small {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      display: block;
       margin-top: 4px;
       color: var(--muted);
-      font-size: 0.86rem;
-    }
-  }
+      font-size: 0.88rem;
+      line-height: 1.5;
 
-  .family-word-tick {
-    padding: 14px 16px;
-    border-radius: 16px;
-    border: 1px solid var(--line);
-    background: rgba(17, 34, 49, 0.02);
+      svg { vertical-align: -2px; margin-right: 2px; }
+    }
+
+    &:hover { border-color: rgba(17, 34, 49, 0.24); }
 
     &.on {
-      border-color: rgba(29, 141, 100, 0.3);
+      border-color: rgba(29, 141, 100, 0.4);
       background: var(--good-soft);
     }
   }
 
-  .member-rows {
-    display: grid;
-    gap: 12px;
-  }
-
-  .member-rows-head {
-    display: grid;
-    gap: 4px;
-
-    strong { font-size: 1rem; }
-    small { color: var(--muted); line-height: 1.5; }
-  }
-
-  .member-row {
+  .onb-people {
     margin: 0;
-    padding: 14px 16px 16px;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.7);
+    padding: 0;
+    border: 0;
+    min-width: 0;
     display: grid;
     gap: 12px;
 
     legend {
-      padding: 0 6px;
-      margin-left: -6px;
-      font-size: 0.7rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
+      padding: 0;
+      margin-bottom: 4px;
+      display: grid;
+      gap: 4px;
+
+      strong { font-size: 1.05rem; }
+      small { color: var(--muted); line-height: 1.5; font-size: 0.92rem; }
     }
   }
 
-  .member-row-fields {
+  .onb-person {
+    display: grid;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(17, 34, 49, 0.1);
+    background: #fff;
+
+    &.me { background: #f7faf9; border-color: rgba(17, 34, 49, 0.16); }
+  }
+
+  .onb-person-fields {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
     gap: 12px;
     align-items: start;
-
-    .icon-button { margin-top: 25px; }
   }
 
-  .member-row-ticks {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 22px;
-  }
-
-  .choice {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.92rem;
-    color: var(--ink);
-    cursor: pointer;
-
-    input { width: 17px; height: 17px; accent-color: var(--good); margin: 0; }
-  }
-
-  .add-member {
-    justify-self: start;
-    gap: 8px;
-  }
-
-  .icon-button {
+  .onb-remove {
+    margin-top: 28px;
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    border: 1px solid var(--line);
+    border: 1px solid transparent;
     background: transparent;
     color: var(--muted);
     display: grid;
     place-items: center;
     cursor: pointer;
 
-    &:hover:not(:disabled) { color: var(--accent); border-color: rgba(231, 109, 82, 0.4); }
-    &:disabled { opacity: 0.4; cursor: not-allowed; }
+    &:hover:not(:disabled) { color: #a3412c; background: var(--accent-soft); }
+    &:disabled { opacity: 0.35; cursor: not-allowed; }
   }
 
-  // ---------------------------------------------------------------- step 2
+  .onb-person-ticks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+  }
 
-  .voice-step,
-  .links-step {
+  .onb-choice {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 9px;
+    font-size: 0.93rem;
+    color: var(--ink);
+    cursor: pointer;
+    line-height: 1.4;
+
+    input { width: 18px; height: 18px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--good); }
+
+    em {
+      display: block;
+      margin-top: 2px;
+      font-style: normal;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+  }
+
+  .onb-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    border-radius: 14px;
+    border: 1.5px dashed rgba(17, 34, 49, 0.22);
+    background: transparent;
+    color: var(--ink);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+
+    &:hover { background: #fff; border-color: rgba(17, 34, 49, 0.4); }
+  }
+
+  .onb-max { color: var(--muted); }
+
+  .onb-submit {
+    width: 100%;
+    min-height: 54px;
+    font-size: 1rem;
+
+    &:disabled { opacity: 0.6; cursor: progress; transform: none; }
+  }
+
+  .onb-aside {
+    position: sticky;
+    top: 24px;
+    padding: 24px;
+    border-radius: 18px;
+    background: rgba(33, 61, 82, 0.05);
+
+    h2 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+  }
+
+  .onb-next {
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: next;
+    display: grid;
+    gap: 18px;
+
+    li {
+      counter-increment: next;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      column-gap: 12px;
+      row-gap: 3px;
+    }
+
+    li::before {
+      content: counter(next);
+      grid-row: span 2;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #fff;
+      color: var(--navy);
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: 0 0 0 1px rgba(17, 34, 49, 0.1);
+    }
+
+    strong { font-size: 0.98rem; }
+    span { color: var(--muted); line-height: 1.55; font-size: 0.92rem; }
+  }
+
+  // ---------------------------------------------------------------- step 2: invites
+
+  .onb-invite {
+    display: grid;
+    gap: 18px;
+  }
+
+  .onb-how {
+    margin: 0;
+    padding: 18px 20px;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px 24px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid rgba(17, 34, 49, 0.08);
+
+    li {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    strong { display: block; font-size: 0.96rem; }
+    small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
+  }
+
+  .onb-invite-summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .onb-joined-count {
+    font-weight: 700;
+    font-size: 1.05rem;
+
+    &.all { color: var(--good); }
+  }
+
+  .onb-live-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 0.86rem;
+
+    &::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22b07d;
+      animation: onb-pulse 2s ease-in-out infinite;
+    }
+  }
+
+  .onb-invite-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .onb-invite-card {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+    padding: 20px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid rgba(17, 34, 49, 0.08);
+    box-shadow: 0 1px 2px rgba(17, 34, 49, 0.04);
+    transition: border-color 0.3s ease;
+
+    &.joined { border-color: rgba(29, 141, 100, 0.4); }
+  }
+
+  .onb-invite-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .avatar { flex-shrink: 0; }
+  }
+
+  .onb-invite-who {
+    flex: 1;
+    min-width: 0;
+
+    h3 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    p { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; }
+  }
+
+  .onb-you {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(33, 61, 82, 0.08);
+    color: var(--navy-soft);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .onb-state {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(17, 34, 49, 0.05);
+    color: #4d6170;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+
+    &.open { background: rgba(245, 185, 77, 0.2); color: #8a5a0c; }
+    &.joined { background: var(--good-soft); color: #17734f; }
+  }
+
+  .onb-qr {
+    justify-self: center;
+    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(17, 34, 49, 0.1);
+    background: #fff;
+    line-height: 0;
+
+    svg { display: block; }
+    .qr-placeholder { line-height: 1.4; }
+
+    &.empty {
+      width: 100%;
+      min-height: 120px;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      line-height: 1.45;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+      border-style: dashed;
+    }
+  }
+
+  .onb-joined {
+    min-height: 170px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 6px;
+    padding: 16px;
+    border-radius: 14px;
+    background: var(--good-soft);
+    color: #17734f;
+    text-align: center;
+    animation: onb-joined-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+    strong { font-size: 1.02rem; color: var(--ink); }
+    small { color: #3d5262; font-size: 0.88rem; }
+  }
+
+  .onb-link {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(17, 34, 49, 0.04);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+    color: #3d5262;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .onb-invite-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .copy-button { flex: 1; }
+  }
+
+  .onb-join-here {
+    flex-basis: 100%;
+    padding: 0.75rem 1rem;
+  }
+
+  .onb-voices {
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid rgba(17, 34, 49, 0.08);
+  }
+
+  .onb-voices-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+
+    strong { display: block; font-size: 0.98rem; }
+    small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.88rem; line-height: 1.5; max-width: 70ch; }
+
+    &:hover .onb-voices-action { background: rgba(17, 34, 49, 0.09); }
+  }
+
+  .onb-voices-action {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(17, 34, 49, 0.05);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  .onb-voices-body {
+    padding: 0 20px 8px;
+  }
+
+  // ---------------------------------------------------------------- step 3: the plan
+
+  .onb-plan {
+    display: grid;
+    gap: 20px;
+  }
+
+  .onb-trial {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 20px 22px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid rgba(17, 34, 49, 0.08);
+
+    > span:not(.onb-how-icon) { flex: 1; min-width: 240px; }
+    strong { display: block; font-size: 1.02rem; }
+    small { display: block; margin-top: 3px; color: var(--muted); line-height: 1.5; }
+  }
+
+  // ---------------------------------------------------------------- the optional voice recorder (VoiceStep)
+
+  .voice-step {
     display: grid;
     gap: 16px;
   }
 
   .voice-list {
     display: grid;
-    gap: 14px;
   }
 
   .voice-card {
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.82);
-    padding: 18px 20px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
     display: grid;
     gap: 14px;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
 
-    &.open { box-shadow: var(--shadow); background: var(--surface-strong); }
-    &.recording { border-color: rgba(231, 109, 82, 0.45); }
+    &.recording .voice-card-head h4 { color: #a3412c; }
   }
 
   .voice-card-head {
@@ -303,26 +686,27 @@
 
   .reading-text {
     padding: 18px 20px;
-    border-radius: 18px;
+    border-radius: 14px;
     background: rgba(17, 34, 49, 0.03);
-    border: 1px solid var(--line);
 
     p {
       margin: 10px 0 0;
       font-size: 1.08rem;
       line-height: 1.65;
       color: var(--ink);
+      max-width: 70ch;
     }
 
     .consent-line {
       font-weight: 700;
-      padding-left: 12px;
-      border-left: 3px solid var(--good);
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: var(--good-soft);
     }
 
     &.live {
-      background: rgba(255, 255, 255, 0.95);
-      border-color: rgba(231, 109, 82, 0.25);
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(231, 109, 82, 0.3);
 
       p { font-size: 1.22rem; }
     }
@@ -343,7 +727,7 @@
     strong {
       font-family: 'Space Grotesk', sans-serif;
       font-size: 2rem;
-      letter-spacing: -0.04em;
+      letter-spacing: -0.03em;
       font-variant-numeric: tabular-nums;
     }
 
@@ -369,7 +753,7 @@
     div {
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, #e76d52, #d95f49);
+      background: var(--accent);
       transition: width 0.2s linear;
     }
 
@@ -380,11 +764,6 @@
       width: 2px;
       background: rgba(17, 34, 49, 0.25);
     }
-  }
-
-  .record-bar .button,
-  .voice-actions .button {
-    gap: 8px;
   }
 
   .voice-actions {
@@ -437,63 +816,59 @@
     padding: 4px 0;
 
     > span { color: var(--muted); margin-right: auto; }
-    > .button-secondary:first-child + span { margin-left: 4px; }
-    .button { gap: 8px; }
   }
 
-  // ---------------------------------------------------------------- step 3
+  // ---------------------------------------------------------------- smaller screens
 
-  .link-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px;
+  @media (max-width: 1080px) {
+    .onb-family-grid { grid-template-columns: 1fr; }
+    .onb-aside { position: static; }
   }
 
-  .link-card {
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    background: var(--surface-strong);
-    padding: 18px;
-    display: grid;
-    gap: 12px;
-    justify-items: start;
-    box-shadow: 0 10px 28px rgba(17, 34, 49, 0.08);
+  @media (max-width: 900px) {
+    .onb-head-text h1 { font-size: 1.85rem; }
+    .onb-steps { width: 100%; }
+    .onb-steps li:not(.current) .onb-step-number + span { display: none; }
+    .onb-steps button, .onb-steps .onb-step-static { padding-right: 6px; }
+    .onb-steps li.current .onb-step-static { padding-right: 14px; }
+    .onb-card { padding: 22px 18px; }
+    .onb-how { grid-template-columns: 1fr; }
   }
 
-  .qr-frame {
-    justify-self: center;
-    padding: 10px;
-    border-radius: 16px;
-    background: white;
-    border: 1px solid var(--line);
-
-    svg { display: block; }
-  }
-
-  .link-text {
-    width: 100%;
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: rgba(17, 34, 49, 0.04);
-    font-size: 0.8rem;
-    color: var(--ink);
-    word-break: break-all;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
-
-  @media (max-width: 1000px) {
-    .signup-family-grid { grid-template-columns: 1fr; }
-    .signup-aside { position: static; }
-  }
-
-  @media (max-width: 680px) {
-    .member-row-fields { grid-template-columns: 1fr; }
-    .member-row-fields .icon-button { margin-top: 0; }
+  @media (max-width: 640px) {
+    .onb-person-fields { grid-template-columns: 1fr 1fr 44px; }
+    .onb-person-fields .onb-field:first-child { grid-column: 1 / 3; }
+    .onb-person-fields .onb-field:nth-child(2) { grid-column: 1 / 3; }
+    .onb-remove { grid-column: 3; grid-row: 1; }
+    .onb-person { padding: 14px; }
     .record-bar { grid-template-columns: 1fr; }
+    .onb-voices-toggle { flex-wrap: wrap; }
   }
+}
+
+@keyframes onb-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@keyframes onb-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 176, 125, 0.45); }
+  50% { box-shadow: 0 0 0 5px rgba(34, 176, 125, 0); }
+}
+
+@keyframes onb-joined-in {
+  from { transform: scale(0.96); opacity: 0.4; }
+  to { transform: none; opacity: 1; }
 }
 
 @keyframes signup-rec {
   0%, 100% { box-shadow: 0 0 0 0 rgba(231, 109, 82, 0.55); }
   50% { box-shadow: 0 0 0 8px rgba(231, 109, 82, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onb .onb-skeleton,
+  .onb .onb-live-dot::before,
+  .onb .onb-joined,
+  .onb .rec-dot { animation: none; }
 }

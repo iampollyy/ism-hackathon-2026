@@ -48,13 +48,15 @@ const needsRecording = (state: VoiceState | undefined) => !state || state.kind =
 
 type Props = {
   members: SignUpMember[];
-  onNext: () => void;
+  /** Inside the invite step: no heading card and no footer of its own. */
+  embedded?: boolean;
+  onNext?: () => void;
   onBack?: () => void;
   /** A member's voice is now ready, so the page can remember it between steps. */
   onReady?: (memberId: string) => void;
 };
 
-export function VoiceStep({ members, onNext, onBack, onReady }: Props) {
+export function VoiceStep({ members, embedded = false, onNext, onBack, onReady }: Props) {
   const [states, setStates] = useState<VoiceStates>(() =>
     Object.fromEntries(members.map((member) => [member.id, initialState(member)])),
   );
@@ -117,26 +119,34 @@ export function VoiceStep({ members, onNext, onBack, onReady }: Props) {
 
   return (
     <div className="voice-step">
-      <div className="auth-card signup-card">
-        <div className="auth-card-header">
-          <div>
-            <small>Step 2 of 3</small>
-            <h2>Everyone's voice</h2>
-          </div>
-          <span className="mini-badge">
-            {readyCount} of {members.length} ready
-          </span>
-        </div>
-        <p className="step-intro">
-          Hand the laptop to each person in turn. They read the text out loud for one minute, in a quiet room. The first
-          sentence is their consent, so only they may record it. You can skip someone and record them later.
-        </p>
-        {cannotRecord ? (
+      {embedded ? (
+        cannotRecord ? (
           <div className="form-alert" role="alert">
             {cannotRecord}
           </div>
-        ) : null}
-      </div>
+        ) : null
+      ) : (
+        <div className="auth-card signup-card">
+          <div className="auth-card-header">
+            <div>
+              <small>Optional</small>
+              <h2>Everyone's voice</h2>
+            </div>
+            <span className="mini-badge">
+              {readyCount} of {members.length} ready
+            </span>
+          </div>
+          <p className="step-intro">
+            Hand the laptop to each person in turn. They read the text out loud for one minute, in a quiet room. The first
+            sentence is their consent, so only they may record it. You can skip someone and record them later.
+          </p>
+          {cannotRecord ? (
+            <div className="form-alert" role="alert">
+              {cannotRecord}
+            </div>
+          ) : null}
+        </div>
+      )}
 
       <div className="voice-list">
         {members.map((member, index) => {
@@ -247,6 +257,7 @@ export function VoiceStep({ members, onNext, onBack, onReady }: Props) {
         })}
       </div>
 
+      {embedded ? null : (
       <div className="step-footer">
         {onBack ? (
           <button type="button" className="button button-secondary" onClick={onBack} disabled={busy}>
@@ -258,10 +269,13 @@ export function VoiceStep({ members, onNext, onBack, onReady }: Props) {
             ? 'Every voice is ready.'
             : `${readyCount} of ${members.length} voices ready. A practice call in a family voice needs at least one.`}
         </span>
-        <button type="button" className="button button-primary" onClick={onNext} disabled={busy}>
-          Next: phone links <ArrowRight size={16} />
-        </button>
+        {onNext ? (
+          <button type="button" className="button button-primary" onClick={onNext} disabled={busy}>
+            Next <ArrowRight size={16} />
+          </button>
+        ) : null}
       </div>
+      )}
     </div>
   );
 }
