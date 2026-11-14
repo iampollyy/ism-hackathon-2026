@@ -1,0 +1,775 @@
+// The learning page. The habits are the strong band at the top (navy, with
+// the first habit set in the brand's "safe action" green), then the check,
+// then the tactic cards. Scoped to .lp-page; tokens from index.scss.
+
+.lp-page {
+  --lp-good-deep: #17714f;
+  --lp-speech: rgba(231, 109, 82, 0.08);
+}
+
+// ---------------------------------------------------------------- habits
+
+.lp-habits {
+  position: relative;
+  overflow: hidden;
+  padding: 32px 34px 34px;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(231, 109, 82, 0.2), transparent 38%),
+    var(--navy);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+.lp-habits__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0;
+    max-width: 24ch;
+    font-family: var(--rd-heading);
+    font-size: clamp(1.55rem, 2.3vw, 2.1rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+}
+
+.lp-habits__print-note { display: none; }
+
+.lp-habits__print {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+
+  &:hover { background: rgba(255, 255, 255, 0.13); border-color: rgba(255, 255, 255, 0.4); transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
+}
+
+.lp-habits__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+.lp-habit {
+  h3 {
+    margin: 0;
+    font-family: var(--rd-heading);
+    font-size: 1.28rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 6px 0 0;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.55;
+  }
+}
+
+.lp-habit__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+}
+
+.lp-habit--lead {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 270px;
+  padding: 26px;
+  border-radius: 20px;
+  background: var(--lp-good-deep);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+
+  .lp-habit__icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: auto;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  h3 {
+    margin-top: 28px;
+    font-size: clamp(1.8rem, 2.6vw, 2.4rem);
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+  }
+
+  p {
+    margin-top: 10px;
+    max-width: 36ch;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.08rem;
+  }
+}
+
+.lp-habits__rest {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  align-content: space-between;
+
+  li {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    padding: 18px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+
+    &:first-child { padding-top: 4px; border-top: 0; }
+    &:last-child { padding-bottom: 0; }
+  }
+}
+
+// ---------------------------------------------------------------- spot the tactic
+
+.lp-quiz {
+  display: grid;
+  gap: 22px;
+  padding: 30px 32px 32px;
+  border-radius: var(--radius);
+  background: var(--rd-surface);
+  border: 1px solid var(--line);
+}
+
+.lp-quiz__intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'title dots' 'text dots';
+  gap: 0 24px;
+
+  h2 {
+    grid-area: title;
+    margin: 0;
+    font-family: var(--rd-heading);
+    font-size: clamp(1.55rem, 2.2vw, 2rem);
+    letter-spacing: -0.03em;
+  }
+
+  p {
+    grid-area: text;
+    margin: 6px 0 0;
+    max-width: 58ch;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .lp-quiz__dots { grid-area: dots; align-self: end; }
+}
+
+.lp-quiz__dots {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 6px;
+  list-style: none;
+}
+
+.lp-quiz__dot {
+  width: 30px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(17, 34, 49, 0.1);
+  transition: background 0.25s ease;
+
+  &.is-current { background: var(--ink); }
+  &.is-spotted { background: var(--good); }
+  &.is-tip { background: var(--warning); }
+}
+
+.lp-quiz__play {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+
+// The caller's line, set like the phone's call screen.
+.lp-call {
+  margin: 0;
+  outline: none;
+  display: grid;
+  gap: 18px;
+  min-height: 230px;
+  align-content: space-between;
+  padding: 24px 26px 28px;
+  border-radius: 22px;
+  background: #132332;
+  color: #fff;
+  box-shadow: 0 18px 36px rgba(17, 34, 49, 0.18);
+}
+
+.lp-call__who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-call__icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(231, 109, 82, 0.22);
+  color: #ffb4a3;
+}
+
+.lp-call__line {
+  margin: 0;
+
+  p {
+    margin: 0;
+    font-family: var(--rd-heading);
+    font-size: clamp(1.45rem, 2.2vw, 1.95rem);
+    font-weight: 500;
+    line-height: 1.22;
+    letter-spacing: -0.02em;
+  }
+}
+
+.lp-quiz__ask {
+  margin: 4px 0 12px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.lp-quiz__options {
+  display: grid;
+  gap: 10px;
+}
+
+.lp-option {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: 1.5px solid rgba(17, 34, 49, 0.14);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1.02rem;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
+
+  &:hover:not(:disabled) { border-color: rgba(17, 34, 49, 0.34); transform: translateY(-1px); }
+  &:active:not(:disabled) { transform: translateY(0); }
+  &:disabled { cursor: default; }
+
+  &.is-answer {
+    border-color: var(--good);
+    background: var(--good-soft);
+    color: var(--rd-good-ink);
+    cursor: default;
+  }
+
+  &.is-pick {
+    border-color: rgba(245, 185, 77, 0.8);
+    background: rgba(245, 185, 77, 0.12);
+    cursor: default;
+  }
+
+  &.is-other { opacity: 0.5; }
+}
+
+.lp-option__note {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--rd-warn-ink);
+}
+
+.lp-quiz__feedback {
+  grid-column: 1 / -1;
+
+  &:empty { display: none; }
+}
+
+.lp-quiz__hint {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.93rem;
+}
+
+.lp-feedback {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px 28px;
+  padding: 20px 22px 22px;
+  border-radius: 18px;
+  background: rgba(245, 185, 77, 0.13);
+  animation: lp-rise 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &.is-spotted { background: var(--good-soft); }
+
+  p { margin: 0; line-height: 1.55; }
+}
+
+.lp-feedback__title {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--rd-warn-ink);
+
+  svg { flex-shrink: 0; }
+  .is-spotted & { color: var(--rd-good-ink); }
+  strong { font-weight: 800; color: var(--ink); }
+}
+
+.lp-feedback__part h3 {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.lp-quiz__next { align-self: end; gap: 8px; white-space: nowrap; }
+
+.lp-quiz__done {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: rgba(17, 34, 49, 0.04);
+
+  p { margin: 0; max-width: 64ch; line-height: 1.6; }
+  .button { gap: 8px; margin-top: 8px; }
+}
+
+.lp-quiz__score {
+  font-family: var(--rd-heading);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+@keyframes lp-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+// ---------------------------------------------------------------- tactic sections
+
+.lp-section {
+  display: grid;
+  gap: 18px;
+  scroll-margin-top: 20px;
+}
+
+.lp-section__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 32px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+
+  > div { flex: 1 1 460px; }
+
+  h2 {
+    margin: 0;
+    font-family: var(--rd-heading);
+    font-size: clamp(1.6rem, 2.3vw, 2.1rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+
+  p {
+    margin: 8px 0 0;
+    max-width: 62ch;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+}
+
+.lp-summary {
+  display: block;
+  margin: 0;
+  max-width: 44ch;
+  color: var(--muted);
+  font-size: 0.93rem;
+  line-height: 1.5;
+
+  a {
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: rgba(17, 34, 49, 0.3);
+
+    &:hover { text-decoration-color: currentColor; }
+  }
+}
+
+.lp-summary__mark {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--navy);
+  vertical-align: 1px;
+}
+
+.lp-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lp-index__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--rd-surface);
+  border: 1px solid var(--line);
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+
+  &:hover { border-color: rgba(17, 34, 49, 0.3); transform: translateY(-1px); }
+}
+
+.lp-index__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warning);
+
+  .lp-index__item--red & { background: var(--rd-red); }
+}
+
+.lp-index__count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-grid {
+  display: grid;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.lp-grid--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.lp-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+// ---------------------------------------------------------------- one tactic
+
+.lp-tactic {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 24px 22px;
+  border-radius: 20px;
+  background: var(--rd-surface);
+  border: 1px solid var(--line);
+  scroll-margin-top: 20px;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease;
+
+  &.is-flash {
+    border-color: rgba(231, 109, 82, 0.6);
+    box-shadow: 0 0 0 4px rgba(231, 109, 82, 0.14), 0 16px 34px rgba(17, 34, 49, 0.1);
+  }
+}
+
+.lp-tactic__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  h3 {
+    margin: 0;
+    font-family: var(--rd-heading);
+    font-size: 1.45rem;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+  }
+}
+
+.lp-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: help;
+
+  &--yellow { background: rgba(245, 185, 77, 0.2); color: var(--rd-warn-ink); }
+  &--red { background: rgba(216, 64, 47, 0.1); color: var(--rd-red-ink); }
+}
+
+.lp-light__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+
+  .lp-light--yellow & { background: var(--warning); }
+  .lp-light--red & { background: var(--rd-red); }
+}
+
+.lp-sub {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.lp-speech {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 8px;
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--lp-speech);
+
+  &:last-child { margin-bottom: 0; }
+
+  p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+}
+
+.lp-tactic__why p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.lp-tactic__todo {
+  padding: 14px 16px 16px;
+  border-radius: 14px;
+  background: var(--good-soft);
+
+  h4 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 6px;
+    color: var(--rd-good-ink);
+    font-size: 0.92rem;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.55;
+  }
+}
+
+.lp-tactic__drills {
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+}
+
+.lp-drill {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+
+  &:hover {
+    border-color: rgba(17, 34, 49, 0.26);
+    background: rgba(17, 34, 49, 0.02);
+    transform: translateY(-1px);
+
+    .lp-drill__go { transform: translateX(2px); color: var(--ink); }
+  }
+}
+
+.lp-drill__who {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  font-size: 0.92rem;
+
+  strong { font-weight: 700; }
+  span { color: var(--muted); }
+}
+
+.lp-drill__outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(17, 34, 49, 0.06);
+  color: var(--navy-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &.is-safe { background: var(--good-soft); color: var(--rd-good-ink); }
+}
+
+.lp-drill__go {
+  color: var(--muted);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.lp-tactic__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(17, 34, 49, 0.3);
+
+  &:hover { text-decoration-color: currentColor; }
+}
+
+// ---------------------------------------------------------------- loading
+
+.lp-skeleton {
+  display: grid;
+  gap: 22px;
+}
+
+.lp-skeleton__band { height: 340px; border-radius: var(--radius); }
+.lp-skeleton__quiz { height: 300px; border-radius: var(--radius); }
+.lp-skeleton__card { height: 420px; }
+
+// ---------------------------------------------------------------- narrower screens
+
+@media (max-width: 1180px) {
+  .lp-grid--three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1000px) {
+  .lp-habits__grid,
+  .lp-quiz__play,
+  .lp-grid--two,
+  .lp-grid--three { grid-template-columns: 1fr; }
+
+  .lp-habit--lead { min-height: 0; }
+  .lp-call { min-height: 0; }
+  .lp-feedback { grid-template-columns: 1fr; }
+  .lp-quiz__next { justify-self: start; }
+}
+
+@media (max-width: 768px) {
+  .lp-habits { padding: 24px 20px 22px; }
+  .lp-habit--lead { padding: 22px; }
+  .lp-quiz { padding: 22px 18px 20px; }
+  .lp-quiz__intro {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'title' 'text' 'dots';
+  }
+  .lp-call { padding: 20px; }
+  .lp-tactic { padding: 20px 18px 18px; }
+  .lp-tactic__head { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .lp-drill { grid-template-columns: minmax(0, 1fr) auto; }
+  .lp-drill__outcome { grid-column: 1; grid-row: 2; justify-self: start; }
+  .lp-drill__go { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+// ---------------------------------------------------------------- printing the habits
+
+@media print {
+  body:has(.lp-page) {
+    background: #fff;
+
+    .practice-sidebar { display: none; }
+    .practice-main { padding: 0; }
+  }
+
+  .lp-page > :not(.lp-habits) { display: none !important; }
+
+  .lp-habits {
+    background: #fff;
+    color: #000;
+    box-shadow: none;
+    border: 2px solid #000;
+    break-inside: avoid;
+  }
+
+  .lp-habits__print { display: none; }
+  .lp-habits__print-note { display: block; margin: 0; font-weight: 600; }
+
+  .lp-habit p,
+  .lp-habit--lead p { color: #222; }
+
+  .lp-habit--lead {
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
+    box-shadow: none;
+  }
+
+  .lp-habit__icon,
+  .lp-habit--lead .lp-habit__icon { background: #eee; color: #000; }
+
+  .lp-habits__rest li { border-top-color: #bbb; }
+}
