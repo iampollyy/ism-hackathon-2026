@@ -380,3 +380,18 @@ class NewsRefresh(Base):
     family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, index=True)
     outcome: Mapped[str | None] = mapped_column(String)  # refreshed | no_new_digest | failed; None while it runs
     created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class LiveCall(Base):
+    """Marks a shield call as a LIVE call between two people: the organiser
+    (or a teammate playing the caller) talks to the member from another
+    phone, browser to browser, instead of a voice agent. The caller's words
+    are transcribed in their browser and posted as caller turns, so the
+    Shield's live risk check, warning and family alert work as on any shield
+    call (services/live_call.py). New table (create_all adds it)."""
+
+    __tablename__ = "live_calls"
+
+    call_id: Mapped[str] = mapped_column(ForeignKey("calls.id"), primary_key=True)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, index=True)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)

@@ -84,6 +84,11 @@ export type WaitlistIn = S['WaitlistIn'];
 export type WaitlistCount = S['WaitlistCount'];
 export type MemberAdd = S['MemberAdd'];
 export type MemberAdded = S['MemberAdded'];
+export type LiveCallCreated = S['LiveCallCreated'];
+export type LiveSignals = S['LiveSignals'];
+export type ScribeToken = S['ScribeToken'];
+export type LiveSignalKind = 'offer' | 'answer' | 'ice' | 'bye';
+export type LiveSide = 'caller' | 'callee';
 
 // ---------------------------------------------------------------- fixed lists
 

@@ -62,6 +62,14 @@ export type PhoneView =
       /** The reveal it was called from: back there if the line cannot connect. */
       reveal: RevealView | null;
     }
+  | {
+      /** A person calling through Callback (live/peer.ts), not a voice agent. */
+      name: 'live_call';
+      callId: string;
+      title: string;
+      number: string | null;
+      startedAt: number;
+    }
   | RevealView
   | WelcomeDoneView;
 
@@ -99,6 +107,8 @@ export type PhoneAction =
   | { type: 'phone_failed'; notFound: boolean; failures: number }
   | { type: 'answer'; call: IncomingCall; at: number }
   | { type: 'answer_failed'; callId: string; message: string }
+  | { type: 'live_answer'; call: IncomingCall; at: number }
+  | { type: 'live_end'; callId: string; message: string | null }
   | { type: 'decline'; callId: string }
   | { type: 'connected'; callId: string }
   | { type: 'mode'; callId: string; mode: Mode }
@@ -289,6 +299,27 @@ export function phoneReducer(state: PhoneUiState, action: PhoneAction): PhoneUiS
           ending: false,
         },
       };
+
+    case 'live_answer':
+      if (view.name !== 'ringing' || view.call.call_id !== action.call.call_id) return state;
+      return {
+        ...state,
+        handled: remember(state.handled, action.call.call_id),
+        notice: null,
+        view: {
+          name: 'live_call',
+          callId: action.call.call_id,
+          title: action.call.caller.label || 'Unknown number',
+          number: action.call.caller.number,
+          startedAt: action.at,
+        },
+      };
+
+    case 'live_end': {
+      if (view.name !== 'live_call' || view.callId !== action.callId) return state;
+      const next: PhoneUiState = { ...state, view: { name: 'waiting' } };
+      return action.message ? withNotice(next, 'info', action.message) : next;
+    }
 
     case 'answer_failed': {
       if (callIdOf(view) !== action.callId) return state;

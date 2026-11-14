@@ -31,6 +31,7 @@ const LearnPage = page(() => import('./pages/LearnPage/LearnPage'), 'LearnPage')
 const NewsPage = page(() => import('./pages/NewsPage/NewsPage'), 'NewsPage');
 const PlanPage = page(() => import('./pages/PlanPage/PlanPage'), 'PlanPage');
 const LiveCallPage = page(() => import('./pages/LiveCallPage/LiveCallPage'), 'LiveCallPage');
+const CallerPage = page(() => import('./pages/CallerPage/CallerPage'), 'CallerPage');
 // The marketing landing and pricing load on their own, so app routes never download three.js.
 const LandingPage = lazy(() => import('./pages/LandingPage/LandingPage'));
 const PricingPage = lazy(() => import('./pages/LandingPage/PricingPage'));
@@ -45,6 +46,8 @@ export default function App() {
           {/* Full screen, no sidebar: the member's phone, joining, and signing in. */}
           <Route path="/phone/:memberId" element={<PhonePage />} />
           <Route path="/join/:memberId" element={<JoinPage />} />
+          {/* The caller's side of a live call (a person calling, the Shield listening). */}
+          <Route path="/live/:callId" element={<CallerPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           {/* The marketing landing and pricing: full page, no sidebar. */}

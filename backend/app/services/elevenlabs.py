@@ -149,6 +149,19 @@ async def conversation_token(agent_id: str) -> ConversationToken:
     return ConversationToken(token=token, conversation_id=str(conversation_id))
 
 
+async def realtime_scribe_token() -> str:
+    """POST /v1/single-use-token/realtime_scribe -> a token for one browser's
+    realtime speech-to-text WebSocket (expires after 15 minutes; the API key
+    never leaves the server). Raises ElevenLabsError on failure."""
+    if _is_fake():
+        return f"fake-scribe-{secrets.token_hex(6)}"
+    body = _json(await _request("POST", "/v1/single-use-token/realtime_scribe"))
+    token = body.get("token")
+    if not isinstance(token, str) or not token:
+        raise ElevenLabsError("ElevenLabs gave no speech-to-text token.")
+    return token
+
+
 async def signed_url(agent_id: str) -> str:
     """GET /v1/convai/conversation/get-signed-url?agent_id=... -> the signed
     WebSocket URL (fallback if WebRTC fails; valid 15 minutes)."""

@@ -16,6 +16,7 @@ import { RingingScreen } from './screens/RingingScreen';
 import { CallScreen } from './screens/CallScreen';
 import { PRACTICE_LINE_NOTE, RevealScreen } from './screens/RevealScreen';
 import { WelcomeDoneScreen } from './screens/WelcomeDoneScreen';
+import { LiveCallScreen } from './screens/LiveCallScreen';
 import './PhonePage.scss';
 
 const DARK_BAR = '#0e0a24';
@@ -79,7 +80,7 @@ function Phone({ memberId }: { memberId: string }) {
     };
   }, [fromJoin, memberId, navigate]);
   const [tab, setTab] = useState<PhoneTab>('home');
-  const dark = view.name === 'ringing' || view.name === 'in_call' || view.name === 'family_line';
+  const dark = view.name === 'ringing' || view.name === 'in_call' || view.name === 'family_line' || view.name === 'live_call';
   useThemeColor(phone.shield?.warn ? WARNING_BAR : dark ? DARK_BAR : null);
 
   if (state.link === 'not_found' && view.name === 'waiting') {
@@ -129,6 +130,18 @@ function Phone({ memberId }: { memberId: string }) {
           connected={view.connected}
           mode={view.mode}
           onEnd={phone.hangUp}
+        />
+      );
+      break;
+    case 'live_call':
+      screen = (
+        <LiveCallScreen
+          callId={view.callId}
+          title={view.title}
+          number={view.number}
+          startedAt={view.startedAt}
+          shield={phone.shield}
+          onEnded={(message) => phone.liveEnded(view.callId, message)}
         />
       );
       break;

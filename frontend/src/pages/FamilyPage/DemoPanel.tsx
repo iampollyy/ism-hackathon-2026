@@ -4,8 +4,9 @@
 // state lives in useDemo, on the page.
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Radio, Sparkles } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowRight, PhoneCall, Radio, Sparkles } from 'lucide-react';
+import { api, ApiError } from '../../api/client';
 import type { MemberView, ProtectionView } from '../../api/types';
 import { ANYONE, type Demo, type Drill } from './useDemo';
 
@@ -219,6 +220,75 @@ export function DemoPanel({ members, protection, demo }: Props) {
           <Radio size={16} /> {shield.busy ? 'Ringing…' : 'Start a Shield demo call'}
         </button>
       </div>
+
+      <LiveCallBlock members={members} />
     </section>
+  );
+}
+
+/** A live call: the organiser calls a member from this phone or laptop,
+ * person to person, and the Shield on the member's phone listens
+ * (pages/CallerPage, live/peer.ts). */
+function LiveCallBlock({ members }: { members: MemberView[] }) {
+  const { familyId = '' } = useParams<{ familyId: string }>();
+  const navigate = useNavigate();
+  const callable = members.filter((member) => member.consent.practice && !member.is_organiser);
+  const [choice, setChoice] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const target = callable.find((member) => member.id === choice) ?? callable[0] ?? null;
+
+  const start = async () => {
+    if (!target) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await api.startLiveCall(familyId, target.id);
+      navigate(`/live/${created.call_id}`);
+    } catch (failure) {
+      setError(failure instanceof ApiError ? failure.message : 'The call could not start. Please try again.');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fh-demo-block">
+      <div className="fh-demo-title">
+        <PhoneCall size={18} aria-hidden="true" />
+        <h3>Live call from this phone</h3>
+      </div>
+      <p>
+        Call them yourself, person to person, through Callback. Say what a scammer would say: the Shield on their
+        phone listens, warns them during the call and alerts the family.
+      </p>
+      <label className="fh-field">
+        <span>Who you call</span>
+        <select value={target?.id ?? ''} onChange={(event) => setChoice(event.target.value)} disabled={callable.length === 0}>
+          {callable.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.name}
+              {member.phone_online ? ' · phone open' : ''}
+            </option>
+          ))}
+        </select>
+      </label>
+      {error ? (
+        <div className="fh-alert" role="alert">
+          {error}
+        </div>
+      ) : callable.length === 0 ? (
+        <small className="fh-hint warn">Nobody else in the family has agreed to practice calls yet.</small>
+      ) : target && !target.phone_online ? (
+        <small className="fh-hint warn">{target.name}'s phone page isn't open. Open it so the call can ring.</small>
+      ) : null}
+      <button
+        type="button"
+        className="button fh-shield-button fh-wide"
+        onClick={() => void start()}
+        disabled={busy || !target}
+      >
+        <PhoneCall size={16} /> {busy ? 'Calling…' : target ? `Call ${target.name} from this phone` : 'Call from this phone'}
+      </button>
+    </div>
   );
 }
