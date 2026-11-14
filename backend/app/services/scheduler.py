@@ -31,6 +31,9 @@ log = logging.getLogger("app.scheduler")
 TICK_SECONDS = 2.0
 RING_SECONDS = 45
 END_GRACE_SECONDS = 30
+# A drill never rings within this long after the person's previous call ended,
+# so it can't cut into a reveal, a lesson or the family-line call-back.
+AFTER_CALL_QUIET_SECONDS = 120
 
 
 async def run_forever() -> None:
@@ -63,6 +66,8 @@ def ring_if_due(db: DbSession, call: Call, now: datetime) -> None:
     if due is not None and due > now:
         return
     if call.kind == "practice":
+        if recently_ended(db, call, now):
+            return  # the reveal may still be on screen; try again on a later pass
         try:
             calls.check_practice_gate(db, call.target_member_id, call.voice_member_id,
                                       check_phone_online=False)
@@ -73,6 +78,21 @@ def ring_if_due(db: DbSession, call: Call, now: datetime) -> None:
             calls.change_status(db, call, "failed", ended_at=to_iso(now))
             return
     calls.change_status(db, call, "ringing", ring_at=to_iso(now))
+
+
+def recently_ended(db: DbSession, call: Call, now: datetime) -> bool:
+    """True when another call of the same person ended less than
+    AFTER_CALL_QUIET_SECONDS ago (an ended, scored, declined or missed call
+    with an ended_at)."""
+    latest = db.scalar(
+        select(Call.ended_at)
+        .where(Call.target_member_id == call.target_member_id, Call.id != call.id,
+               Call.ended_at.is_not(None))
+        .order_by(Call.ended_at.desc())
+        .limit(1)
+    )
+    since = seconds_since(latest, now)
+    return since is not None and 0 <= since < AFTER_CALL_QUIET_SECONDS
 
 
 def miss_if_unanswered(db: DbSession, call: Call, now: datetime) -> None:
