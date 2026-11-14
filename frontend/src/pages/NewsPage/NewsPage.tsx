@@ -149,6 +149,7 @@ export function NewsPage() {
       if (answer.reason === 'too_soon') {
         recheck.current = window.setTimeout(async () => {
           const later = await load();
+          if (!live.current) return;
           setNow(Date.now());
           if (later && later.updated_at && later.updated_at !== before) {
             setNotice({ tone: 'good', text: 'The new briefing is in.' });

@@ -726,7 +726,24 @@
   .lp-quiz__intro {
     grid-template-columns: 1fr;
     grid-template-areas: 'title' 'text' 'dots';
+    row-gap: 12px;
+
+    p { margin-top: -6px; }
   }
+
+  // The jump links scroll sideways on a phone instead of filling the screen.
+  .lp-index {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 2px 16px 6px;
+    mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 28px), transparent 100%);
+
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .lp-index__item { flex-shrink: 0; }
   .lp-call { padding: 20px; }
   .lp-tactic { padding: 20px 18px 18px; }
   .lp-tactic__head { align-items: flex-start; flex-direction: column; gap: 8px; }
