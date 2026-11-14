@@ -8,7 +8,7 @@ type Group = { startMs: number; endMs: number; speaker: string; kind: string; pa
 
 const groups = data.groups as Group[];
 
-const TAG: Record<string, string | null> = { ai: "AI voice · copy of Polina", denis: "AI voice · Denis", team: null };
+const TAG: Record<string, string | null> = { ai: "AI voice · copy of Polina", denis: "AI voice", team: null };
 
 /**
  * Word-by-word captions, one box per run of a speaker, kept clear of the bottom 22%.

@@ -135,7 +135,7 @@ const AiTag: React.FC = () => {
     interpolate(t, [tag.from, tag.from + 0.25], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
     interpolate(t, [tag.to - 0.25, tag.to], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
   );
-  const label = tag.kind === "caller" ? "AI voice · a copy of Polina's voice" : "AI voice · Denis's cloned voice";
+  const label = tag.kind === "caller" ? "AI voice · a copy of Polina's voice" : "AI voice";
   return (
     <div
       style={{

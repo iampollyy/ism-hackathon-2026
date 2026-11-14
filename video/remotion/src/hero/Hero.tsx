@@ -245,7 +245,7 @@ const Reveal: React.FC = () => {
         }}
       />
       <Line text="That wasn't Denis." at={S(0.2)} size={104} top={560} />
-      <Line text="An AI copy of his face and voice." at={S(0.9)} size={64} top={790} color={C.lavender} />
+      <Line text="An AI copy of his face." at={S(0.9)} size={64} top={790} color={C.lavender} />
       <Line text="Made in minutes." at={S(1.5)} size={64} top={975} color={C.pink} />
       <Sequence from={realFrom} layout="none">
         <AbsoluteFill style={{ opacity: realIn }}>
