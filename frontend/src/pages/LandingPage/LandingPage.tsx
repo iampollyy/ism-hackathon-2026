@@ -6,7 +6,8 @@ import { Component, Suspense, useEffect, useRef, useState, type ComponentType, t
 import './styles/landing.scss';
 import { head } from './copy';
 import { store, useLp } from './store';
-import { callMachine } from './callMachine';
+import { callMachine, inFocusCall } from './callMachine';
+import { startScroll } from './motion';
 import { afterLoadIdle, can3D, prefersReducedMotion } from './capability';
 import { useLandingHead, useLandingShell } from './useLandingHead';
 import { Nav } from './components/Nav';
@@ -39,27 +40,18 @@ export default function LandingPage() {
   const stageUiRef = useRef<HTMLDivElement>(null);
   const mode = useLp((s) => s.mode);
   const reduced = useLp((s) => s.reducedMotion);
+  // While the call plays, the page steps back: the headline and nav dim, the ground darkens.
+  const callFocus = useLp((s) => inFocusCall(s.call));
+  const glitching = useLp((s) => s.call === 'glitch');
   const pricingData = usePricing();
   const [Stage, setStage] = useState<ComponentType<StageProps> | null>(null);
   useLandingShell(rootRef);
 
-  // The scroll driver (GSAP ScrollTrigger) loads after first paint.
+  // The scroll driver (cached offsets, one frame per scroll). Reduced motion shows
+  // every chapter as a still row, so it needs no scroll progress.
   useEffect(() => {
-    if (prefersReducedMotion()) return;
-    let stop: (() => void) | undefined;
-    let alive = true;
-    const cancel = afterLoadIdle(() => {
-      import('./motion')
-        .then((m) => {
-          if (alive && rootRef.current) stop = m.startScroll(rootRef.current);
-        })
-        .catch(() => undefined);
-    });
-    return () => {
-      alive = false;
-      cancel();
-      stop?.();
-    };
+    if (prefersReducedMotion() || !rootRef.current) return;
+    return startScroll(rootRef.current);
   }, []);
 
   // The 3D chunk: only on capable desktops, after load and idle.
@@ -115,10 +107,20 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="lp" lang="en-GB" ref={rootRef} data-mode={mode} data-reduced={reduced || undefined}>
+    <div
+      className="lp"
+      lang="en-GB"
+      ref={rootRef}
+      data-mode={mode}
+      data-reduced={reduced || undefined}
+      data-call-focus={callFocus || undefined}
+      data-glitch={glitching || undefined}
+    >
       <Nav />
       <main id="content" tabIndex={-1}>
         <div className="lp-night">
+          {/* Under the 3D canvas and the text: darkens the ground during the call. */}
+          <div className="lp-vignette" aria-hidden="true" />
           {Stage ? (
             <StageBoundary onFail={onFail}>
               <Suspense fallback={null}>
@@ -126,7 +128,7 @@ export default function LandingPage() {
               </Suspense>
             </StageBoundary>
           ) : null}
-          <Hero stageUiRef={stageUiRef} />
+          <Hero stageUiRef={stageUiRef} trialDays={pricingData.trial_days} />
           <Problem />
           <Habit />
           <Story />

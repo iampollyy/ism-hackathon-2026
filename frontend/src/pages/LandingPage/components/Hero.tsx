@@ -1,15 +1,15 @@
 // Section 1: the call. The page opens as an incoming call; Answer plays the scam,
 // the screen glitches into the truth, and the phone calls the real son back.
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowRight, Phone as PhoneIcon, PhoneOff, RotateCcw, MessageCircle } from 'lucide-react';
-import { hero } from '../copy';
-import { REVEAL_LINES, SCAM_LINES, lineAt, type Line } from '../captions';
+import { ArrowDown, ArrowRight, Phone as PhoneIcon, PhoneOff, RotateCcw, MessageCircle, Share2, X } from 'lucide-react';
+import { hero, SIGNUP, story } from '../copy';
+import { REVEAL_LINES, SCAM_DURATION, SCAM_LINES, lineAt, type Line } from '../captions';
 import { callMachine, focusMark, isActiveCall, setAnnouncer } from '../callMachine';
 import { callAudio } from '../audio';
 import { live, store, useLp, type CallState } from '../store';
 import { Phone, type Rings } from './Phone';
-import { HeroScreen, LiveWave, fmt, scrambleInto } from './screens';
+import { HeroScreen, LiveWave, RiskPill, fmt, scrambleInto, type RiskLevel } from './screens';
 import { SoundToggle } from './SoundToggle';
 
 const ICON = { strokeWidth: 1.75 } as const;
@@ -101,6 +101,91 @@ function DisplayLine({ call }: { call: CallState }) {
   );
 }
 
+// What Callback's risk light picks up while the scam plays: the story's tactic chips
+// (the same labels the back end uses) at the times they are spoken.
+const HERO_TACTICS = story.transcript
+  .filter((l) => l.chip && l.chipAt < SCAM_DURATION)
+  .map((l) => ({ chip: l.chip as string, at: l.chipAt }));
+const tacticAt = (chip: string) => HERO_TACTICS.find((c) => c.chip === chip)?.at ?? 99;
+const YELLOW_AT = HERO_TACTICS[0]?.at ?? 99;
+const RED_AT = tacticAt('Urgency');
+const SECRET_AT = tacticAt('Secrecy');
+
+function heroRisk(t: number): { level: RiskLevel; text: string } {
+  if (t < YELLOW_AT) return { level: 'green', text: story.risk.green };
+  if (t < RED_AT) return { level: 'yellow', text: story.risk.yellow };
+  if (t < SECRET_AT) return { level: 'red', text: story.risk.red1 };
+  return { level: 'red', text: story.risk.red2 };
+}
+
+function CallReading({ t }: { t: number }) {
+  const risk = heroRisk(t);
+  return (
+    <div className="lp-reading" aria-hidden="true">
+      <ul className="lp-reading__chips">
+        {HERO_TACTICS.map((c) => (
+          <li key={c.chip} className={`lp-chip lp-chip--inline${t >= c.at ? ' is-in' : ''}`}>
+            {c.chip}
+          </li>
+        ))}
+      </ul>
+      <p className={`lp-reading__risk lp-reading__risk--${risk.level}`}>
+        <RiskPill level={risk.level} />
+        <span>
+          <span className="lp-reading__label">{hero.riskLabel}</span>{' '}
+          <span key={risk.text} className="lp-reading__text">
+            {risk.text}
+          </span>
+        </span>
+      </p>
+    </div>
+  );
+}
+
+/** "Would your mum have known? Send her the call.": the share sheet, or the link copied. */
+function ShareCall({ className = '' }: { className?: string }) {
+  const [note, setNote] = useState<'none' | 'copied' | 'manual'>('none');
+  const url = `${window.location.origin}/#top`;
+  const share = async () => {
+    const data = { title: hero.shareTitle, text: hero.shareText, url };
+    if (typeof navigator.share === 'function' && (!navigator.canShare || navigator.canShare(data))) {
+      try {
+        await navigator.share(data);
+        return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setNote('copied');
+    } catch {
+      setNote('manual');
+    }
+  };
+  let status: ReactNode = null;
+  if (note === 'copied') status = hero.shareCopied;
+  if (note === 'manual')
+    status = (
+      <>
+        {hero.shareFallback} <span className="lp-share__url">{url}</span>
+      </>
+    );
+  return (
+    <div className={`lp-share ${className}`}>
+      <button type="button" className="lp-link lp-share__btn" onClick={share}>
+        <Share2 size={18} {...ICON} aria-hidden="true" />
+        <span>
+          <span className="lp-share__ask">{hero.shareAsk}</span> <span className="lp-share__do">{hero.share}</span>
+        </span>
+      </button>
+      <p className="lp-share__note" role="status">
+        {status}
+      </p>
+    </div>
+  );
+}
+
 export function CaptionStage({ compact = false }: { compact?: boolean }) {
   const call = useLp((s) => s.call);
   const scamT = useLp((s) => s.scamT);
@@ -118,6 +203,7 @@ export function CaptionStage({ compact = false }: { compact?: boolean }) {
         </p>
       ) : null}
       {call === 'in-call' ? <Captions lines={SCAM_LINES} t={scamT} size={compact ? 'md' : 'lg'} /> : null}
+      {call === 'in-call' ? <CallReading t={scamT} /> : null}
       {call === 'hung-up' || call === 'glitch' || showReveal ? <DisplayLine call={call} /> : null}
       {showReveal ? <Captions lines={REVEAL_LINES} t={call === 'reveal' ? revealT : 99} size="md" /> : null}
       {noSound && (call === 'in-call' || call === 'reveal') ? (
@@ -241,7 +327,7 @@ function CallOverlay({ returnFocus }: { returnFocus: RefObject<HTMLElement | nul
   const ref = useRef<HTMLDivElement>(null);
 
   const closeOverlay = () => {
-    if (isActiveCall(store.get().call)) callMachine.stop();
+    if (isActiveCall(store.get().call)) callMachine.stop('closed');
     store.set({ overlayOpen: false });
     window.setTimeout(() => {
       const el = returnFocus.current?.querySelector<HTMLElement>('button, a');
@@ -307,6 +393,10 @@ function CallOverlay({ returnFocus }: { returnFocus: RefObject<HTMLElement | nul
         data-lp-focus="stage-overlay"
       >
         <div className="lp-overlay__top">
+          {/* A way out at any moment, for anyone who tapped Answer by accident. */}
+          <button type="button" className="lp-overlay__close" aria-label={hero.closeCall} onClick={closeOverlay}>
+            <X size={24} {...ICON} aria-hidden="true" />
+          </button>
           <p className="lp-overlay__who">
             {tone === 'safe' ? hero.son : call === 'reveal' ? hero.practiceBadge : hero.unknown}
           </p>
@@ -321,7 +411,14 @@ function CallOverlay({ returnFocus }: { returnFocus: RefObject<HTMLElement | nul
           </p>
         </div>
         <div className="lp-overlay__mid">
-          {call === 'done' ? <p className="lp-done">{hero.doneLine}</p> : <CaptionStage compact />}
+          {call === 'done' ? (
+            <>
+              <p className="lp-done">{hero.doneLine}</p>
+              <ShareCall className="lp-share--overlay" />
+            </>
+          ) : (
+            <CaptionStage compact />
+          )}
           {call === 'in-call' ? <LiveWave active /> : null}
           {call === 'reveal' ? (
             <div className={`lp-reveal__lesson lp-reveal__lesson--overlay${lesson ? ' is-shown' : ''}`}>
@@ -367,8 +464,26 @@ function CallOverlay({ returnFocus }: { returnFocus: RefObject<HTMLElement | nul
 
 // ------------------------------------------------------------- the hero
 
-export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | null> }) {
+/** In 3D mode the notes under the phone fade as the hero scrolls away, before the flying phone crosses them. */
+function LeaveFade({ className, children }: { className: string; children: ReactNode }) {
+  const fade = useLp((s) => (s.mode === '3d' ? Math.min(1, s.heroLeave * 6) : 0));
+  const style = fade > 0 ? { opacity: 1 - fade, visibility: fade >= 1 ? ('hidden' as const) : undefined } : undefined;
+  return (
+    <div className={className} style={style}>
+      {children}
+    </div>
+  );
+}
+
+export function Hero({
+  stageUiRef,
+  trialDays = 30,
+}: {
+  stageUiRef?: RefObject<HTMLDivElement | null>;
+  trialDays?: number;
+}) {
   const call = useLp((s) => s.call);
+  const stopReason = useLp((s) => s.stopReason);
   const declineStep = useLp((s) => s.declineStep);
   const lesson = useLp((s) => s.lesson);
   const soundOn = useLp((s) => s.soundOn);
@@ -473,10 +588,24 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
                 {hero.sub}
               </p>
               <div className="lp-hero__cta lp-enter" style={{ ['--d' as string]: '200ms' }}>
-                <Link to="/signup" className="lp-btn lp-btn--light">
-                  {hero.cta}
-                </Link>
-                <p className="lp-small lp-muted">{hero.priceLine(30)}</p>
+                <div className="lp-hero__ctarow">
+                  <Link to={SIGNUP} className="lp-btn lp-btn--light">
+                    {hero.cta}
+                  </Link>
+                  <button
+                    type="button"
+                    className="lp-link lp-answerlink"
+                    aria-label={hero.answerLabel}
+                    onClick={() => callMachine.answer({ overlay: false })}
+                    onPointerEnter={() => callAudio.warm()}
+                    onFocus={() => callAudio.warm()}
+                    disabled={call === 'connecting'}
+                  >
+                    <span className="lp-answerlink__dot" aria-hidden="true" />
+                    {hero.orAnswer}
+                  </button>
+                </div>
+                <p className="lp-small lp-muted">{hero.priceLine(trialDays)}</p>
               </div>
             </div>
             <div {...panelProps('call')} tabIndex={-1} data-lp-focus="stage">
@@ -485,7 +614,7 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
             <div {...panelProps('done')}>
               <p className="lp-done">{hero.doneLine}</p>
               <div className="lp-row">
-                <Link to="/signup" className="lp-btn lp-btn--light">
+                <Link to={SIGNUP} className="lp-btn lp-btn--light">
                   {hero.cta}
                 </Link>
                 <button type="button" className="lp-btn lp-btn--ghost" onClick={replay} data-lp-focus="replay">
@@ -493,10 +622,13 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
                   {hero.replay}
                 </button>
               </div>
-              <a href="#how" className="lp-link lp-link--cue">
-                {hero.seeHow}
-                <ArrowDown size={18} {...ICON} aria-hidden="true" />
-              </a>
+              <div className="lp-row lp-row--links">
+                <ShareCall />
+                <a href="#how" className="lp-link lp-link--cue">
+                  {hero.seeHow}
+                  <ArrowDown size={18} {...ICON} aria-hidden="true" />
+                </a>
+              </div>
             </div>
             <div {...panelProps('declined')}>
               <p className="lp-display lp-display--sm">{hero.declineTitle}</p>
@@ -513,7 +645,7 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
               </div>
             </div>
             <div {...panelProps('stopped')}>
-              <p className="lp-lead">{hero.stopped}</p>
+              <p className="lp-lead">{stopReason === 'closed' ? hero.closedEarly : hero.stopped}</p>
               <div className="lp-row">
                 <button type="button" className="lp-btn lp-btn--light" onClick={replay} data-lp-focus="replay">
                   <RotateCcw size={18} {...ICON} aria-hidden="true" />
@@ -535,7 +667,7 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
           </div>
           {/* The 3D phone's screen is portalled here, so its buttons follow the page's tab order. */}
           <div className="lp-stage-ui" ref={stageUiRef} />
-          <div className="lp-hero__notes">
+          <LeaveFade className="lp-hero__notes">
             <p className="lp-hint">
               {call === 'ringing' || call === 'connecting' ? <span>{soundOn ? hero.hintSound : hero.hintMuted}</span> : null}
               <SoundToggle className="lp-sound--inline" withLabel={call !== 'ringing' && call !== 'connecting'} />
@@ -550,12 +682,12 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
                 <strong>{hero.callbackPrefix}</strong> {REVEAL_LINES.map((l) => l.text).join(' ')}
               </p>
             </details>
-          </div>
+          </LeaveFade>
           <div className="lp-hero__mcta">
-            <Link to="/signup" className="lp-btn lp-btn--ghost lp-btn--block">
+            <Link to={SIGNUP} className="lp-btn lp-btn--ghost lp-btn--block">
               {hero.cta}
             </Link>
-            <p className="lp-small lp-muted">{hero.priceLine(30)}</p>
+            <p className="lp-small lp-muted">{hero.priceLine(trialDays)}</p>
           </div>
         </div>
       </div>

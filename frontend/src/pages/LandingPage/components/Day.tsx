@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, CircleCheck, Hand, KeyRound, Lock, PhoneCall, UserCheck } from 'lucide-react';
-import { banks, faq, pricing, rules } from '../copy';
+import { banks, faq, pricing, rules, SIGNUP } from '../copy';
 import { FALLBACK_PRICING, getPricing, type Pricing as PricingData } from '../api';
 import { afterLoadIdle } from '../capability';
 import { BankForm } from './Forms';
@@ -91,7 +91,7 @@ export function PricingSection({ data, headingLevel = 2, onHome = true }: { data
             <li key={plan.key} className={`lp-plan lp-plan--${plan.key}`}>
               <h3 className="lp-h3">{plan.name}</h3>
               <p className="lp-plan__price lp-tnum">{plan.price}</p>
-              <p className="lp-plan__note">{plan.note}</p>
+              <p className="lp-plan__note">{plan.key === 'bank' ? pricing.bankNote : plan.note}</p>
               <ul className="lp-plan__features">
                 {plan.features.map((f) => (
                   <li key={f}>
@@ -100,7 +100,7 @@ export function PricingSection({ data, headingLevel = 2, onHome = true }: { data
                   </li>
                 ))}
               </ul>
-              <Link to={`/signup?plan=${plan.key}`} className="lp-btn lp-btn--dark lp-btn--block">
+              <Link to={`${SIGNUP}?plan=${plan.key}`} className="lp-btn lp-btn--dark lp-btn--block">
                 {plan.cta}
               </Link>
             </li>

@@ -2,13 +2,13 @@
 // put (sticky) while the chapters scroll past, and its screen follows them.
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { story } from '../copy';
+import { SIGNUP, story } from '../copy';
 import { useLp } from '../store';
 import { Phone, type Rings } from './Phone';
 import { StoryScreen, TRANSCRIPT_SECONDS, riskAt } from './screens';
 
 const CHIPS = story.transcript.filter((l) => l.chip) as { chip: string; chipAt: number }[];
-// Slots on the left of the phone, as a share of its height from the top.
+// Until the transcript lines can be measured: slots as a share of the phone's height.
 const SLOTS = [0.2, 0.34, 0.48, 0.62, 0.76];
 const easeOutCubic = (x: number) => 1 - (1 - x) ** 3;
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -24,6 +24,24 @@ function Chips({ chapter, p, reduced }: { chapter: number; p: number; reduced: b
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  // Each chip sits level with the transcript line it names (measured on the CSS phone,
+  // which stays laid out under the 3D phone too).
+  const [slots, setSlots] = useState<(number | null)[]>(() => CHIPS.map(() => null));
+  useLayoutEffect(() => {
+    const box = ref.current?.parentElement;
+    if (!box || chapter !== 1) return;
+    const top = box.getBoundingClientRect().top;
+    const lines = Array.from(box.querySelectorAll<HTMLElement>('.lp-phone--story .lp-tline[data-chip]'));
+    setSlots((prev) => {
+      const next = CHIPS.map((c, i) => {
+        const el = lines.find((l) => l.dataset.chip === c.chip);
+        if (!el) return prev[i];
+        const r = el.getBoundingClientRect();
+        return Math.round(r.top + r.height / 2 - top);
+      });
+      return next.some((v, i) => v !== prev[i]) ? next : prev;
+    });
+  }, [chapter, p, w]);
   const t = chapter === 1 ? p * TRANSCRIPT_SECONDS : chapter > 1 ? 99 : -1;
   // In the reveal chapter they leave to the right during the turn.
   const out = chapter === 3 ? clamp01(p / 0.14) : chapter > 3 ? 1 : 0;
@@ -52,7 +70,7 @@ function Chips({ chapter, p, reduced }: { chapter: number; p: number; reduced: b
             key={c.chip}
             className={`lp-chip${dim ? ' is-dim' : ''}`}
             style={{
-              top: `${SLOTS[i] * 100}%`,
+              top: slots[i] !== null ? `${slots[i]}px` : `${SLOTS[i] * 100}%`,
               opacity: o,
               transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${(0.85 + 0.15 * qv).toFixed(3)})`,
             }}
@@ -92,7 +110,7 @@ function ChapterText({ i }: { i: number }) {
       <p className="lp-body">{c.body}</p>
       {'small' in c && c.small ? <p className="lp-small lp-muted">{c.small}</p> : null}
       {i === 4 ? (
-        <Link to="/signup" className="lp-btn lp-btn--light lp-story__cta">
+        <Link to={SIGNUP} className="lp-btn lp-btn--light lp-story__cta">
           {story.cta}
         </Link>
       ) : null}

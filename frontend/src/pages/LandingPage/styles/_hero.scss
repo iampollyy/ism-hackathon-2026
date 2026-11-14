@@ -35,7 +35,106 @@
 
   .lp-h1 {
     margin-bottom: 28px;
+    transition: opacity 600ms var(--lp-ease);
   }
+}
+
+// ---------------------------------------------------------------- the page steps back during the call
+// From Answer until the call back connects, the call leads: the headline and the nav
+// links dim and the ground darkens (a fixed layer under the 3D canvas and the text).
+
+.lp[data-call-focus] .lp-hero .lp-h1 {
+  opacity: 0.15;
+}
+
+.lp .lp-nav__links {
+  transition: opacity 600ms var(--lp-ease);
+}
+
+.lp[data-call-focus] .lp-nav__links {
+  opacity: 0.4;
+}
+
+.lp-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 900ms var(--lp-ease);
+  background:
+    radial-gradient(ellipse 70% 80% at 52% 50%, rgba(2, 6, 10, 0) 40%, rgba(2, 6, 10, 0.62) 100%),
+    rgba(2, 6, 10, 0.22);
+
+  // One scanline sweep down the background at the glitch.
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 24vh;
+    opacity: 0;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(93, 200, 220, 0) 0%,
+        rgba(93, 200, 220, 0.06) 40%,
+        rgba(234, 241, 238, 0.14) 50%,
+        rgba(231, 109, 82, 0.07) 60%,
+        rgba(231, 109, 82, 0) 100%
+      ),
+      repeating-linear-gradient(180deg, rgba(234, 241, 238, 0.05) 0 1px, transparent 1px 3px);
+  }
+}
+
+.lp[data-call-focus] .lp-vignette {
+  opacity: 1;
+}
+
+.lp[data-glitch]:not([data-reduced]) .lp-vignette::after {
+  animation: lp-sweep 620ms cubic-bezier(0.4, 0, 0.6, 1) 1 both;
+}
+
+@keyframes lp-sweep {
+  0% {
+    opacity: 1;
+    transform: translateY(-24vh);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh);
+  }
+}
+
+// "or answer the call", beside the trial button.
+.lp-hero__ctarow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+}
+
+.lp-answerlink {
+  gap: 10px;
+  color: var(--lp-text);
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+}
+
+.lp-answerlink__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--lp-scam);
+  box-shadow: 0 0 0 0 rgba(231, 109, 82, 0.6);
+  animation: lp-dot 2.4s ease-out 0.6s infinite;
 }
 
 // The stage under the h1: the sub-line and button, then captions, then the outcome.
@@ -99,7 +198,7 @@
 .lp-display {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
-  font-size: clamp(36px, 4.6vw, 64px);
+  font-size: clamp(40px, 5.3vw, 76px);
   line-height: 1.05;
   letter-spacing: -0.03em;
   text-wrap: balance;
@@ -157,7 +256,7 @@
 .lp-cap--lg {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 500;
-  font-size: clamp(26px, 2.5vw, 36px);
+  font-size: clamp(28px, 2.8vw, 40px);
   line-height: 1.25;
   letter-spacing: -0.01em;
 }
@@ -165,12 +264,12 @@
 .lp-cap--md {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
-  font-size: clamp(20px, 1.6vw, 22px);
+  font-size: clamp(24px, 1.8vw, 26px);
   line-height: 1.4;
 }
 
 .lp-cap__w {
-  opacity: 0.38;
+  opacity: 0.5;
   transition: opacity 120ms ease, color 200ms ease;
 
   &.is-lit {
@@ -179,6 +278,117 @@
   &.is-lit.is-safe {
     color: var(--lp-safe);
   }
+}
+
+// What Callback's risk light picks up while the scam plays.
+.lp-reading {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.lp-reading__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+}
+
+.lp-chip.lp-chip--inline {
+  position: relative;
+  right: auto;
+  opacity: 0;
+  transform: translateY(8px) scale(0.9);
+  transition:
+    opacity 220ms ease,
+    transform 360ms var(--lp-ease);
+
+  &.is-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lp-reading__risk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  line-height: 1.35;
+
+  .lp-riskpill {
+    margin-left: 0;
+    flex: none;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--lp-line-dark);
+  }
+}
+
+.lp-reading__label {
+  color: var(--lp-text-muted);
+  font-weight: 600;
+}
+
+.lp-reading__text {
+  font-weight: 600;
+  animation: lp-fade 300ms ease both;
+}
+
+.lp-reading__risk--green .lp-reading__text {
+  color: var(--lp-safe);
+}
+.lp-reading__risk--yellow .lp-reading__text {
+  color: var(--lp-doubt);
+}
+.lp-reading__risk--red .lp-reading__text {
+  color: #f08a73;
+}
+
+// Share the call (done state).
+.lp-row--links {
+  gap: 4px 28px;
+}
+
+.lp-share {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.lp-share__btn {
+  text-align: left;
+  // A real underline on the action (it can wrap), not the link's hover line.
+  background-image: none;
+
+  .lp-share__do {
+    text-decoration: underline;
+    text-decoration-color: rgba(234, 241, 238, 0.4);
+    text-underline-offset: 4px;
+  }
+  &:hover .lp-share__do {
+    text-decoration-color: currentColor;
+  }
+}
+
+.lp-share__ask {
+  color: var(--lp-text-muted);
+  font-weight: 500;
+}
+
+.lp-share__note {
+  min-height: 0;
+  font-size: 14px;
+  color: var(--lp-text-muted);
+
+  &:empty {
+    display: none;
+  }
+}
+
+.lp-share__url {
+  user-select: all;
+  color: var(--lp-text);
+  word-break: break-all;
 }
 
 .lp-nosound {
@@ -289,7 +499,9 @@
     scale 1.2s var(--lp-ease);
 }
 
-.lp-hero[data-call='glitch'] .lp-hero__phonewrap {
+// The shake goes on the phone's body: the wrapper's entrance and float keep running,
+// so nothing restarts (and the phone never blinks out) when the glitch ends.
+.lp-hero[data-call='glitch'] .lp-phone--hero .lp-phone__body {
   animation: lp-shake 0.3s steps(5) 1;
 }
 
@@ -352,12 +564,18 @@
 }
 
 .lp-hero__notes {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   max-width: 440px;
   text-align: center;
+  // A soft dark backing, so the rings never run through the text.
+  border-radius: 24px;
+  background: rgba(7, 17, 26, 0.84);
+  box-shadow: 0 0 32px 22px rgba(7, 17, 26, 0.84);
 }
 
 .lp-hint {
@@ -455,13 +673,14 @@
   }
 }
 
+// Short reach: the rings stay clear of the sub-line above and the hint below.
 @keyframes lp-ring-card {
   0% {
     transform: scale(1);
-    opacity: 0.5;
+    opacity: 0.7;
   }
   100% {
-    transform: scale(1.14, 1.5);
+    transform: scale(1.06, 1.2);
     opacity: 0;
   }
 }
@@ -546,8 +765,29 @@
 }
 
 .lp-overlay__top {
+  position: relative;
   text-align: center;
   padding-top: 24px;
+}
+
+.lp-overlay__close {
+  position: absolute;
+  top: -16px;
+  right: -6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(234, 241, 238, 0.1);
+  color: var(--lp-text);
+  cursor: pointer;
+
+  &:active {
+    transform: scale(0.95);
+  }
 }
 
 .lp-overlay__who {
@@ -598,6 +838,31 @@
   }
   .lp-done {
     font-size: 26px;
+  }
+  .lp-reading {
+    align-items: center;
+    margin-top: 18px;
+    gap: 12px;
+  }
+  .lp-reading__chips {
+    justify-content: center;
+    gap: 6px 8px;
+  }
+  .lp-chip--inline {
+    height: 30px;
+    font-size: 14px;
+    padding: 0 12px 0 10px;
+  }
+  .lp-reading__risk {
+    font-size: 15px;
+    text-align: left;
+    max-width: 330px;
+  }
+  .lp-share {
+    align-items: center;
+  }
+  .lp-share__btn {
+    text-align: center;
   }
 }
 
@@ -680,6 +945,13 @@
     max-width: none;
     align-items: flex-start;
     text-align: left;
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .lp-vignette {
+    display: none;
   }
 
   .lp-hint {

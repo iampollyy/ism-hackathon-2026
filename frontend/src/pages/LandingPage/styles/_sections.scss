@@ -56,6 +56,7 @@
 .lp-fact__num {
   color: var(--lp-scam);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .lp-habit {
@@ -247,10 +248,12 @@
   position: relative;
 }
 
+// Each chapter's text holds beside the phone (sticky) until the next one pushes it up,
+// so the column is never empty while the phone shows that chapter.
 .lp-chapter {
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   padding: 10vh 0;
 
   .lp-h3 {
@@ -262,12 +265,18 @@
 }
 
 .lp-chapter__panel {
+  position: sticky;
+  top: calc(50vh - 140px);
   max-width: 460px;
-  opacity: 0.55;
-  transition: opacity 300ms ease;
+
+  // Chapters not on screen dim their words; the trial button keeps full contrast.
+  > :not(.lp-story__cta) {
+    opacity: 0.55;
+    transition: opacity 300ms ease;
+  }
 }
 
-.lp-chapter.is-on .lp-chapter__panel {
+.lp-chapter.is-on .lp-chapter__panel > * {
   opacity: 1;
 }
 
@@ -366,6 +375,11 @@
   }
 }
 
+// Beside the phone, each chip is centred on the line it names.
+.lp-chips .lp-chip {
+  translate: 0 -50%;
+}
+
 // Reduced motion: five rows, each with its finished screen.
 .lp-story__static {
   display: flex;
@@ -436,7 +450,7 @@
 
 .lp-phone--shield {
   --ph: min(600px, 70vh);
-  margin-right: 18%;
+  margin-right: 24%;
 }
 
 .lp-shield__glow {
@@ -459,7 +473,7 @@
 }
 
 .lp-phone--small {
-  --ph: min(360px, 42vh);
+  --ph: min(440px, 50vh);
 }
 
 // ---------------------------------------------------------------- the close and the footer
@@ -485,6 +499,23 @@
 
 .lp-phone--close {
   --ph: min(560px, 68vh);
+}
+
+.lp-close__object {
+  flex-direction: column;
+  gap: 24px;
+}
+
+// Under the phone once Mum's call connects; on wider screens the trial button sits beside it.
+.lp-close__phonecta {
+  max-width: 360px;
+  animation: lp-rise 500ms var(--lp-ease) 300ms both;
+}
+
+@media (min-width: 860px) {
+  .lp-close__phonecta {
+    display: none;
+  }
 }
 
 .lp-close__glow {
@@ -742,8 +773,13 @@
     padding: 0 0 6svh;
   }
 
-  .lp-chapter__panel {
+  .lp-chapter__panel > * {
     opacity: 1;
+  }
+
+  .lp-chapter__panel {
+    position: relative;
+    top: auto;
     padding: 20px;
     border-radius: 20px;
     background: rgba(33, 61, 82, 0.94);
@@ -795,7 +831,7 @@
   }
 
   .lp-phone--close {
-    --ph: 380px;
+    --ph: 440px;
   }
 
   .lp-footer__grid {

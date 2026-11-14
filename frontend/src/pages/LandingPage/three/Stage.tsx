@@ -199,6 +199,8 @@ function Scene({
   const field = useRef<FieldHandle | null>(null);
   const [interactive, setInteractive] = useState(true);
   const frames = useRef(0);
+  const placed = useRef(false);
+  const settled = useRef(0);
   const readyCalled = useRef(false);
   const lastScroll = useRef(0);
   const perf = useRef({ acc: 0, n: 0, slowFor: 0 });
@@ -374,15 +376,22 @@ function Scene({
       if (wrap.current) wrap.current.style.opacity = String(1 - nightEnd);
     } else if (wrap.current && wrap.current.style.opacity !== '') wrap.current.style.opacity = '';
 
-    // Damped towards the targets (position faster than rotation).
+    // Damped towards the targets (position faster than rotation). The first frame
+    // lands exactly on the CSS phone, so the swap from the CSS phone is invisible.
     const before = g.position.x + g.position.y + g.rotation.y + g.scale.x;
-    g.position.x = damp(g.position.x, px, 7, dt);
-    g.position.y = damp(g.position.y, py, 7, dt);
-    const sc = damp(g.scale.x, scale, 7, dt);
-    g.scale.setScalar(sc);
-    g.rotation.x = damp(g.rotation.x, rx, 4.5, dt);
-    g.rotation.y = damp(g.rotation.y, ry, 4.5, dt);
-    g.rotation.z = damp(g.rotation.z, rz, 4.5, dt);
+    if (!placed.current) {
+      placed.current = true;
+      g.position.set(px, py, 0);
+      g.scale.setScalar(scale);
+      g.rotation.set(rx, ry, rz);
+    } else {
+      g.position.x = damp(g.position.x, px, 7, dt);
+      g.position.y = damp(g.position.y, py, 7, dt);
+      g.scale.setScalar(damp(g.scale.x, scale, 7, dt));
+      g.rotation.x = damp(g.rotation.x, rx, 4.5, dt);
+      g.rotation.y = damp(g.rotation.y, ry, 4.5, dt);
+      g.rotation.z = damp(g.rotation.z, rz, 4.5, dt);
+    }
     const moving = Math.abs(before - (g.position.x + g.position.y + g.rotation.y + g.scale.x)) > 1e-4;
 
     // The screen swaps for the reveal while the phone shows its back.
@@ -461,9 +470,12 @@ function Scene({
     }
     if (animating && !off) invalidate();
 
-    // Ready after a few frames with everything placed.
+    // Ready once the glass has rendered and the phone has sat on its target for two
+    // frames (the idle float moves the target a little, hence the small allowance).
     frames.current += 1;
-    if (!readyCalled.current && frames.current > 4) {
+    const off3 = Math.abs(g.position.x - px) + Math.abs(g.position.y - py) + Math.abs(g.scale.x - scale) * 0.5;
+    settled.current = off3 < 0.012 ? settled.current + 1 : 0;
+    if (!readyCalled.current && frames.current > 4 && settled.current >= 2) {
       readyCalled.current = true;
       wrap.current?.classList.add('is-ready');
       onReady();

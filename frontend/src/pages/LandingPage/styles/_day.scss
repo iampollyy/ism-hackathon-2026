@@ -10,23 +10,46 @@
   z-index: 1;
 }
 
+// It starts on Shield's own bottom colour (navy-soft, with the night's grain), so there
+// is no step; the grain thins out as the paper arrives.
 .lp-dawn {
   height: 40vh;
   min-height: 240px;
-  background: linear-gradient(180deg, var(--lp-navy-soft) 0%, #5f7d8c 55%, var(--lp-paper) 100%);
-  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--lp-navy-soft) 0%,
+    #284559 12%,
+    #4b687a 36%,
+    #8fa7b3 66%,
+    #c9d6d4 86%,
+    var(--lp-paper) 100%
+  );
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--grain, none);
+    background-size: 64px 64px;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 90%);
+    mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 45%, transparent 90%);
+    pointer-events: none;
+  }
 }
 
+// A low, warm light on the horizon: drawn inside the band, so it has no edge to clip.
 .lp-dawn__sun {
   position: absolute;
-  left: 50%;
-  bottom: -40%;
-  width: 90vw;
-  max-width: 1200px;
-  aspect-ratio: 1;
-  translate: -50% 0;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(245, 185, 77, 0.32), rgba(245, 185, 77, 0) 70%);
+  inset: 0;
+  background: radial-gradient(
+    58% 78% at 50% 84%,
+    rgba(246, 196, 160, 0.4) 0%,
+    rgba(246, 196, 160, 0.18) 45%,
+    rgba(246, 196, 160, 0) 100%
+  );
+  // It meets the paper below without a line.
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 100%);
   pointer-events: none;
 }
 
@@ -468,5 +491,9 @@
     .lp-btn {
       margin-top: 4px;
     }
+  }
+  // Full-width buttons on phones, in both forms.
+  .lp-form .lp-btn--form {
+    width: 100%;
   }
 }

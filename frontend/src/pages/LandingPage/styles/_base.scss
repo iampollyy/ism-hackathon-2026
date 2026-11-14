@@ -222,10 +222,12 @@
   line-height: 0;
   margin-left: 2px;
 
+  // A real box (not a hairline) for the focus ring and the tap.
   a {
     display: inline-block;
     min-width: 1.4em;
-    padding: 0 2px;
+    padding: 4px 3px;
+    line-height: 1;
     text-align: center;
     color: var(--lp-text-muted);
     text-decoration: underline;

@@ -1,143 +1,114 @@
-// The scroll driver, loaded after first paint. GSAP's ScrollTrigger caches section
-// offsets (refreshed on resize) and reports progress; nothing here reads layout on
-// scroll. React reads quantised values from the store; the 3D stage reads raw ones.
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+// The scroll driver. Section offsets are measured once and again whenever the page
+// changes size; on scroll, one animation frame compares window.scrollY with those
+// cached numbers, so nothing reads layout while scrolling. React reads quantised
+// values from the store; it is small enough to ship in the landing chunk itself.
 import { q, store, type Segment } from './store';
 
-gsap.registerPlugin(ScrollTrigger);
-
-export const progress = {
-  hero: 0,
-  problem: 0,
-  habit: 0,
-  chapters: [0, 0, 0, 0, 0],
-  shield: 0,
-  /** Raw progress through the story's chapter list, 0..5. */
-  story: 0,
-};
-
-const setP = (key: 'problem' | 'habit' | 'shield', v: number) => {
-  if (key === 'problem') store.set({ problemP: v });
-  else if (key === 'habit') store.set({ habitP: v });
-  else store.set({ shieldP: v });
-};
-
-export function startScroll(root: HTMLElement): () => void {
-  const triggers: ScrollTrigger[] = [];
-  const active = new Map<string, boolean>();
-
-  const pickSegment = () => {
-    let seg: Segment = 'hero';
-    const order: Segment[] = ['problem', 'habit', 'story', 'shield'];
-    for (const s of order) if (active.get(s)) seg = s;
-    if (!order.some((s) => active.get(s)) && progress.shield >= 1) seg = 'after';
-    if (!order.some((s) => active.get(s)) && progress.problem <= 0) seg = 'hero';
-    store.set({ segment: seg });
-  };
-
-  const add = (vars: ScrollTrigger.Vars) => {
-    const t = ScrollTrigger.create(vars);
-    triggers.push(t);
-    return t;
-  };
-
-  const heroEl = root.querySelector<HTMLElement>('#top');
-  if (heroEl)
-    add({
-      trigger: heroEl,
-      start: 'top top',
-      end: 'bottom top',
-      onUpdate: (self) => {
-        progress.hero = self.progress;
-        store.set({ heroLeave: q(self.progress, 0.01) });
-      },
-    });
-
-  const section = (sel: string, key: 'problem' | 'habit' | 'shield') => {
-    const el = root.querySelector<HTMLElement>(sel);
-    if (!el) return;
-    add({
-      trigger: el,
-      start: 'top center',
-      end: 'bottom center',
-      onUpdate: (self) => {
-        progress[key] = self.progress;
-        setP(key, q(self.progress, 0.01));
-      },
-      onToggle: (self) => {
-        active.set(key, self.isActive);
-        pickSegment();
-      },
-      onLeave: () => {
-        progress[key] = 1;
-        setP(key, 1);
-        pickSegment();
-      },
-      onLeaveBack: () => {
-        progress[key] = 0;
-        setP(key, 0);
-        pickSegment();
-      },
-    });
-  };
-  section('#problem', 'problem');
-  section('#habit', 'habit');
-
-  const chapters = Array.from(root.querySelectorAll<HTMLElement>('[data-chapter]'));
-  const chapterActive = chapters.map(() => false);
-  const syncStory = () => {
-    let ch = -1;
-    chapterActive.forEach((a, i) => {
-      if (a) ch = i;
-    });
-    active.set('story', ch >= 0);
-    if (ch >= 0) store.set({ chapter: ch, chapterP: q(progress.chapters[ch]) });
-    else if (progress.chapters[4] >= 1) store.set({ chapter: 4, chapterP: 1 });
-    else if (progress.chapters[0] <= 0) store.set({ chapter: 0, chapterP: 0 });
-    progress.story = progress.chapters.reduce((a, b) => a + b, 0);
-    pickSegment();
-  };
-  chapters.forEach((el, i) => {
-    add({
-      trigger: el,
-      start: 'top center',
-      end: 'bottom center',
-      onUpdate: (self) => {
-        progress.chapters[i] = self.progress;
-        if (self.isActive) store.set({ chapter: i, chapterP: q(self.progress) });
-        progress.story = progress.chapters.reduce((a, b) => a + b, 0);
-      },
-      onToggle: (self) => {
-        chapterActive[i] = self.isActive;
-        if (!self.isActive) progress.chapters[i] = self.progress >= 0.5 ? 1 : 0;
-        syncStory();
-      },
-    });
-  });
-
-  section('#shield', 'shield');
-
-  // Fonts and the pricing answer can change heights; refresh once both settle.
-  const refresh = () => ScrollTrigger.refresh();
-  document.fonts?.ready.then(refresh).catch(() => undefined);
-  let refreshTimer = 0;
-  const ro = new ResizeObserver(() => {
-    window.clearTimeout(refreshTimer);
-    refreshTimer = window.setTimeout(refresh, 150);
-  });
-  ro.observe(root);
-
-  return () => {
-    window.clearTimeout(refreshTimer);
-    ro.disconnect();
-    triggers.forEach((t) => t.kill());
-  };
+interface Span {
+  start: number;
+  end: number;
 }
 
-export function scrollToChapter(root: HTMLElement, i: number, smooth: boolean) {
-  const el = root.querySelectorAll<HTMLElement>('[data-chapter]')[i];
-  if (!el) return;
-  const top = el.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.5 + 40;
-  window.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' });
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const prog = (y: number, s: Span) => (s.end <= s.start ? (y >= s.end ? 1 : 0) : clamp01((y - s.start) / (s.end - s.start)));
+const inside = (y: number, s: Span) => y > s.start && y < s.end;
+
+export function startScroll(root: HTMLElement): () => void {
+  const hero = root.querySelector<HTMLElement>('#top');
+  const problem = root.querySelector<HTMLElement>('#problem');
+  const habit = root.querySelector<HTMLElement>('#habit');
+  const shield = root.querySelector<HTMLElement>('#shield');
+  const chapters = Array.from(root.querySelectorAll<HTMLElement>('[data-chapter]'));
+
+  const none: Span = { start: Infinity, end: Infinity };
+  let heroSpan = none;
+  let problemSpan = none;
+  let habitSpan = none;
+  let shieldSpan = none;
+  let chapterSpans: Span[] = [];
+
+  // "Top of the element at the middle of the screen" to "bottom at the middle".
+  const centred = (el: HTMLElement | null, y: number, vh: number): Span => {
+    if (!el) return none;
+    const r = el.getBoundingClientRect();
+    const top = r.top + y;
+    return { start: top - vh / 2, end: top + r.height - vh / 2 };
+  };
+
+  const measure = () => {
+    const y = window.scrollY;
+    const vh = window.innerHeight;
+    if (hero) {
+      const r = hero.getBoundingClientRect();
+      heroSpan = { start: r.top + y, end: r.top + y + r.height };
+    }
+    problemSpan = centred(problem, y, vh);
+    habitSpan = centred(habit, y, vh);
+    shieldSpan = centred(shield, y, vh);
+    chapterSpans = chapters.map((el) => centred(el, y, vh));
+    update();
+  };
+
+  let lastChapter = 0;
+  const update = () => {
+    const y = window.scrollY;
+    const patch: Parameters<typeof store.set>[0] = {
+      heroLeave: q(prog(y, heroSpan), 0.01),
+      problemP: q(prog(y, problemSpan), 0.01),
+      habitP: q(prog(y, habitSpan), 0.01),
+      shieldP: q(prog(y, shieldSpan), 0.01),
+    };
+
+    // The chapter on screen; before the first it is 0 at 0, after the last 4 at 1.
+    if (chapterSpans.length) {
+      let ch = chapterSpans.findIndex((s) => inside(y, s));
+      if (ch < 0) {
+        if (y >= chapterSpans[chapterSpans.length - 1].end) ch = chapterSpans.length - 1;
+        else if (y <= chapterSpans[0].start) ch = 0;
+        else ch = lastChapter;
+      }
+      lastChapter = ch;
+      patch.chapter = ch;
+      patch.chapterP = q(prog(y, chapterSpans[ch]));
+    }
+
+    let segment: Segment = 'hero';
+    if (y >= shieldSpan.end) segment = 'after';
+    else if (y > shieldSpan.start) segment = 'shield';
+    else if (chapterSpans.length && y > chapterSpans[0].start) segment = 'story';
+    else if (y > habitSpan.start) segment = 'habit';
+    else if (y > problemSpan.start) segment = 'problem';
+    patch.segment = segment;
+    store.set(patch);
+  };
+
+  let raf = 0;
+  const onScroll = () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      update();
+    });
+  };
+
+  // Fonts, the pricing answer and images can change heights: measure again once they settle.
+  let timer = 0;
+  const remeasure = () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(measure, 120);
+  };
+  const ro = new ResizeObserver(remeasure);
+  ro.observe(root);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', remeasure);
+  document.fonts?.ready.then(remeasure).catch(() => undefined);
+  measure();
+
+  return () => {
+    cancelAnimationFrame(raf);
+    window.clearTimeout(timer);
+    ro.disconnect();
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('resize', remeasure);
+  };
 }

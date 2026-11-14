@@ -2,7 +2,8 @@
 // the anchor the WebGL phone flies to (the frame hides, the box stays).
 import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 
-export type Rings = 'scam' | 'safe' | 'off';
+/** 'bloom' is one green burst, as a call connects. */
+export type Rings = 'scam' | 'safe' | 'bloom' | 'off';
 
 export function Phone({
   anchor,

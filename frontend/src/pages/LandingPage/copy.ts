@@ -17,8 +17,9 @@ export const SOURCES = [
 
 export const REPO_URL = 'https://github.com/iampollyy/ism-hackathon-2026';
 export const SIGNUP = '/signup';
-// Track 1's /login is not merged on this branch; the sign-in page lives at /signin.
-export const SIGNIN = '/signin';
+// The real log-in page on feat/full-app. (This branch has no /login route: the landing
+// is shown only once it is merged there; see DESIGN.md, "Before it goes live".)
+export const SIGNIN = '/login';
 
 export const head = {
   title: 'Callback: a family plan against voice-clone scams',
@@ -48,11 +49,12 @@ export const nav = {
 export const hero = {
   h1a: 'A family plan against',
   h1b: 'voice-clone scams',
-  sub: 'Scammers now call parents in their child’s cloned voice. Callback trains the one habit that beats any clone: hang up and call back.',
+  sub: 'Scammers now call parents in their child’s cloned voice. Callback trains the one habit that works however good the clone is: hang up and call back.',
   cta: 'Start your free trial',
   priceLine: (days: number) => `${days} days free, then €4.99 a month. Cancel any time.`,
   hintSound: 'Answer to hear the call. 11 seconds, sound on.',
   hintMuted: 'Answer to hear the call. 11 seconds, with captions.',
+  orAnswer: 'or answer the call',
   disclosure: 'The voices on this page are artificial, made with ElevenLabs. No real person was cloned.',
   unknown: 'Unknown number',
   mobile: 'mobile',
@@ -88,6 +90,18 @@ export const hero = {
   noSound: 'Sound didn’t start, so the captions are running on their own.',
   trySound: 'Try sound again',
   stopped: 'The call stopped when you scrolled away.',
+  closedEarly: 'You closed the call before the end.',
+  closeCall: 'Close the call',
+  // While the call plays, the page shows what Callback's risk light picks up (the
+  // same tactic labels and risk-light reasons the back end uses).
+  riskLabel: 'Callback’s risk light',
+  // The done state: send the call to someone it could happen to.
+  shareAsk: 'Would your mum have known?',
+  share: 'Send her the call',
+  shareCopied: 'Link copied. Send it to her.',
+  shareFallback: 'Copy this link:',
+  shareTitle: 'Callback',
+  shareText: 'Would you have known this voice wasn’t real? Hear the call: 11 seconds, sound on.',
   transcriptTitle: 'Read the call as text',
   callerPrefix: 'Caller (artificial voice):',
   callbackPrefix: 'Callback (artificial voice):',
@@ -146,7 +160,7 @@ export const story = {
       h3: 'A risk light reads the caller',
       body: 'A separate model hears only what the caller says. Code turns its signals into green, yellow or red as the scam builds, and Lukas can watch it live on his laptop.',
       small:
-        'On ten test calls, it matched the tactics our agent used with 0.80 precision and 0.87 recall, in about 1.2 seconds a check.',
+        'On ten written test transcripts, it matched the tactics our agent used with 0.80 precision and 0.87 recall, in about 1.2 seconds a check.',
     },
     {
       h3: 'Every call ends with the truth',
@@ -286,6 +300,8 @@ export const pricing = {
   lead: (days: number) =>
     `Every plan starts with ${days} days free. Pay monthly or yearly, or get Callback free through a partner bank.`,
   partnerRow: 'For banks: priced per enrolled family.',
+  // Overrides the server's note on the bank card: no partner bank is signed yet.
+  bankNote: 'Free when your bank partners with Callback. Enter the code from your bank.',
   partnerLink: 'See Callback for banks',
   demoNote: 'This is a demo: choosing a plan takes no payment and asks for no card details.',
   pageIntro: 'One plan for the whole family. Every plan starts free.',
@@ -297,8 +313,7 @@ export const banks = {
   body: 'The UK has required scam refunds since October 2024. In February 2026, Lithuania’s central bank proposed that banks compensate customers when they fail to stop a suspicious payment.',
   gets: [
     'Free enrolment for your customers’ families',
-    'Habit reports per enrolled family: who practised, and whether the habit held',
-    'Your brand on the welcome call',
+    'An anonymous count of enrolled families who practised and kept the habit',
     'A prevention step you can show customers and your regulator',
   ],
   priceLine: 'Priced per enrolled family.',
@@ -374,7 +389,12 @@ export const close = {
   sending: 'Joining…',
   successTitle: 'You’re on the list.',
   success: (email: string) => `We’ll email ${email} when Callback rings real phones.`,
-  phone: { name: 'Mum', sub: 'mobile · saved contact' },
+  phone: {
+    name: 'Mum',
+    sub: 'mobile · saved contact',
+    answerLabel: 'Answer the call from Mum',
+    note: 'On the number you know',
+  },
 };
 
 export const footer = {

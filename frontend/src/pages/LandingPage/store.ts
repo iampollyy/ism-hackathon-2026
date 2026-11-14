@@ -40,6 +40,8 @@ export interface LpState {
   /** The lesson ("Hang up, and call back") has been spoken. */
   lesson: boolean;
   overlayOpen: boolean;
+  /** Why the call stopped early: scrolled away (or tab hidden), or closed from the call dialog. */
+  stopReason: 'scroll' | 'closed';
   segment: Segment;
   /** Story chapter 0..4 and its progress 0..1 (quantised). */
   chapter: number;
@@ -68,6 +70,7 @@ const initial: LpState = {
   revealShown: false,
   lesson: false,
   overlayOpen: false,
+  stopReason: 'scroll',
   segment: 'hero',
   chapter: 0,
   chapterP: 0,

@@ -31,8 +31,10 @@ function announce(text: string) {
   }, 60);
 }
 
-/** Focus the first visible element marked data-lp-focus="name" (works across React roots). */
-export function focusMark(name: string) {
+/** Focus the first visible element marked data-lp-focus="name" (works across React roots).
+ * A panel that is still turning visible (reduced motion keeps a short transition) is
+ * retried for a few frames rather than leaving focus on the body. */
+export function focusMark(name: string, tries = 12) {
   window.requestAnimationFrame(() => {
     // While the phone-sized call dialog is open, focus stays inside it.
     const scope: ParentNode = document.querySelector('.lp-overlay[aria-modal="true"]') ?? document;
@@ -44,8 +46,19 @@ export function focusMark(name: string) {
       const style = window.getComputedStyle(e);
       return style.visibility !== 'hidden';
     });
-    el?.focus({ preventScroll: true });
+    if (el) el.focus({ preventScroll: true });
+    else if (tries > 0) window.setTimeout(() => focusMark(name, tries - 1), 30);
   });
+}
+
+/** A short buzz on phones that allow it (after the visitor's tap; iOS ignores it). */
+function buzz(pattern: number | number[]) {
+  if (store.get().reducedMotion) return;
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {
+    // Not allowed here: nothing to do.
+  }
 }
 
 class CallMachine {
@@ -253,6 +266,7 @@ class CallMachine {
       live.glitch = 1;
       callAudio.glitch();
     }
+    buzz([30, 40, 30]);
     this.onGlitch?.();
   }
 
@@ -277,6 +291,7 @@ class CallMachine {
     this.backFrom = this.now() - this.t0;
     if (st.soundOn && callAudio.isReady('ring') && callAudio.running) callAudio.play('ring', { loop: true });
     this.set('calling-back');
+    buzz(30);
     announce(hero.announce.callingBack);
   }
 
@@ -316,7 +331,7 @@ class CallMachine {
   }
 
   /** Scrolled away, tab hidden or overlay closed mid-call. */
-  stop() {
+  stop(reason: 'scroll' | 'closed' = 'scroll') {
     const s = store.get().call;
     if (s !== 'in-call' && s !== 'glitch' && s !== 'reveal' && s !== 'hung-up' && s !== 'connecting') return;
     this.runId++;
@@ -324,7 +339,7 @@ class CallMachine {
     callAudio.stopAll(400);
     live.audioLevel = 0;
     live.glitch = 0;
-    this.set('stopped');
+    this.set('stopped', { stopReason: reason });
     announce(hero.announce.stopped);
   }
 
@@ -347,3 +362,7 @@ export const callMachine = new CallMachine();
 
 export const isActiveCall = (s: CallState) =>
   s === 'connecting' || s === 'in-call' || s === 'hung-up' || s === 'glitch' || s === 'reveal';
+
+/** From Answer until the call back connects: the page steps back so the call leads. */
+export const inFocusCall = (s: CallState) =>
+  s === 'in-call' || s === 'hung-up' || s === 'glitch' || s === 'reveal' || s === 'calling-back' || s === 'connected';

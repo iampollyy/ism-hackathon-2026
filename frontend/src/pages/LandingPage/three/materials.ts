@@ -2,7 +2,9 @@
 // the screens of the field of phones. All procedural; nothing is downloaded.
 import * as THREE from 'three';
 
-export const RING_PLANE = 5.4;
+// Big enough for the phone (0.78 x 1.62) plus the rings' reach (RING_REACH) and their glow.
+export const RING_PLANE = 3.9;
+const RING_REACH = 0.56;
 
 export function ringsMaterial() {
   return new THREE.ShaderMaterial({
@@ -32,6 +34,7 @@ export function ringsMaterial() {
       uniform vec3 uColor;
       uniform float uSize;
       varying vec2 vUv;
+      const float REACH = ${RING_REACH.toFixed(2)};
 
       float sdRoundRect(vec2 p, vec2 b, float r) {
         vec2 q = abs(p) - b + r;
@@ -46,17 +49,20 @@ export function ringsMaterial() {
           p.x += (hash(band * 17.0 + uSeed) - 0.5) * 0.08 * uSize * uGlitch;
         }
         // Distance from the phone's outline: rings start phone-shaped and round off as they grow.
-        float d = sdRoundRect(p, vec2(0.39, 0.81), 0.11);
+        // Vertical distance counts 2.4 times, so the rings reach out sideways more than up and
+        // down: they stay clear of the nav above and the notes below.
+        float d = sdRoundRect(vec2(p.x, p.y * 2.4), vec2(0.39, 1.944), 0.22);
         float a = 0.0;
+        // Short reach, so the rings stay clear of the text under the phone and the nav.
         for (int i = 0; i < 3; i++) {
-          float r = fract(uTime / 2.4 + float(i) / 3.0) * 1.25;
+          float r = fract(uTime / 2.4 + float(i) / 3.0) * REACH;
           float x = abs(d - r);
-          float band = smoothstep(0.014, 0.0, x);
-          float glow = exp(-x * 20.0) * 0.3;
-          float fade = (1.0 - r / 1.25);
-          a += fade * fade * (band + glow) * smoothstep(0.0, 0.06, r);
+          float band = 1.0 - smoothstep(0.003, 0.011, x);
+          float glow = exp(-x * 34.0) * 0.4;
+          float fade = (1.0 - r / REACH);
+          a += fade * (band + glow) * smoothstep(0.0, 0.04, r);
         }
-        a *= uIntensity * 0.75;
+        a *= uIntensity * 0.95;
         gl_FragColor = vec4(uColor * a, a);
         #include <colorspace_fragment>
       }

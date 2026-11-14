@@ -596,7 +596,11 @@ export function TranscriptScreen({ t, risk }: { t: number; risk?: RiskLevel | nu
         {lines.map((l) => {
           const fresh = l.chip && t - l.chipAt >= 0 && t - l.chipAt < 1.2;
           return (
-            <li key={l.text} className={`lp-tline lp-tline--${l.who === 'Rasa' ? 'me' : 'them'}${fresh ? ' is-fresh' : ''}`}>
+            <li
+              key={l.text}
+              className={`lp-tline lp-tline--${l.who === 'Rasa' ? 'me' : 'them'}${fresh ? ' is-fresh' : ''}`}
+              data-chip={l.chip ?? undefined}
+            >
               <span className="lp-tline__who">{l.who}</span>
               <span className="lp-tline__text">{l.text}</span>
               {/* Where the chips beside the phone are not shown (phones, reduced motion), the tactic sits under its line. */}
@@ -611,7 +615,7 @@ export function TranscriptScreen({ t, risk }: { t: number; risk?: RiskLevel | nu
 
 export type RiskLevel = 'green' | 'yellow' | 'red';
 
-function RiskPill({ level, compact = false }: { level: RiskLevel; compact?: boolean }) {
+export function RiskPill({ level, compact = false }: { level: RiskLevel; compact?: boolean }) {
   return (
     <span className={`lp-riskpill lp-riskpill--${level}${compact ? ' is-compact' : ''}`} aria-hidden="true">
       <i className="g" />
@@ -819,6 +823,54 @@ export function LockScreen({ shown }: { shown: boolean }) {
   );
 }
 
-export function MumScreen() {
-  return <IncomingScreen name={close.phone.name} sub={close.phone.sub} tone="safe" />;
+/** The close: Mum calls, on the number you know. Answer connects, and the call counts up. */
+export function MumScreen({ answered = false, timer = 0, onAnswer }: { answered?: boolean; timer?: number; onAnswer?: () => void }) {
+  const m = close.phone;
+  if (!answered)
+    return (
+      <div className="lp-scr lp-scr--incoming lp-scr--safe lp-scr--mum">
+        <StatusBar />
+        <div className="lp-scr__head">
+          <Avatar label={m.name.charAt(0)} tone="safe" />
+          <p className="lp-scr__name">{m.name}</p>
+          <p className="lp-scr__sub">{m.sub}</p>
+        </div>
+        <div className="lp-scr__actions lp-scr__actions--one">
+          <RoundButton
+            tone="safe"
+            label={hero.answer}
+            aria={m.answerLabel}
+            icon={<Phone size={38} {...ICON} />}
+            interactive={!!onAnswer}
+            onClick={onAnswer}
+            focusName="mum-answer"
+            breathe
+          />
+        </div>
+      </div>
+    );
+  return (
+    <div className="lp-scr lp-scr--incall lp-scr--safe lp-scr--mum">
+      <StatusBar />
+      <div className="lp-scr__head">
+        <Avatar label={m.name.charAt(0)} tone="safe" />
+        <p className="lp-scr__name">{m.name}</p>
+        <p className="lp-scr__sub lp-tnum">{fmt(timer)}</p>
+        <p className="lp-scr__note">{m.note}</p>
+      </div>
+      <div className="lp-scr__mid">
+        <span className="lp-pulse is-still" aria-hidden="true">
+          <Phone size={34} {...ICON} />
+        </span>
+      </div>
+      <div className="lp-scr__actions lp-scr__actions--one">
+        <span className="lp-rb" aria-hidden="true">
+          <span className="lp-rb__btn lp-rb__btn--scam">
+            <PhoneOff size={30} {...ICON} />
+          </span>
+          <span className="lp-rb__label">{hero.end}</span>
+        </span>
+      </div>
+    </div>
+  );
 }

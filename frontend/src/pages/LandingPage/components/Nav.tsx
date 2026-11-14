@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-import { nav, SIGNIN } from '../copy';
+import { nav, SIGNIN, SIGNUP } from '../copy';
 import { SoundToggle } from './SoundToggle';
 
 /** Anchor links work on the landing page; elsewhere (the pricing page) they lead back to it. */
@@ -99,7 +99,7 @@ export function Nav({ onHome = true, initialTheme = 'dark', showSound = true }: 
           <Link to={SIGNIN} className="lp-nav__signin">
             {nav.signIn}
           </Link>
-          <Link to="/signup" className="lp-btn lp-btn--nav">
+          <Link to={SIGNUP} className="lp-btn lp-btn--nav">
             {nav.cta}
           </Link>
           <button
@@ -124,7 +124,7 @@ export function Nav({ onHome = true, initialTheme = 'dark', showSound = true }: 
             {nav.signIn}
           </Link>
         </nav>
-        <Link to="/signup" className="lp-btn lp-btn--light lp-btn--block" onClick={close}>
+        <Link to={SIGNUP} className="lp-btn lp-btn--light lp-btn--block" onClick={close}>
           {nav.cta}
         </Link>
       </div>
