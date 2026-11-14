@@ -1,5 +1,10 @@
 """Pricing and the family's plan, demo mode (app/routers/billing.py)."""
 
+from datetime import timedelta
+
+from app.db import new_session, to_iso, utcnow
+from app.models import Family, FamilyPlan
+
 
 def family_body() -> dict:
     return {"name": "The Kovacs", "safe_word_set": True, "members": [
@@ -26,18 +31,50 @@ def test_new_family_is_on_a_trial(client) -> None:
 def test_choose_monthly_then_cancel(client) -> None:
     fid = client.post("/api/families", json=family_body()).json()["family_id"]
     chosen = client.post(f"/api/families/{fid}/plan", json={"plan": "family_monthly"}).json()
-    assert chosen["plan"] == "family_monthly" and chosen["status"] == "active" and chosen["price"] == "€4.99 a month"
+    assert chosen["plan"] == "family_monthly" and chosen["price"] == "€4.99 a month"
     assert client.get(f"/api/families/{fid}/plan").json()["plan"] == "family_monthly"
     canceled = client.post(f"/api/families/{fid}/plan/cancel").json()
     assert canceled["status"] == "canceled"
 
 
-def test_bank_plan_needs_a_code(client) -> None:
+def test_choosing_a_paid_plan_keeps_the_trial_running(client) -> None:
     fid = client.post("/api/families", json=family_body()).json()["family_id"]
-    bad = client.post(f"/api/families/{fid}/plan", json={"plan": "bank"})
-    assert bad.status_code == 422 and bad.json()["error"]["code"] == "invalid_bank_code"
-    ok = client.post(f"/api/families/{fid}/plan", json={"plan": "bank", "bank_code": "demo-2026"}).json()
-    assert ok["plan"] == "bank" and ok["bank_code"] == "DEMO-2026" and ok["price"] == "Free"
+    trial = client.get(f"/api/families/{fid}/plan").json()
+    for choice, name, price in (("family_yearly", "Family, yearly", "€49 a year"),
+                                ("family_monthly", "Family", "€4.99 a month")):
+        chosen = client.post(f"/api/families/{fid}/plan", json={"plan": choice}).json()
+        assert chosen == {**trial, "plan": choice, "plan_name": name, "price": price}, \
+            "still trialing to the same day, with the chosen plan after it"
+        assert client.get(f"/api/families/{fid}/plan").json() == chosen
+
+
+def test_a_paid_plan_starts_when_the_trial_ends(client) -> None:
+    fid = client.post("/api/families", json=family_body()).json()["family_id"]
+    client.post(f"/api/families/{fid}/plan", json={"plan": "family_yearly"})
+    with new_session() as db:
+        family = db.get(Family, fid)
+        trial_end = utcnow() - timedelta(days=1)
+        family.created_at = to_iso(trial_end - timedelta(days=30))
+        db.get(FamilyPlan, fid).started_at = to_iso(trial_end - timedelta(days=20))
+        db.commit()
+    plan = client.get(f"/api/families/{fid}/plan").json()
+    assert (plan["plan"], plan["status"], plan["trial_ends_at"]) == ("family_yearly", "active", None)
+    assert plan["started_at"] == to_iso(trial_end)
+
+
+def test_bank_plan_needs_the_partner_banks_code(client) -> None:
+    fid = client.post("/api/families", json=family_body()).json()["family_id"]
+    for code in (None, "", "  ", "WRONG1", "NOTACODE", "demo-2026", "DEMO-BANKX"):
+        body = {"plan": "bank"} if code is None else {"plan": "bank", "bank_code": code}
+        bad = client.post(f"/api/families/{fid}/plan", json=body)
+        assert bad.status_code == 422 and bad.json()["error"]["code"] == "invalid_bank_code", code
+        assert "DEMO-BANK" in bad.json()["error"]["message"]
+    assert "isn't from a partner bank" in client.post(
+        f"/api/families/{fid}/plan", json={"plan": "bank", "bank_code": "WRONG1"}).json()["error"]["message"]
+    assert client.get(f"/api/families/{fid}/plan").json()["plan"] == "trial", "a wrong code changes nothing"
+    ok = client.post(f"/api/families/{fid}/plan", json={"plan": "bank", "bank_code": " demo-bank "}).json()
+    assert ok["plan"] == "bank" and ok["status"] == "active" and ok["bank_code"] == "DEMO-BANK"
+    assert ok["price"] == "Free" and ok["trial_ends_at"] is None
 
 
 def test_unknown_family_and_cancel_without_plan(client) -> None:

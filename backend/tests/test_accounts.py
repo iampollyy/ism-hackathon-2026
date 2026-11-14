@@ -358,8 +358,12 @@ def test_families_still_work_without_a_session(client):
     assert (listed.status_code, error_code(listed)) == (401, "not_logged_in")
 
 
-def test_the_family_page_is_readable_by_id_without_the_owner(client):
+def test_an_owned_family_page_is_only_the_owners(client):
     register(client)
     family_id = client.post("/api/families", json=family_payload()).json()["family_id"]
-    client.post("/api/auth/logout")
     assert client.get(f"/api/families/{family_id}").json()["name"] == "The Kovacs"
+    client.post("/api/auth/logout")
+    response = client.get(f"/api/families/{family_id}")
+    assert (response.status_code, error_code(response)) == (401, "not_logged_in")
+    login(client)
+    assert client.get(f"/api/families/{family_id}").json()["name"] == "The Kovacs"  # back after logging in

@@ -1,11 +1,13 @@
 """POST /api/families and GET /api/families/{id}."""
 
 import json
+from datetime import timedelta
 
 from sqlalchemy import select
 
-from app.db import now_iso
-from app.models import Consent, Family, Member, ReadinessSnapshot
+from app.db import now_iso, to_iso, utcnow
+from app.ids import new_call_id
+from app.models import Call, Consent, Family, Member, ReadinessSnapshot
 
 
 def safe_word_keys(value) -> list[str]:
@@ -104,6 +106,7 @@ def test_get_family_reads_snapshots_plan_profile_and_online(client, make_family,
     member.voice_id = "voice_x"
     member.voice_status = "ready"
     member.consent_clone_at = now_iso()
+    db.add(Consent(member_id=member_id, kind="clone_from_call", source="invite", evidence="tick", created_at=now_iso()))
     member.profile_json = json.dumps({"said": "If the bank rings, I do what they say.", "weak_spot": "Trusts the bank."})
     member.plan_json = json.dumps({
         "member_id": member_id, "weak_spot": "Acts fast when the bank calls.", "this_week": "Save the family number.",
@@ -163,3 +166,67 @@ def test_family_readiness_is_the_mean_of_members_with_a_score(client, make_famil
     db.commit()
     family = client.get(f"/api/families/{body['family_id']}").json()
     assert family["readiness"] == {"before": 6, "now": 6, "max": 10}
+
+
+# ---------------------------------------------------------------- consent.clone: the person's own voice tick
+
+
+def voice_consent(client, family_id: str) -> dict[str, bool]:
+    family = client.get(f"/api/families/{family_id}").json()
+    return {member["name"]: member["consent"]["clone"] for member in family["members"]}
+
+
+def test_voice_consent_is_the_members_own_tick(client, make_family, db):
+    body = make_family()
+    sara = body["members"][0]["id"]
+    member = db.get(Member, sara)
+    member.voice_id, member.voice_status, member.consent_clone_at = "voice_x", "ready", now_iso()
+    db.commit()
+    # A voice exists, but Sara never ticked "my voice may be copied": not allowed.
+    # Jon is the organiser, the one at the laptop: allowed.
+    assert voice_consent(client, body["family_id"]) == {"Sara": False, "Jon": True}
+
+    db.add(Consent(member_id=sara, kind="clone_from_call", source="invite", evidence="tick",
+                   created_at="2026-11-13T10:00:00+00:00"))
+    db.commit()
+    assert voice_consent(client, body["family_id"])["Sara"] is True
+
+    db.add(Consent(member_id=sara, kind="clone_from_call_withdrawn", source="invite", evidence="untick",
+                   created_at="2026-11-13T11:00:00+00:00"))
+    db.commit()
+    assert voice_consent(client, body["family_id"])["Sara"] is False, "the latest answer wins"
+
+    db.add(Consent(member_id=sara, kind="clone_from_call", source="invite", evidence="tick",
+                   created_at="2026-11-13T12:00:00+00:00"))
+    member.opted_out_at = now_iso()
+    db.get(Member, body["members"][1]["id"]).opted_out_at = now_iso()
+    db.commit()
+    assert voice_consent(client, body["family_id"]) == {"Sara": False, "Jon": False}, "never after leaving"
+
+
+# ---------------------------------------------------------------- This week keeps the organiser's drill a surprise
+
+
+def add_practice(db, family_id: str, target: str, status: str, minutes: int) -> str:
+    call_id = new_call_id()
+    when = to_iso(utcnow() + timedelta(minutes=minutes))
+    db.add(Call(id=call_id, family_id=family_id, kind="practice", target_member_id=target, difficulty=1,
+                scenario="hospital", status=status, scheduled_for=when if status == "scheduled" else None,
+                created_at=now_iso()))
+    db.commit()
+    return call_id
+
+
+def test_week_hides_the_organisers_own_scheduled_drill(client, make_family, db):
+    body = make_family()
+    sara, jon = (m["id"] for m in body["members"])
+    for_sara = add_practice(db, body["family_id"], sara, "scheduled", 30)
+    hidden = add_practice(db, body["family_id"], jon, "scheduled", 40)
+    week = client.get(f"/api/families/{body['family_id']}").json()["week"]
+    assert [item["call_id"] for item in week] == [for_sara]
+    assert "Practice for Jon" not in json.dumps(week)
+
+    db.get(Call, hidden).status = "ringing"  # once it rings it shows like any other
+    db.commit()
+    week = client.get(f"/api/families/{body['family_id']}").json()["week"]
+    assert {item["call_id"] for item in week} == {for_sara, hidden}

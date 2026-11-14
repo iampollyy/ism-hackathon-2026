@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.db import to_iso, utcnow
 from app.ids import new_call_id
-from app.models import Call, CallEvent, Consent, Member, Message, ReadinessSnapshot, Result
+from app.models import Call, CallEvent, Consent, Member, MemberJoin, Message, ReadinessSnapshot, Result
 from app.services import review
 
 BASE = utcnow() - timedelta(hours=3)
@@ -163,6 +163,25 @@ def test_drills_filter_by_member_and_limit(client: Any, db: Session, fam: dict[s
     assert [d["call_id"] for d in client.get(url, params={"limit": 1}).json()["drills"]] == [sara_new]
 
 
+def test_the_organisers_own_drill_stays_a_surprise(client: Any, db: Session, fam: dict[str, str]) -> None:
+    """Jon (the organiser) reads these screens: his scheduled drill is not
+    listed and has no next time, until it rings."""
+    for_sara = add_call(db, fam, 10, status="scheduled", answered_at=None, ended_at=None, scheduled_for=at(200))
+    for_jon = add_call(db, fam, 11, status="scheduled", answered_at=None, ended_at=None, scheduled_for=at(100),
+                       target="jon", scenario="hospital")
+    done = add_call(db, fam, 5, target="jon")
+    url = f"/api/families/{fam['id']}/drills"
+    assert [d["call_id"] for d in client.get(url).json()["drills"]] == [for_sara, done]
+    assert [d["call_id"] for d in client.get(url, params={"member_id": fam["jon"]}).json()["drills"]] == [done]
+    assert client.get(url, params={"limit": 1}).json()["drills"][0]["call_id"] == for_sara, "the limit counts shown ones"
+    assert client.get(f"/api/members/{fam['jon']}/progress").json()["next_drill_at"] is None
+    assert client.get(f"/api/members/{fam['sara']}/progress").json()["next_drill_at"] == at(200)
+
+    db.get(Call, for_jon).status = "ringing"
+    db.commit()
+    assert [d["call_id"] for d in client.get(url).json()["drills"]] == [for_jon, for_sara, done]
+
+
 def test_drills_are_per_family(client: Any, db: Session, fam: dict[str, str], make_family: Any) -> None:
     add_call(db, fam, 10)
     other = make_family(1)["family_id"]
@@ -183,13 +202,67 @@ def test_activity_unknown_family(client: Any) -> None:
 
 def test_activity_after_sign_up(client: Any, fam: dict[str, str]) -> None:
     items = client.get(f"/api/families/{fam['id']}/activity").json()["items"]
-    assert sorted(texts(items, "joined")) == ["Ana joined the family plan", "Jon started the family plan",
-                                             "Sara joined the family plan"]
-    assert sorted(texts(items, "consent_given")) == [f"{name} agreed to practice calls at sign-up"
-                                                     for name in ("Ana", "Jon", "Sara")]
-    # At the same moment, the tick is shown above the joining.
+    # Nobody but the organiser has joined yet: the organiser added them.
+    assert sorted(texts(items, "joined")) == ["Jon added Ana to the family plan", "Jon added Sara to the family plan",
+                                             "Jon started the family plan"]
+    # The organiser ticked for everyone on the sign-up form (a family without
+    # an owner keeps those ticks); only Jon's own tick is his agreement.
+    assert sorted(texts(items, "consent_given")) == ["Jon agreed to practice calls at sign-up",
+                                                     "Jon ticked practice calls for Ana at sign-up",
+                                                     "Jon ticked practice calls for Sara at sign-up"]
+    # At the same moment, the tick is shown above the adding.
     sara = [item["kind"] for item in items if item["member"]["id"] == fam["sara"]]
     assert sara == ["consent_given", "joined"]
+
+
+def owned_family(client: Any, db: Session) -> dict[str, str]:
+    """A family made while logged in as "Ana Kovacs": Mum (mother) and Ana
+    (the organiser, with her own sign-up tick), added at minute 0."""
+    client.post("/api/auth/register", json={"name": "Ana Kovacs", "email": "ana@example.com",
+                                            "password": "correct horse"})
+    body = client.post("/api/families", json={"name": "The Kovacs", "members": [
+        {"name": "Mum", "relationship": "mother", "consent_practice": True},
+        {"name": "Ana", "relationship": "daughter", "is_organiser": True, "consent_practice": True}]}).json()
+    mum, ana = (member["id"] for member in body["members"])
+    for member in db.scalars(select(Member).where(Member.id.in_((mum, ana)))):
+        member.created_at = at(0)
+    for consent in db.scalars(select(Consent).where(Consent.member_id.in_((mum, ana)))):
+        consent.created_at = at(0)
+    db.commit()
+    return {"id": body["family_id"], "mum": mum, "ana": ana}
+
+
+def test_activity_names_who_acted(client: Any, db: Session) -> None:
+    fam = owned_family(client, db)
+    added = texts(client.get(f"/api/families/{fam['id']}/activity").json()["items"], "joined")
+    assert sorted(added) == ["Ana Kovacs added Mum to the family plan", "Ana started the family plan"]
+
+    # Mum opens her invite at minute 5 and agrees there; she is "joined" then, not at minute 0.
+    response = client.post(f"/api/join/{fam['mum']}", json={"consent_practice": True,
+                                                           "consent_clone_from_call": False})
+    assert response.status_code == 200, response.text
+    db.expire_all()
+    db.get(MemberJoin, fam["mum"]).joined_at = at(5)
+    for row in db.scalars(select(Consent).where(Consent.member_id == fam["mum"])):
+        row.created_at = at(5)
+    db.commit()
+    # Ana switches Mum's practice calls off, then records Mum's voice on her laptop.
+    assert client.post(f"/api/members/{fam['mum']}/consent", json={"consent_practice": False}).status_code == 200
+    db.add(Consent(member_id=fam["mum"], kind="clone", source="voice_recording", evidence="x", created_at=at(20)))
+    db.add(Consent(member_id=fam["ana"], kind="clone", source="voice_recording", evidence="x", created_at=at(21)))
+    db.commit()
+
+    items = client.get(f"/api/families/{fam['id']}/activity").json()["items"]
+    mum = [(item["when"], item["text"]) for item in items if item["member"]["id"] == fam["mum"]]
+    assert mum[-2:] == [(at(5), "Mum joined the family plan"), (at(0), "Ana Kovacs added Mum to the family plan")]
+    assert texts(items, "consent_given") == ["Mum agreed to practice calls when joining",
+                                             "Ana agreed to practice calls at sign-up"]
+    assert texts(items, "consent_withdrawn") == ["Ana Kovacs switched off Mum's practice calls"]
+    assert texts(items, "voice_consent") == [
+        "Ana recorded a voice sample for family drills",
+        "Mum's voice sample was recorded on Ana Kovacs's laptop, starting with their spoken consent",
+    ]
+    assert not [text for _, text in mum if text.startswith(("Mum paused", "Mum recorded", "Mum agreed to practice calls at"))]
 
 
 def test_activity_timeline(client: Any, db: Session, fam: dict[str, str]) -> None:

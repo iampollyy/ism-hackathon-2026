@@ -26,9 +26,11 @@ Rules (docs/full-app/track1.md):
   rows inside settings.login_window_minutes, log-in answers 429
   too_many_attempts before the password is checked, even a right one.
 - Families: POST /api/families with a valid session writes `family_owners`
-  (claim_family). The family page stays readable by id without a session,
-  but for a family with an owner only that owner's session sees the invite
-  links and phone numbers (can_see_invites).
+  (claim_family). A family with an owner is that owner's alone: its page,
+  its review screens and its controls answer 401 without a session and
+  404 to another account (services/access.py, a middleware). A family
+  without an owner stays readable by id, and can_see_invites keeps its
+  invite links and phone numbers to the owner's session either way.
 
 Nothing here commits; the routers do.
 """
@@ -173,8 +175,14 @@ def can_see_invites(db: DbSession, family_id: str, account: Account | None) -> b
     return owner is None or (account is not None and owner.account_id == account.id)
 
 
+def family_owner(db: DbSession, family_id: str) -> FamilyOwner | None:
+    """The family_owners row: who created the family while logged in."""
+    return db.get(FamilyOwner, family_id)
+
+
 def family_owner_name(db: DbSession, family_id: str) -> str | None:
-    """The name on the account that created the family, if any."""
+    """The name on the account that created the family, if any (the
+    organiser's name in activity and consent evidence)."""
     return db.scalar(
         select(Account.name)
         .join(FamilyOwner, FamilyOwner.account_id == Account.id)

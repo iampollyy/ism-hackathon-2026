@@ -19,7 +19,7 @@ from app.db import init_db, new_session
 from app.models import Call
 from app.routers import accounts, billing, calls, dev, families, phone, protection, push, review, scenarios, streams, voice, voice_sample, waitlist, weekly
 from app.schemas import ApiError
-from app.services import scheduler
+from app.services import access, scheduler
 
 log = logging.getLogger("app")
 
@@ -86,6 +86,9 @@ def error_body(code: str, message: str) -> dict:
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Callback", lifespan=lifespan)
+    # The family dashboard is the owner's (services/access.py). Added before
+    # CORS, so CORS stays outermost and also answers for its refusals.
+    app.add_middleware(access.OwnerOnly)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
