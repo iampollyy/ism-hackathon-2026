@@ -9,7 +9,7 @@ import { api, ApiError } from '../../api/client';
 import type { FamilyPlanView, Pricing } from '../../api/types';
 import { useDocumentTitle } from '../../layouts/useDocumentTitle';
 import { PlanPicker } from './PlanPicker';
-import { STATUS_WORDS, daysWord, longDate, trialDaysLeft } from './planWords';
+import { STATUS_WORDS, chosenForAfterTrial, daysWord, longDate, trialDaysLeft } from './planWords';
 import './PlanPage.scss';
 
 type Load =
@@ -50,7 +50,13 @@ export function PlanPage() {
   const chosen = (plan: FamilyPlanView) => {
     setLoad({ status: 'ready', plan });
     setConfirming(false);
-    setNotice(`You’re on ${plan.plan_name} now${plan.price ? ` (${plan.price})` : ''}. No payment was taken.`);
+    const price = plan.price ? ` (${plan.price})` : '';
+    const ends = longDate(plan.trial_ends_at);
+    setNotice(
+      chosenForAfterTrial(plan)
+        ? `${plan.plan_name}${price} starts when your free trial ends${ends ? `, on ${ends}` : ''}. No payment was taken.`
+        : `You’re on ${plan.plan_name} now${price}. No payment was taken.`,
+    );
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -118,7 +124,9 @@ export function PlanPage() {
 
           <section className="plan-choose" aria-labelledby="plan-choose-title">
             <h2 id="plan-choose-title">
-              {load.plan.status === 'trialing'
+              {chosenForAfterTrial(load.plan)
+                ? 'Change the plan for after the trial'
+                : load.plan.status === 'trialing'
                 ? 'Choose a plan for after the trial'
                 : load.plan.status === 'canceled'
                   ? 'Choose a plan again'
@@ -147,6 +155,7 @@ function CurrentPlan({ plan, trialDays, confirming, cancelling, cancelError, onA
   const left = trialDaysLeft(plan);
   const trialEnded = plan.status === 'trialing' && left === 0;
   const used = left !== null && trialDays ? Math.min(trialDays, Math.max(0, trialDays - left)) : null;
+  const ends = longDate(plan.trial_ends_at);
 
   return (
     <section className={`plan-current ${plan.status}`} aria-labelledby="plan-current-title">
@@ -154,9 +163,18 @@ function CurrentPlan({ plan, trialDays, confirming, cancelling, cancelError, onA
         <span className={`plan-status ${plan.status}`}>{STATUS_WORDS[plan.status]}</span>
         {plan.status === 'trialing' ? (
           // The pill already says "Free trial": the heading says how long is left.
-          <h2 id="plan-current-title">
-            {trialEnded ? 'Your trial has ended' : left !== null ? `${daysWord(left)} left` : 'Free for now'}
-          </h2>
+          <>
+            <h2 id="plan-current-title">
+              {trialEnded ? 'Your trial has ended' : left !== null ? `${daysWord(left)} left` : 'Free for now'}
+            </h2>
+            {chosenForAfterTrial(plan) ? (
+              <p className="plan-price">
+                Then {plan.plan_name}
+                {ends ? `, from ${ends}` : ''}
+                {plan.price ? ` · ${plan.price}` : ''}
+              </p>
+            ) : null}
+          </>
         ) : (
           <>
             <h2 id="plan-current-title">{plan.plan_name}</h2>
@@ -179,7 +197,7 @@ function CurrentPlan({ plan, trialDays, confirming, cancelling, cancelError, onA
             <small>
               {trialEnded
                 ? `Ended on ${longDate(plan.trial_ends_at)}. Nothing stops working in this demo.`
-                : `Day ${(used ?? 0) + 1} of ${trialDays}. Nothing is charged when it ends.`}
+                : `Day ${(used ?? 0) + 1} of ${trialDays}. Demo: nothing is ever charged.`}
             </small>
           </div>
         ) : null}
@@ -191,7 +209,7 @@ function CurrentPlan({ plan, trialDays, confirming, cancelling, cancelError, onA
             <dt>
               <CalendarClock size={16} aria-hidden="true" /> Trial ends
             </dt>
-            <dd>{longDate(plan.trial_ends_at) || 'Not set'}</dd>
+            <dd>{ends || 'Not set'}</dd>
           </div>
         ) : null}
         <div>

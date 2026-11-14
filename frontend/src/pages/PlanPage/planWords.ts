@@ -25,12 +25,18 @@ export function daysWord(days: number): string {
   return days === 1 ? '1 day' : `${days} days`;
 }
 
+/** A plan chosen during the trial: it takes over when the trial ends, and the trial keeps going. */
+export function chosenForAfterTrial(plan: FamilyPlanView): boolean {
+  return plan.status === 'trialing' && plan.plan !== 'trial';
+}
+
 /** One short line, for a list: "Free trial · 29 days left", "Family · €4.99 a month". */
 export function planLine(plan: FamilyPlanView): string {
   if (plan.status === 'trialing') {
     const days = trialDaysLeft(plan);
-    if (days === null) return 'Free trial';
-    return days > 0 ? `Free trial · ${daysWord(days)} left` : 'Free trial ended';
+    const then = chosenForAfterTrial(plan) ? ` · then ${plan.plan_name}` : '';
+    if (days === null) return `Free trial${then}`;
+    return days > 0 ? `Free trial · ${daysWord(days)} left${then}` : `Free trial ended${then}`;
   }
   if (plan.status === 'canceled') return `${plan.plan_name} · cancelled`;
   return plan.price ? `${plan.plan_name} · ${plan.price}` : plan.plan_name;

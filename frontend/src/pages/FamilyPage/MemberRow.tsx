@@ -1,9 +1,13 @@
 // One person in the family list: who they are, whether they joined (with
 // their invite link to copy, share or scan if not), their phone, practice
-// consent (a switch), their voice, the welcome call, readiness before and
-// now, and the way to their own page.
+// consent, their voice, the welcome call, readiness before and now, and the
+// way to their own page.
+//
+// Practice consent is the person's own: only they say yes, on their phone.
+// Here the organiser can only switch it off (after a short confirm); while it
+// is off the cell says what it is waiting for instead of offering a switch.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, ChevronRight, Link2, PhoneIncoming, QrCode } from 'lucide-react';
 import { api } from '../../api/client';
@@ -11,7 +15,7 @@ import type { MemberView, VoiceSampleStatus, WeekItem } from '../../api/types';
 import { Avatar } from '../../components/atoms/Avatar';
 import { CopyButton, fullUrl, LinkQrCode, ShareButton } from './links';
 import { Switch } from './Switch';
-import { callErrorText, capitalise, errorText } from './words';
+import { callErrorText, capitalise, errorText, possessive } from './words';
 
 type Props = {
   member: MemberView;
@@ -19,6 +23,8 @@ type Props = {
   initials: string;
   familyId: string;
   familyName: string;
+  /** The organiser's first name, who sends the invites. */
+  organiserName: string | null;
   /** undefined until loaded; only fetched for members who joined. */
   sample: VoiceSampleStatus | undefined;
   week: WeekItem[];
@@ -53,10 +59,15 @@ function voiceState(member: MemberView, sample: VoiceSampleStatus | undefined, l
   return { text: 'None yet', tone: 'quiet' };
 }
 
-export function MemberRow({ member, color, initials, familyId, familyName, sample, week, left, base, onChanged }: Props) {
+export function MemberRow({
+  member, color, initials, familyId, familyName, organiserName, sample, week, left, base, onChanged,
+}: Props) {
   const [consentBusy, setConsentBusy] = useState(false);
-  // The answer just sent, shown until the next refresh of the family agrees.
-  const [consentSent, setConsentSent] = useState<boolean | null>(null);
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const rowRef = useRef<HTMLLIElement>(null);
+  const withdrawRef = useRef<HTMLDivElement>(null);
+  // The withdrawal just sent, shown until the next refresh of the family agrees.
+  const [consentSent, setConsentSent] = useState<false | null>(null);
   const [welcomeBusy, setWelcomeBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [linksOpen, setLinksOpen] = useState(false);
@@ -67,6 +78,21 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
   useEffect(() => {
     if (consentSent !== null && member.consent.practice === consentSent) setConsentSent(null);
   }, [member.consent.practice, consentSent]);
+
+  // The question takes the focus when it opens, so the keyboard and screen readers go there next.
+  useEffect(() => {
+    if (confirmWithdraw) withdrawRef.current?.focus();
+  }, [confirmWithdraw]);
+
+  const keepConsent = () => {
+    setConfirmWithdraw(false);
+    rowRef.current?.querySelector<HTMLElement>('[role=switch]')?.focus();
+  };
+
+  // They withdrew on their phone meanwhile: nothing left to confirm.
+  useEffect(() => {
+    if (!member.consent.practice) setConfirmWithdraw(false);
+  }, [member.consent.practice]);
 
   // An error goes once what it was about changes (the phone opens, consent, a voice).
   useEffect(() => {
@@ -99,12 +125,14 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
   const inviteUrl = member.invite_link ? fullUrl(member.invite_link, base) : '';
   const phoneUrl = fullUrl(member.phone_link, base);
 
-  const toggleConsent = async (next: boolean) => {
+  // The organiser can only withdraw: a yes comes from the person, on their phone.
+  const withdrawConsent = async () => {
     setConsentBusy(true);
     setNotice(null);
     try {
-      await api.setConsent(member.id, { consent_practice: next });
-      setConsentSent(next);
+      await api.setConsent(member.id, { consent_practice: false });
+      setConsentSent(false);
+      setConfirmWithdraw(false);
       onChanged();
     } catch (error) {
       setNotice({ tone: 'bad', text: errorText(error) });
@@ -143,6 +171,32 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
   };
 
   const role = [capitalise(member.relationship), member.is_organiser ? 'Organiser' : null].filter(Boolean).join(' · ');
+  const theirPhone = `${possessive(member.relationship)} phone`;
+
+  let practice: React.ReactNode;
+  if (consent && !left) {
+    practice = (
+      <Switch
+        checked
+        label={`Practice calls for ${member.name}: agreed. Switch off to withdraw`}
+        onText="Agreed"
+        busy={consentBusy}
+        onChange={() => setConfirmWithdraw((open) => !open)}
+      />
+    );
+  } else {
+    const detail = left
+      ? `${member.name} has left Callback`
+      : !member.joined
+        ? 'Invite not opened yet'
+        : `Waiting for ${member.name} to say yes on ${theirPhone}`;
+    practice = (
+      <>
+        <span className={`fh-fact-value ${left || !member.joined ? 'quiet' : 'wait'}`}>Not agreed</span>
+        <small className="fh-fact-detail">{detail}</small>
+      </>
+    );
+  }
 
   let welcome: React.ReactNode;
   if (!member.joined) {
@@ -175,7 +229,7 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
   }
 
   return (
-    <li className={`fh-member${member.joined ? '' : ' not-joined'}${left ? ' has-left' : ''}`}>
+    <li ref={rowRef} className={`fh-member${member.joined ? '' : ' not-joined'}${left ? ' has-left' : ''}`}>
       <div className="fh-member-main">
         <Avatar initials={initials} color={color} size="md" />
         <div className="fh-member-name">
@@ -221,17 +275,7 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
       <dl className="fh-member-facts">
         <div>
           <dt>Practice calls</dt>
-          <dd>
-            <Switch
-              checked={consent}
-              label={`${member.name} agrees to practice calls`}
-              onText="Agreed"
-              offText="Not agreed"
-              busy={consentBusy}
-              disabled={left}
-              onChange={(next) => void toggleConsent(next)}
-            />
-          </dd>
+          <dd>{practice}</dd>
         </div>
         <div>
           <dt>Voice</dt>
@@ -289,7 +333,13 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
               <code className="fh-link-text">{inviteUrl}</code>
               <div className="fh-invite-actions">
                 <CopyButton text={inviteUrl} owner={member.name} what="invite link" />
-                <ShareButton url={inviteUrl} name={member.name} familyName={familyName} />
+                <ShareButton
+                  url={inviteUrl}
+                  name={member.name}
+                  familyName={familyName}
+                  from={organiserName}
+                  own={member.is_organiser}
+                />
                 <button
                   type="button"
                   className="fh-chip-button"
@@ -336,6 +386,28 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
           </div>
           <div className="fh-qr">
             <LinkQrCode url={phoneUrl} owner={member.name} size={132} />
+          </div>
+        </div>
+      ) : null}
+
+      {confirmWithdraw && consent && !left ? (
+        <div
+          ref={withdrawRef}
+          className="fh-row-confirm"
+          role="group"
+          aria-label={`Switch off ${member.name}'s practice calls`}
+          tabIndex={-1}
+        >
+          <span>
+            Switch off {member.name}'s practice calls? Only {member.name} can switch them on again, from {theirPhone}.
+          </span>
+          <div>
+            <button type="button" className="fh-chip-button danger" onClick={() => void withdrawConsent()} disabled={consentBusy}>
+              {consentBusy ? 'Switching off…' : 'Switch off'}
+            </button>
+            <button type="button" className="fh-chip-button" onClick={keepConsent} disabled={consentBusy}>
+              Keep them on
+            </button>
           </div>
         </div>
       ) : null}

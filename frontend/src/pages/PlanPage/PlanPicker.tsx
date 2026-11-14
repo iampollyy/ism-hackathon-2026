@@ -9,6 +9,9 @@ import { api, ApiError } from '../../api/client';
 import type { FamilyPlanView, PlanChoice, Pricing } from '../../api/types';
 import './PlanPicker.scss';
 
+/** The partner code that works in this demo. */
+const DEMO_BANK_CODE = 'DEMO-BANK';
+
 type PlanKey = PlanChoice['plan'];
 
 const CHOOSABLE: readonly string[] = ['family_monthly', 'family_yearly', 'bank'];
@@ -70,7 +73,7 @@ export function PlanPicker({ familyId, current, onChosen, onPricing, highlight =
       const message =
         error instanceof ApiError
           ? error.code === 'invalid_bank_code'
-            ? 'That code doesn’t look right. It is 4 to 40 letters, digits or dashes, as printed by your bank.'
+            ? `That code doesn’t work. Demo code: ${DEMO_BANK_CODE}`
             : error.message
           : 'Something went wrong. Please try again.';
       setErrors((current) => ({ ...current, [key]: message }));
@@ -85,7 +88,7 @@ export function PlanPicker({ familyId, current, onChosen, onPricing, highlight =
     if (!/^[A-Za-z0-9-]{4,40}$/.test(code)) {
       setErrors((current) => ({
         ...current,
-        bank: 'Enter the code from your bank: 4 to 40 letters, digits or dashes.',
+        bank: `Enter the code from your bank. Demo code: ${DEMO_BANK_CODE}`,
       }));
       return;
     }
@@ -121,7 +124,9 @@ export function PlanPicker({ familyId, current, onChosen, onPricing, highlight =
       <div className="pp-grid">
         {plans.map((plan) => {
           const key = plan.key as PlanKey;
-          const isCurrent = current?.plan === key && current.status === 'active';
+          // Chosen during the trial counts too: it starts when the trial ends.
+          const isCurrent = current?.plan === key && current.status !== 'canceled';
+          const afterTrial = isCurrent && current?.status === 'trialing';
           const [amount, period] = splitPrice(plan.price);
           const error = errors[key];
           const working = busy === key;
@@ -171,13 +176,17 @@ export function PlanPicker({ familyId, current, onChosen, onPricing, highlight =
                         setErrors((current) => ({ ...current, bank: undefined }));
                       }}
                       aria-invalid={Boolean(error)}
-                      aria-describedby={error ? `bank-code-error-${familyId}` : undefined}
+                      aria-describedby={error ? `bank-code-error-${familyId}` : `bank-code-hint-${familyId}`}
                     />
                     {error ? (
                       <small className="pp-error" id={`bank-code-error-${familyId}`}>
                         {error}
                       </small>
-                    ) : null}
+                    ) : (
+                      <small className="pp-hint" id={`bank-code-hint-${familyId}`}>
+                        Demo code: {DEMO_BANK_CODE}
+                      </small>
+                    )}
                     <div className="pp-bank-buttons">
                       <button type="submit" className="button button-primary" disabled={busy !== null}>
                         {working ? <LoaderCircle size={16} className="pp-spin" aria-hidden="true" /> : null}
@@ -198,7 +207,7 @@ export function PlanPicker({ familyId, current, onChosen, onPricing, highlight =
                     >
                       {working ? <LoaderCircle size={16} className="pp-spin" aria-hidden="true" /> : null}
                       {key === 'bank' ? <Landmark size={16} aria-hidden="true" /> : null}
-                      {isCurrent ? 'Your current plan' : plan.cta}
+                      {afterTrial ? 'Chosen for after the trial' : isCurrent ? 'Your current plan' : plan.cta}
                     </button>
                     {error && key !== 'bank' ? <small className="pp-error">{error}</small> : null}
                   </>

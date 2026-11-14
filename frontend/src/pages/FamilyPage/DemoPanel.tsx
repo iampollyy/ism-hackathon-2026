@@ -3,6 +3,7 @@
 // the Shield warns the person live and alerts the family by itself). The
 // state lives in useDemo, on the page.
 
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Radio, Sparkles } from 'lucide-react';
 import type { MemberView, ProtectionView } from '../../api/types';
@@ -24,7 +25,8 @@ function names(list: string[]): string {
 function drillNotice(drill: Drill): { tone: 'wait' | 'live' | 'done'; text: string; link: string | null } {
   switch (drill.status) {
     case 'scheduled':
-      return { tone: 'wait', text: `A drill will ring ${drill.name}'s phone within a minute.`, link: null };
+      // The live view follows a planned call too, and picks it up the moment it rings.
+      return { tone: 'wait', text: `A drill is on its way to ${drill.name}'s phone.`, link: 'Watch it live' };
     case 'ringing':
       return { tone: 'live', text: `Ringing on ${drill.name}'s phone now.`, link: 'Watch the call' };
     case 'in_progress':
@@ -40,8 +42,28 @@ function drillNotice(drill: Drill): { tone: 'wait' | 'live' | 'done'; text: stri
   }
 }
 
+/** Whole seconds until an ISO time, ticking once a second while there is one; null without it. */
+function useSecondsUntil(iso: string | null | undefined): number | null {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!iso) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [iso]);
+  if (!iso) return null;
+  const at = new Date(iso).getTime();
+  return Number.isNaN(at) ? null : Math.max(0, Math.ceil((at - now) / 1000));
+}
+
+function clock(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
 export function DemoPanel({ members, protection, demo }: Props) {
   const { canGet, reasonFor, drill, shield } = demo;
+  const waiting = drill.current?.status === 'scheduled' ? drill.current.scheduledFor : null;
+  const secondsLeft = useSecondsUntil(waiting);
 
   // ---------------------------------------------------------------- surprise drill
 
@@ -138,6 +160,11 @@ export function DemoPanel({ members, protection, demo }: Props) {
             <span className="fh-demo-pulse" aria-hidden="true" />
             <div className="fh-demo-notice-text">
               <span>{notice.text}</span>
+              {secondsLeft !== null ? (
+                <span className="fh-demo-count">
+                  {secondsLeft > 0 ? `Rings within ${clock(secondsLeft)}` : 'Ringing any moment now'}
+                </span>
+              ) : null}
               {notice.link ? (
                 <Link to={`/calls/${drill.current.callId}`} className="fh-inline-link">
                   {notice.link} <ArrowRight size={14} />

@@ -177,19 +177,34 @@ export function shownUrl(url: string): string {
   return url.replace(/^https?:\/\//, '');
 }
 
+/**
+ * The words sent with an invite, in the organiser's own voice: a bare link
+ * from nowhere is exactly what a scam-wary parent has learned to ignore.
+ * `from` is the organiser's first name; `own` is a link to their own phone.
+ */
+export function inviteMessage(name: string, from: string | null | undefined, own = false): string {
+  if (own) return 'My own Callback link. Open this on my phone:';
+  const hello = from ? `${name}, it's ${from}.` : `${name},`;
+  return `${hello} I've set up Callback so our family can practise spotting scam calls. Open this on your phone:`;
+}
+
 type ShareProps = {
   url: string;
   /** Who the link is for. */
   name: string;
   familyName: string;
+  /** The organiser's first name, who sends it. */
+  from?: string | null;
+  /** The organiser's own link. */
+  own?: boolean;
 };
 
 /**
  * Share a link with the phone's or laptop's own share sheet (WhatsApp, SMS,
  * email...). Where the browser has none, it opens WhatsApp with the message.
  */
-export function ShareButton({ url, name, familyName }: ShareProps) {
-  const text = `${name}, here is your own link to join ${familyName} on Callback. Open it on your phone:`;
+export function ShareButton({ url, name, familyName, from, own = false }: ShareProps) {
+  const text = inviteMessage(name, from, own);
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   if (!canShare) {

@@ -320,6 +320,14 @@
     }
   }
 
+  // Where the organiser's own tick is, for everyone else: they say yes themselves.
+  .onb-choice-note {
+    align-self: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+
   .onb-add {
     display: flex;
     align-items: center;

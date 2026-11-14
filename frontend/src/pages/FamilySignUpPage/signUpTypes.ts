@@ -9,6 +9,9 @@ export type SignUpMember = {
   relationship?: string;
   voiceStatus: MemberView['voice_status'];
   phoneOnline?: boolean;
+  isOrganiser: boolean;
+  /** They have agreed to a copy of their voice, so a sample may be recorded for them. */
+  voiceAllowed: boolean;
 };
 
 const AVATAR_COLORS = ['#e76d52', '#1d8d64', '#213d52', '#b77a15', '#6b5ca5', '#2f7ea8'];

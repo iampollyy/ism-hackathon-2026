@@ -90,11 +90,15 @@ input[type="submit"] {
   cursor: pointer;
 }
 
-input:focus,
-input:active,
-button:focus,
-button:active {
+/* No ring for a mouse click or a tap, but always one for the keyboard (WCAG 2.4.7). */
+:focus:not(:focus-visible) {
   outline: none;
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 3px solid var(--focus, var(--navy-soft, #213d52));
+  outline-offset: 2px;
 }
 
 button::-moz-focus-inner {
