@@ -14,6 +14,9 @@ at once; the check runs in the background (services.run_in_background):
   the laptop's live stream and GET /api/calls/{id} both carry it. The last
   stored `risk` event is what the next check builds on, so within a call the
   signals only grow and the level never goes down.
+- Right after storing it, services/shield.on_risk alerts the family, once,
+  if the call is a shield call and the event warns (track 3). Training
+  drills never alert.
 
 Welcome and family-line calls are never checked. Settings.risk_check_enabled
 switches it off (the test suite does, except tests/test_risk.py).
@@ -31,7 +34,7 @@ from app.agents import risk
 from app.config import get_settings
 from app.db import new_session
 from app.models import Call
-from app.services import run_in_background
+from app.services import run_in_background, shield
 
 log = logging.getLogger("app.live_risk")
 
@@ -115,7 +118,9 @@ async def check_once(call_id: str) -> dict[str, Any] | None:
         if index is None or (isinstance(last_checked, int) and index <= last_checked):
             return None
         data = await risk.check_risk(turns, previous)
-        return events.publish(call_id, "risk", data)["data"]
+        stored = events.publish(call_id, "risk", data)["data"]
+        shield.on_risk(call_id, stored)  # a shield call alerts the family once; never raises
+        return stored
     except Exception:
         log.exception("the risk check for %s failed", call_id)
         return None

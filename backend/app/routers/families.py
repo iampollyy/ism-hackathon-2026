@@ -1,19 +1,27 @@
-"""Families: create one, read the family page, the health check, and a
-member's later practice tick (POST /api/members/{id}/consent)."""
+"""Families: create one, read the family page, the health check, and the
+practice switch after sign-up (POST /api/members/{id}/consent).
+
+Consent rules for a family with an owner (made while logged in): only the
+person themselves can say yes to practice calls, on their invite page or
+on the welcome call. The organiser's sign-up form counts only for the
+organiser's own row, and the organiser's switch can only turn practice
+calls off for someone else (source `organiser`). A family without an owner
+(tests, scripts) keeps the old ticks. Who may call these at all is
+services/access.py's job."""
 
 import json
 from typing import Any
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import and_, not_, select
 from sqlalchemy.orm import Session
 
 from app import schemas
 from app.config import get_settings
 from app.db import get_db, now_iso, parse_time, utcnow
 from app.ids import new_family_id, new_member_id
-from app.models import Call, Consent, Family, Member, Message, ReadinessSnapshot
-from app.services import consent, limits
+from app.models import Account, Call, Consent, Family, Member, MemberJoin, Message, ReadinessSnapshot
+from app.services import accounts, consent, limits
 
 router = APIRouter(tags=["families"])
 
@@ -31,29 +39,37 @@ def phone_link(member_id: str) -> str:
 
 
 @router.post("/families", status_code=201, response_model=schemas.FamilyCreated)
-async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db)) -> schemas.FamilyCreated:
+async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db),
+                        account: Account | None = Depends(accounts.optional_account)) -> schemas.FamilyCreated:
+    """Works without a log-in; with one, the family also belongs to the
+    account (family_owners, track 1), and only the organiser's own practice
+    tick counts: everyone else agrees on their invite page or the welcome
+    call."""
     limits.check(db, "family")
     now = now_iso()
     family = Family(id=new_family_id(), name=body.name.strip(), safe_word_set=body.safe_word_set, created_at=now)
     db.add(family)
     links: list[schemas.MemberLink] = []
     for item in body.members:
+        ticked = item.consent_practice and (account is None or item.is_organiser)
         member = Member(
             id=new_member_id(),
             family_id=family.id,
             name=item.name.strip(),
             relationship=item.relationship.strip(),
             is_organiser=item.is_organiser,
-            consent_practice_at=now if item.consent_practice else None,
+            consent_practice_at=now if ticked else None,
             voice_status="none",
             created_at=now,
         )
         db.add(member)
         db.flush()  # the member row must exist before its consent row
-        if item.consent_practice:
+        if ticked:
             db.add(Consent(member_id=member.id, kind="practice", source="manual",
                            evidence="sign-up tick", created_at=now))
         links.append(schemas.MemberLink(id=member.id, name=member.name, phone_link=phone_link(member.id)))
+    if account is not None:
+        accounts.claim_family(db, account, family.id)
     db.commit()
     return schemas.FamilyCreated(family_id=family.id, members=links)
 
@@ -61,18 +77,30 @@ async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db
 @router.post("/members/{member_id}/consent", response_model=schemas.Ok)
 async def set_practice_consent(member_id: str, body: schemas.ConsentUpdate,
                                db: Session = Depends(get_db)) -> schemas.Ok:
-    """The member's own practice tick after sign-up. True gives consent
-    (again, for example after a no on the welcome call); false withdraws it.
-    A change writes a consents row with source manual; the same answer
-    twice writes nothing more."""
+    """The practice switch after sign-up. True gives consent (again, for
+    example after a no on the welcome call); false withdraws it. A change
+    writes a consents row; the same answer twice writes nothing more.
+
+    In a family with an owner the switch is the organiser's, so for anyone
+    but the organiser's own row it only switches off (source `organiser`,
+    the evidence names the organiser); a yes is 403 member_must_agree,
+    because only the person can agree, from their own link. Without an
+    owner it works both ways with source manual."""
     member = db.get(Member, member_id)
     if member is None:
         raise schemas.ApiError(404, "not_found", "No member with this id.")
+    by_organiser = not member.is_organiser and accounts.family_owner(db, member.family_id) is not None
     if body.consent_practice:
+        if by_organiser:
+            raise schemas.ApiError(403, "member_must_agree",
+                                   f"Only {member.name} can say yes, from their own link.")
         if member.opted_out_at is not None:
             raise schemas.ApiError(409, "consent_missing", f"{member.name} has left Callback.")
         if member.consent_practice_at is None:
             consent.give_practice(db, member, "manual", "consent tick")
+    elif by_organiser:
+        owner = accounts.family_owner_name(db, member.family_id) or "the organiser"
+        consent.withdraw_practice(db, member, "organiser", f"switched off by {owner}")
     else:
         consent.withdraw_practice(db, member, "manual", "consent tick removed")
     db.commit()
@@ -80,12 +108,18 @@ async def set_practice_consent(member_id: str, body: schemas.ConsentUpdate,
 
 
 @router.get("/families/{family_id}", response_model=schemas.FamilyView)
-async def get_family(family_id: str, db: Session = Depends(get_db)) -> schemas.FamilyView:
+async def get_family(family_id: str, db: Session = Depends(get_db),
+                     account: Account | None = Depends(accounts.optional_account)) -> schemas.FamilyView:
+    """A family with an owner is only the owner's to read
+    (services/access.py answers anyone else before this runs); one without
+    an owner is readable by id. can_see_invites still keeps invite links
+    and phone numbers to the owner's session."""
     family = db.get(Family, family_id)
     if family is None:
         raise schemas.ApiError(404, "not_found", "No family with this id.")
     members = list(db.scalars(select(Member).where(Member.family_id == family_id).order_by(Member.created_at)))
-    views = [member_view(db, member) for member in members]
+    invites = accounts.can_see_invites(db, family_id, account)
+    views = [member_view(db, member, invites=invites) for member in members]
     return schemas.FamilyView(
         id=family.id,
         name=family.name,
@@ -182,11 +216,30 @@ def is_phone_online(last_seen_at: str | None) -> bool:
     return seen is not None and (utcnow() - seen).total_seconds() <= PHONE_ONLINE_SECONDS
 
 
-def member_view(db: Session, member: Member) -> schemas.MemberView:
+def voice_copy_allowed(db: Session, member: Member) -> bool:
+    """consent.clone: whether the person allowed a copy of their voice,
+    by their own current tick ("my voice may be cloned from my welcome
+    call", joining.clone_from_call_given). The organiser counts as yes:
+    they are the one at the laptop. Never for someone who left."""
+    if member.opted_out_at is not None:
+        return False
+    if member.is_organiser:
+        return True
+    from app.services import joining  # joining imports this module
+
+    return joining.clone_from_call_given(db, member)
+
+
+def member_view(db: Session, member: Member, invites: bool = False) -> schemas.MemberView:
+    """invites: fill invite_link and phone_number (the reader may see them:
+    accounts.can_see_invites). An opted-out member's phone number is never
+    shown. consent.clone is the person's own voice tick (voice_copy_allowed),
+    not whether a voice exists yet: voice_ready says that."""
     profile = _as_dict(_load_json(member.profile_json))
     plan = _as_dict(_load_json(member.plan_json))
     opted_out = member.opted_out_at is not None
     voice_ready = member.voice_status == "ready" and member.voice_id is not None and not opted_out
+    joined = db.get(MemberJoin, member.id)
     return schemas.MemberView(
         id=member.id,
         name=member.name,
@@ -194,7 +247,7 @@ def member_view(db: Session, member: Member) -> schemas.MemberView:
         is_organiser=member.is_organiser,
         phone_link=phone_link(member.id),
         consent=schemas.ConsentView(
-            clone=member.consent_clone_at is not None and not opted_out,
+            clone=voice_copy_allowed(db, member),
             practice=member.consent_practice_at is not None and not opted_out,
         ),
         voice_ready=voice_ready,
@@ -204,6 +257,10 @@ def member_view(db: Session, member: Member) -> schemas.MemberView:
         weak_spot=plan.get("weak_spot") or profile.get("weak_spot"),
         said=profile.get("said"),
         plan=plan_view(plan) if plan else None,
+        invite_link=f"/join/{member.id}" if invites else "",
+        joined=joined is not None,
+        joined_at=joined.joined_at if joined else None,
+        phone_number=joined.phone_number if joined and invites and not opted_out else None,
     )
 
 
@@ -218,10 +275,22 @@ def _call_text(call: Call, names: dict[str, str]) -> str:
     return f"Practice for {target}: {scenario}" + (f", in {voice}'s voice" if voice else "")
 
 
+def organisers_surprise(family_id: str):
+    """A SQL condition true for a call that is still a surprise for the
+    organiser: scheduled for an is_organiser member. The dashboard's reader
+    is the organiser, so their own drill's time and story stay hidden
+    until it rings."""
+    organisers = select(Member.id).where(Member.family_id == family_id, Member.is_organiser.is_(True))
+    return and_(Call.status == "scheduled", Call.target_member_id.in_(organisers))
+
+
 def week_items(db: Session, family_id: str, names: dict[str, str]) -> list[schemas.WeekItem]:
+    """The family page's This week: the latest calls and messages, newest
+    first. The organiser's own scheduled drill is left out (organisers_surprise)."""
     items: list[schemas.WeekItem] = []
     calls = db.scalars(
-        select(Call).where(Call.family_id == family_id).order_by(Call.created_at.desc()).limit(WEEK_ITEMS)
+        select(Call).where(Call.family_id == family_id, not_(organisers_surprise(family_id)))
+        .order_by(Call.created_at.desc()).limit(WEEK_ITEMS)
     )
     for call in calls:
         items.append(schemas.WeekItem(

@@ -20,6 +20,8 @@ Conventions:
     keys from schemas.READINESS_KEYS; total is their sum, max is 10.
 
 Added after backend.md: push_subscriptions (Web Push, services/push.py).
+Track 3 (docs/full-app/protection.md): protection_settings,
+member_drill_settings, call_shield, drill_calls; messages.kind gains `alert`.
 """
 
 from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text, UniqueConstraint
@@ -138,7 +140,7 @@ class Message(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), nullable=False, index=True)
-    kind: Mapped[str] = mapped_column(String, nullable=False)  # weekly | callback_notice | reminder
+    kind: Mapped[str] = mapped_column(String, nullable=False)  # weekly | callback_notice | reminder | alert
     text: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
     read_at: Mapped[str | None] = mapped_column(String)
@@ -185,4 +187,196 @@ class ModelRun(Base):
     latency_ms: Mapped[int | None] = mapped_column(Integer)
     input_tokens: Mapped[int | None] = mapped_column(Integer)
     output_tokens: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+# ---------------------------------------------------------------- billing (Saturday, demo mode)
+
+
+class FamilyPlan(Base):
+    """The family's plan. Demo mode: choosing a plan never takes a payment
+    and no card details exist anywhere. No row: a 30-day trial counted from
+    the family's created_at."""
+
+    __tablename__ = "family_plans"
+
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), primary_key=True)
+    plan: Mapped[str] = mapped_column(String, nullable=False)  # trial | family_monthly | family_yearly | bank
+    status: Mapped[str] = mapped_column(String, nullable=False)  # trialing | active | canceled
+    bank_code: Mapped[str | None] = mapped_column(String)
+    started_at: Mapped[str] = mapped_column(String, nullable=False)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class WaitlistEntry(Base):
+    """Sign-ups from the landing page: families wanting early access, and
+    banks wanting to talk. Added on Saturday (routers/waitlist.py)."""
+
+    __tablename__ = "waitlist"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String, nullable=False)  # family | bank
+    organisation: Mapped[str | None] = mapped_column(String)
+    message: Mapped[str | None] = mapped_column(Text)
+    source: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+# ---------------------------------------------------------------- track 1: organiser accounts, invites and joining
+# New tables only (the server's SQLite file already exists; create_all adds
+# tables, never columns). The rules are in docs/full-app/track1.md.
+
+
+class Account(Base):
+    """An organiser's log-in. email is stored lower-cased; password_hash is
+    services/accounts.hash_password's text (scrypt with its parameters)."""
+
+    __tablename__ = "accounts"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)  # acc_...
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class AuthSession(Base):
+    """A logged-in browser. Only the sha256 of the cookie's token is kept."""
+
+    __tablename__ = "sessions"
+
+    token_hash: Mapped[str] = mapped_column(String, primary_key=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), nullable=False, index=True)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    expires_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class FamilyOwner(Base):
+    """Which account created a family (POST /api/families with a session)."""
+
+    __tablename__ = "family_owners"
+
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), primary_key=True)
+    account_id: Mapped[str] = mapped_column(ForeignKey("accounts.id"), nullable=False, index=True)
+
+
+class LoginFailure(Base):
+    """One wrong log-in for an email (lower-cased), for the 429 after too many."""
+
+    __tablename__ = "login_failures"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class MemberJoin(Base):
+    """A member who opened their invite link (/join/{member_id}) and joined.
+    Joining again updates phone_number; joined_at stays the first join's time."""
+
+    __tablename__ = "member_joins"
+
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), primary_key=True)
+    joined_at: Mapped[str] = mapped_column(String, nullable=False)
+    phone_number: Mapped[str | None] = mapped_column(String)
+
+
+# ---------------------------------------------------------------- track 2: the member's voice from the welcome call
+
+
+class VoiceSample(Base):
+    """The member's own side of one welcome call, recorded by the phone page
+    and uploaded when the call ends, and what became of it (the rules are in
+    services/voice_sample.py). One row per welcome call.
+
+    state: none (nothing kept) | waiting_for_consent | cloning | ready | failed.
+    path is the stored upload while it may still be used, then None."""
+
+    __tablename__ = "voice_samples"
+
+    call_id: Mapped[str] = mapped_column(ForeignKey("calls.id"), primary_key=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), nullable=False, index=True)
+    state: Mapped[str] = mapped_column(String, nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
+    path: Mapped[str | None] = mapped_column(String)
+    speech_seconds: Mapped[float | None] = mapped_column(Float)  # the sound left after cleaning
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+# ---------------------------------------------------------------- track 3: protection, drills, the Shield
+# New tables only (create_all adds them to an existing database file); see
+# docs/full-app/protection.md.
+
+
+class ProtectionSettings(Base):
+    """A family's protection: random drills and the Shield. No row means the
+    defaults below (drills off, the Shield on)."""
+
+    __tablename__ = "protection_settings"
+
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # random drills
+    drills_per_week: Mapped[int] = mapped_column(Integer, nullable=False, default=2)  # 1 to 7
+    window_start_hour: Mapped[int] = mapped_column(Integer, nullable=False, default=10)  # local, inclusive
+    window_end_hour: Mapped[int] = mapped_column(Integer, nullable=False, default=19)  # local, exclusive
+    timezone: Mapped[str] = mapped_column(String, nullable=False, default="Europe/Vilnius")
+    shield_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_at: Mapped[str | None] = mapped_column(String)
+
+
+class MemberDrillSettings(Base):
+    """One member's own switch for random drills. No row means not paused."""
+
+    __tablename__ = "member_drill_settings"
+
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), primary_key=True)
+    paused: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[str | None] = mapped_column(String)
+
+
+class CallShield(Base):
+    """Marks a practice call as a shield call: a simulated scam call during
+    which the Shield warns the person and alerts the family by itself.
+    alerted_at is set once, when the family is alerted."""
+
+    __tablename__ = "call_shield"
+
+    call_id: Mapped[str] = mapped_column(ForeignKey("calls.id"), primary_key=True)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    alerted_at: Mapped[str | None] = mapped_column(String)
+    alert_level: Mapped[str | None] = mapped_column(String)  # the risk level that set off the alert
+
+
+class DrillCall(Base):
+    """A practice call made by the random-drill pass or a surprise drill, so
+    a pause or a change of the drill settings can cancel the pending ones."""
+
+    __tablename__ = "drill_calls"
+
+    call_id: Mapped[str] = mapped_column(ForeignKey("calls.id"), primary_key=True)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, index=True)
+    member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), nullable=False, index=True)
+    source: Mapped[str] = mapped_column(String, nullable=False)  # random | surprise
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+    # The plan step the drill used, {"scenario", "when"}, so cancelling the
+    # drill can set it back to planned; null when no plan step was used.
+    plan_step_json: Mapped[str | None] = mapped_column(Text)
+
+
+# ---------------------------------------------------------------- track 4: review, learning, news
+
+
+class NewsRefresh(Base):
+    """One news refresh a family started (POST /api/families/{id}/news/refresh).
+    Written and committed before Firecrawl and the digest job run, so at most
+    one build runs per settings.news_refresh_seconds for all families together,
+    even while one is still running (services/news.py)."""
+
+    __tablename__ = "news_refreshes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), nullable=False, index=True)
+    outcome: Mapped[str | None] = mapped_column(String)  # refreshed | no_new_digest | failed; None while it runs
     created_at: Mapped[str] = mapped_column(String, nullable=False)

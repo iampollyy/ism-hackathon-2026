@@ -1,0 +1,463 @@
+// One person's page. Shared review styles are in DrillsPage/review.scss.
+
+.rv-member {
+  --rv-had: #a9d8c3;
+
+  .rv-header__title .avatar-lg {
+    width: 68px;
+    height: 68px;
+    font-size: 1.25rem;
+    flex: none;
+  }
+
+  // Wide: readiness, lessons and drills on the left, the side panels on the
+  // right. The side spans both rows, so a tall side never stretches readiness.
+  .rv-member__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.8fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "top side"
+      "main side";
+    gap: 20px;
+    align-items: start;
+  }
+
+  .rv-member__top { grid-area: top; min-width: 0; }
+  .rv-member__side { grid-area: side; }
+  .rv-member__main { grid-area: main; }
+
+  .rv-member__main,
+  .rv-member__side {
+    display: grid;
+    gap: 20px;
+    min-width: 0;
+  }
+
+  .rv-muted {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+    font-size: 0.92rem;
+  }
+
+  // ---------------------------------------------------------------- readiness
+
+  .rv-readiness__legend {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    gap: 14px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+
+    li { display: inline-flex; align-items: center; gap: 7px; }
+    i { width: 14px; height: 8px; border-radius: 3px; }
+    .is-had { background: var(--rv-had); }
+    .is-gained { background: var(--good); }
+    .is-dropped { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rv-had); }
+  }
+
+  .rv-readiness__total {
+    display: grid;
+    gap: 12px;
+    padding-bottom: 20px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rv-readiness__score {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-variant-numeric: tabular-nums;
+
+    strong {
+      font-weight: 600;
+      font-size: 3.4rem;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      color: var(--good);
+    }
+
+    small {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+  }
+
+  .rv-readiness__total.is-zero .rv-readiness__score strong { color: var(--muted); }
+
+  .rv-readiness__before {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: -0.03em;
+  }
+
+  .rv-readiness__arrow {
+    font-size: 1.5rem;
+    color: var(--muted);
+  }
+
+  .rv-readiness__sentence {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+  }
+
+  .rv-readiness__items {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+
+    li {
+      display: grid;
+      grid-template-columns: minmax(150px, 1fr) minmax(120px, 1.2fr) 86px;
+      align-items: center;
+      gap: 16px;
+      padding: 11px 0;
+    }
+
+    li + li { border-top: 1px solid rgba(53, 42, 124, 0.06); }
+  }
+
+  .rv-readiness__label { font-weight: 600; font-size: 0.95rem; }
+
+  .rv-readiness__value {
+    text-align: right;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.92rem;
+
+    strong { color: var(--ink); font-size: 1.05rem; }
+    small { font-size: 0.8rem; }
+  }
+
+  .rv-meter {
+    display: flex;
+    gap: 5px;
+  }
+
+  .rv-meter__seg {
+    flex: 1;
+    height: 12px;
+    border-radius: 4px;
+    background: rgba(53, 42, 124, 0.07);
+    animation: rv-seg 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+    &.is-had { background: var(--rv-had); }
+    &.is-gained { background: var(--good); }
+    &.is-dropped { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rv-had); }
+  }
+
+  .rv-meter--big {
+    gap: 6px;
+
+    .rv-meter__seg { height: 18px; border-radius: 6px; }
+  }
+
+  // ---------------------------------------------------------------- lessons
+
+  .rv-lessons {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+  }
+
+  .rv-lesson {
+    display: grid;
+    gap: 8px;
+    padding: 16px 0;
+
+    & + & { border-top: 1px solid var(--line); }
+    &:first-child { padding-top: 4px; }
+
+    p {
+      margin: 0;
+      max-width: 70ch;
+      font-size: 1.02rem;
+      line-height: 1.55;
+      text-wrap: pretty;
+    }
+
+    .rv-link { width: fit-content; }
+  }
+
+  .rv-lesson__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    time { color: var(--muted); font-size: 0.85rem; font-weight: 500; }
+  }
+
+  // ---------------------------------------------------------------- the record
+
+  .rv-record__numbers {
+    margin: 0 0 14px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+
+    div {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(53, 42, 124, 0.04);
+    }
+
+    dt { color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+
+    dd {
+      margin: 4px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .is-safe { background: var(--good-soft); }
+    .is-safe dd { color: var(--good); }
+    // A streak is good news: warm amber, never the orange-red kept for scams.
+    .is-streak { background: var(--rv-tip-soft); }
+    .is-streak dd { color: var(--rv-yellow-ink); }
+    .is-streak dd svg { color: #d08a12; }
+  }
+
+  .rv-record__last {
+    margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .rv-record__none { margin-bottom: 14px; }
+
+  .rv-weak.is-unknown {
+    background: rgba(53, 42, 124, 0.04);
+    color: var(--muted);
+
+    h3 { color: var(--muted); }
+  }
+
+  .rv-weak {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 16px;
+    // The tip tone, not the scam red: a weak spot is where to practise next.
+    background: var(--rv-tip-soft);
+    color: var(--rv-yellow-ink);
+
+    svg { flex: none; margin-top: 2px; }
+
+    h3 {
+      margin: 0 0 4px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--rv-yellow-ink);
+    }
+
+    p { margin: 0; color: var(--ink); line-height: 1.5; font-size: 0.95rem; }
+  }
+
+  // ---------------------------------------------------------------- next drill
+
+  .rv-next__when {
+    margin: 0 0 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .rv-next__surprise {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+    margin-top: 14px;
+
+    p { margin: 0; font-size: 0.84rem; }
+  }
+
+  .rv-next__started {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(41, 33, 82, 0.07);
+    animation: rv-rise 240ms cubic-bezier(0.16, 1, 0.3, 1);
+
+    p { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--ink); }
+    strong { font-weight: 650; }
+  }
+
+  .rv-next__last {
+    margin: 12px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  .rv-next__week {
+    margin: 12px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.86rem;
+    font-weight: 600;
+
+    small {
+      display: block;
+      margin-top: 2px;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+  }
+
+  // ---------------------------------------------------------------- consent
+
+  .rv-facts {
+    margin: 0;
+    display: grid;
+
+    > div {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      min-height: 46px;
+    }
+
+    > div + div { border-top: 1px solid rgba(53, 42, 124, 0.06); }
+
+    dt {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    dd {
+      margin: 0;
+      font-weight: 650;
+      font-size: 0.92rem;
+      text-align: right;
+
+      &.is-good { color: var(--good); }
+    }
+  }
+
+  .rv-form-error {
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--rv-tip-soft);
+    color: var(--rv-yellow-ink);
+    font-weight: 600;
+    font-size: 0.88rem;
+  }
+
+  .rv-consent__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(53, 42, 124, 0.06);
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  .rv-consent__ask {
+    display: grid;
+    justify-items: start;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(41, 33, 82, 0.06);
+
+    p { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--ink); }
+    strong { font-weight: 650; }
+
+    .copy-button {
+      gap: 8px;
+      padding: 0.55rem 0.85rem;
+      border-radius: 12px;
+      font-size: 0.86rem;
+      white-space: nowrap;
+    }
+  }
+
+  .rv-consent__note { margin-top: 12px; font-size: 0.84rem; }
+}
+
+@keyframes rv-seg {
+  from { transform: scaleX(0.2); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+// One column: readiness, then the record, next drill and consent, then the
+// lessons and drills (the actions and consent are not left at the bottom).
+@media (max-width: 1080px) {
+  .rv-member .rv-member__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      "top"
+      "side"
+      "main";
+  }
+}
+
+// Two side panels next to each other while there is room for it.
+@media (min-width: 720px) and (max-width: 1080px) {
+  .rv-member .rv-member__side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+
+    .rv-consent { grid-column: 1 / -1; }
+  }
+}
+
+@media (max-width: 640px) {
+  .rv-member {
+    .rv-readiness__items li {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas: "label value" "meter meter";
+      gap: 8px 12px;
+    }
+
+    .rv-readiness__label { grid-area: label; }
+    .rv-readiness__items .rv-meter { grid-area: meter; }
+    .rv-readiness__value { grid-area: value; }
+    .rv-readiness__score strong { font-size: 2.8rem; }
+    .rv-header__title { align-items: flex-start; }
+    .rv-header__title .avatar-lg { width: 52px; height: 52px; font-size: 1rem; }
+  }
+}

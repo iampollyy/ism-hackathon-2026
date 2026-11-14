@@ -35,7 +35,8 @@ TOOLS = {tool["name"]: tool for tool in json.loads((VOICE_AGENTS / "tools.json")
 
 KINDS = ("welcome", "practice", "family_line")
 # Which client tools go on which agent (voice_agents/README.md, "Settings per agent").
-CLIENT_TOOLS = {"welcome": {"consent_result"}, "practice": {"mark_tactic", "practice_result"}, "family_line": set()}
+CLIENT_TOOLS = {"welcome": {"consent_result", "voice_consent_result"}, "practice": {"mark_tactic", "practice_result"},
+                "family_line": set()}
 VOICES = ("police", "bank", "nurse")
 VARIABLE = re.compile(r"\{\{\s*([A-Za-z0-9_]+)\s*\}\}")
 

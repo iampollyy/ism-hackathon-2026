@@ -1,0 +1,768 @@
+// The organiser's review screens: drills, activity and one person's page.
+// Built on the brand tokens in index.scss (--ink, --muted, --line, --navy,
+// --accent for scams and tactics, --good for the safe thing, --warning);
+// everything is scoped to .rv.
+
+.rv {
+  // The risk light's colours, as on the live call screen: red is a true red,
+  // so it never reads as the orange-red accent used for tactics.
+  --rv-red: #d8402f;
+  --rv-red-ink: #a8301f;
+  --rv-yellow-ink: #8a5c08;
+  --rv-tip-soft: rgba(245, 185, 77, 0.2);
+  --rv-quiet: rgba(53, 42, 124, 0.06);
+  --rv-row-hover: rgba(53, 42, 124, 0.035);
+
+  display: grid;
+  gap: 20px;
+  align-content: start;
+  max-width: 1180px;
+  color: var(--ink);
+
+  ::selection { background: rgba(19, 134, 83, 0.22); }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 3px solid rgba(224, 71, 94, 0.6);
+    outline-offset: 2px;
+  }
+
+  .rv-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .rv-spin { animation: rv-spin 1.1s linear infinite; }
+
+  .rv-button { gap: 8px; padding: 0.72rem 1.05rem; font-size: 0.94rem; }
+
+  // ---------------------------------------------------------------- header
+
+  .rv-header {
+    display: grid;
+    gap: 14px;
+    padding-top: 6px;
+  }
+
+  .rv-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.92rem;
+    padding: 6px 2px;
+    transition: color 0.18s ease;
+
+    &:hover { color: var(--ink); }
+    svg { transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+    &:hover svg { transform: translateX(-3px); }
+  }
+
+  .rv-header__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .rv-header__title {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-width: 0;
+
+    h1 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: clamp(2.2rem, 3.2vw, 3rem);
+      line-height: 1.02;
+      letter-spacing: -0.035em;
+      text-wrap: balance;
+    }
+  }
+
+  .rv-lead {
+    margin: 10px 0 0;
+    max-width: 64ch;
+    color: var(--muted);
+    font-size: 1.02rem;
+    line-height: 1.55;
+
+    strong { color: var(--ink); font-weight: 650; }
+  }
+
+  .rv-header__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  // ---------------------------------------------------------------- panels
+
+  .rv-panel {
+    container-type: inline-size;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 22px 22px;
+    min-width: 0;
+  }
+
+  .rv-panel__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+
+    h2 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 1.3rem;
+      letter-spacing: -0.025em;
+    }
+
+    p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+  }
+
+  .rv-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--navy-soft);
+    font-weight: 650;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    text-decoration-color: rgba(41, 33, 82, 0.25);
+    text-underline-offset: 4px;
+    transition: text-decoration-color 0.18s ease, color 0.18s ease;
+
+    &:hover { color: var(--ink); text-decoration-color: currentColor; }
+  }
+
+  .rv-stale {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--rv-tip-soft);
+    color: var(--rv-yellow-ink);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  // ---------------------------------------------------------------- toolbar and filter
+
+  .rv-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px 24px;
+    flex-wrap: wrap;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rv-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .rv-filter__chip {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+
+    &:hover { border-color: rgba(53, 42, 124, 0.28); transform: translateY(-1px); }
+    &:active { transform: translateY(0); }
+
+    &.is-on {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+
+      .rv-filter__count { background: rgba(255, 255, 255, 0.16); color: #fff; }
+    }
+  }
+
+  .rv-filter__dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  .rv-filter__count {
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--rv-quiet);
+    color: var(--muted);
+    font-size: 0.76rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
+  // ---------------------------------------------------------------- the tally
+
+  .rv-tally {
+    display: grid;
+    gap: 8px;
+    min-width: min(100%, 300px);
+  }
+
+  .rv-tally__bar {
+    display: flex;
+    gap: 3px;
+    height: 8px;
+
+    span {
+      border-radius: 999px;
+      min-width: 8px;
+      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  }
+
+  .rv-tally__legend {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    color: var(--muted);
+    font-size: 0.84rem;
+    font-weight: 500;
+
+    li { display: inline-flex; align-items: center; gap: 7px; }
+    span { width: 9px; height: 9px; border-radius: 3px; }
+  }
+
+  .is-safe { --tone: var(--good); }
+  .is-tip { --tone: var(--warning); }
+  .is-quiet { --tone: rgba(53, 42, 124, 0.22); }
+  .rv-tally .is-shield { --tone: var(--navy); }
+  .rv-tally__bar span,
+  .rv-tally__legend span { background: var(--tone); }
+
+  // ---------------------------------------------------------------- groups
+
+  .rv-groups { display: grid; gap: 26px; padding-top: 20px; }
+
+  .rv-group {
+    display: grid;
+    gap: 6px;
+
+    h2 {
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 1.22rem;
+      letter-spacing: -0.02em;
+    }
+  }
+
+  .rv-group__head {
+    display: flex;
+    align-items: baseline;
+    gap: 6px 14px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+
+    p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+  }
+
+  // The tint reaches 7px past the rows on each side; padding plus border
+  // give those 7px back, so the rows' columns line up with the other groups.
+  .rv-group--now {
+    padding: 16px 6px 8px;
+    margin: 0 -7px;
+    border-radius: 20px;
+    background: rgba(224, 71, 94, 0.06);
+    border: 1px solid rgba(224, 71, 94, 0.18);
+
+    > h2 { padding-inline: 8px; }
+  }
+
+  .rv-live-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: rv-live 1.6s ease-out infinite;
+  }
+
+  // ---------------------------------------------------------------- a drill row
+
+  $drill-cols: minmax(130px, 160px) minmax(0, 1fr) minmax(220px, 280px) 84px 20px;
+  $drill-cols-nowho: minmax(0, 1fr) minmax(220px, 280px) 84px 20px;
+
+  .rv-drill-head {
+    display: grid;
+    grid-template-columns: $drill-cols;
+    gap: 18px;
+    padding: 8px 14px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+
+    &.no-who { grid-template-columns: $drill-cols-nowho; }
+  }
+
+  .rv-drill-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+  }
+
+  .rv-drill + .rv-drill { border-top: 1px solid var(--line); }
+
+  .rv-drill__link {
+    display: grid;
+    grid-template-columns: $drill-cols;
+    grid-template-areas:
+      "who call outcome risk open"
+      ". lesson lesson lesson .";
+    gap: 6px 18px;
+    align-items: start;
+    padding: 16px 14px;
+    border-radius: 16px;
+    transition: background 0.18s ease;
+
+    &:hover { background: var(--rv-row-hover); }
+    &:hover .rv-drill__open { color: var(--ink); transform: translateX(2px); }
+  }
+
+  .rv-drill.no-who .rv-drill__link {
+    grid-template-columns: $drill-cols-nowho;
+    grid-template-areas:
+      "call outcome risk open"
+      "lesson lesson lesson .";
+  }
+
+  .rv-drill__who {
+    grid-area: who;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+
+    strong { display: block; font-weight: 650; font-size: 0.98rem; }
+    small { display: block; color: var(--muted); font-size: 0.82rem; text-transform: capitalize; }
+  }
+
+  .rv-drill__call {
+    grid-area: call;
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .rv-drill__title {
+    font-weight: 650;
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .rv-drill__meta {
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+
+  .rv-drill__tactics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .tactic-badge {
+    padding: 4px 9px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: #a94f3e;
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .rv-drill__outcome {
+    grid-area: outcome;
+    display: grid;
+    justify-items: start;
+    gap: 5px;
+
+    small {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+  }
+
+  .rv-drill__callback {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--good) !important;
+    font-weight: 600;
+  }
+
+  // A Shield demo call: the same navy as the Shield on the live call screen.
+  .rv-shield-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 2px 8px 2px 6px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    vertical-align: 2px;
+    white-space: nowrap;
+  }
+
+  .rv-drill__shield {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--navy) !important;
+    font-weight: 600;
+  }
+
+  .rv-outcome {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    font-weight: 650;
+    font-size: 0.88rem;
+    line-height: 1.2;
+    background: var(--rv-quiet);
+    color: var(--navy-soft);
+
+    svg { flex: none; }
+
+    &.is-safe { background: var(--good-soft); color: var(--good); }
+    &.is-tip { background: var(--rv-tip-soft); color: var(--rv-yellow-ink); }
+    &.is-unanswered { color: var(--muted); }
+    &.is-upcoming { background: rgba(41, 33, 82, 0.08); color: var(--navy-soft); }
+    &.is-live { background: var(--accent-soft); color: #b0503d; }
+    &.is-live svg { animation: rv-spin 2.4s linear infinite; }
+  }
+
+  .rv-drill__risk {
+    grid-area: risk;
+    padding-top: 2px;
+  }
+
+  .rv-drill__dash { color: var(--muted); }
+
+  .rv-drill__open {
+    grid-area: open;
+    align-self: center;
+    color: rgba(53, 42, 124, 0.35);
+    transition: color 0.18s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .rv-drill__lesson {
+    grid-area: lesson;
+    margin: 4px 0 0;
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    max-width: 78ch;
+    color: #2e255c;
+    font-size: 0.92rem;
+    line-height: 1.5;
+
+    svg { flex: none; margin-top: 3px; color: var(--good); }
+  }
+
+  .rv-drill.is-tip .rv-drill__lesson svg { color: var(--warning); }
+
+  // ---------------------------------------------------------------- the small risk light
+
+  .rv-lamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rv-lamp__housing {
+    display: inline-grid;
+    gap: 3px;
+    padding: 4px;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #231c45 0%, #140f2b 100%);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45), 0 3px 8px rgba(53, 42, 124, 0.16);
+  }
+
+  .rv-lamp__bulb {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+
+    &.is-red { background: #46201c; }
+    &.is-yellow { background: #4a3a17; }
+    &.is-green { background: #163a2d; }
+  }
+
+  .rv-lamp--red .is-red { background: radial-gradient(circle at 35% 30%, #ff9c8c 0%, var(--rv-red) 60%); box-shadow: 0 0 8px 1px rgba(216, 64, 47, 0.6); }
+  .rv-lamp--yellow .is-yellow { background: radial-gradient(circle at 35% 30%, #ffe7a6 0%, var(--warning) 60%); box-shadow: 0 0 8px 1px rgba(245, 185, 77, 0.6); }
+  .rv-lamp--green .is-green { background: radial-gradient(circle at 35% 30%, #8ff0c4 0%, var(--good) 60%); box-shadow: 0 0 8px 1px rgba(19, 134, 83, 0.55); }
+
+  .rv-lamp__word {
+    font-size: 0.82rem;
+    font-weight: 650;
+    color: var(--muted);
+  }
+
+  .rv-lamp--red .rv-lamp__word { color: var(--rv-red-ink); }
+  .rv-lamp--yellow .rv-lamp__word { color: var(--rv-yellow-ink); }
+  .rv-lamp--green .rv-lamp__word { color: var(--good); }
+
+  // ---------------------------------------------------------------- states
+
+  .rv-empty {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 30px 8px 12px;
+
+    h3 {
+      margin: 4px 0 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 1.4rem;
+      letter-spacing: -0.02em;
+    }
+  }
+
+  .rv-empty--compact {
+    padding: 22px 4px 4px;
+
+    h3 { font-size: 1.15rem; }
+  }
+
+  .rv-empty__icon {
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
+    background: var(--good-soft);
+    color: var(--good);
+  }
+
+  .rv-empty__text {
+    max-width: 66ch;
+    color: var(--muted);
+    line-height: 1.6;
+
+    p { margin: 0 0 10px; }
+  }
+
+  .rv-empty__action { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .rv-loading {
+    display: grid;
+    gap: 4px;
+    padding-top: 16px;
+  }
+
+  .rv-loading__row {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 160px;
+    gap: 16px;
+    align-items: center;
+    padding: 18px 14px;
+    animation: rv-breathe 1.4s ease-in-out infinite;
+  }
+
+  .rv-loading__dot,
+  .rv-loading__line {
+    display: block;
+    border-radius: 999px;
+    background: rgba(53, 42, 124, 0.07);
+  }
+
+  .rv-loading__dot { width: 32px; height: 32px; }
+  .rv-loading__line { height: 12px; }
+  .rv-loading__line.is-short { width: 70%; }
+
+  .rv-error {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: rgba(245, 185, 77, 0.12);
+    color: var(--rv-yellow-ink);
+
+    div { flex: 1; min-width: 200px; }
+    strong { display: block; color: var(--ink); }
+    p { margin: 2px 0 0; color: var(--muted); }
+    .button { gap: 8px; padding: 0.65rem 1rem; }
+  }
+
+  // ---------------------------------------------------------------- switches (one person's page)
+
+  .rv-switch {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 4px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font: inherit;
+    font-weight: 650;
+    font-size: 0.9rem;
+    color: var(--muted);
+    cursor: pointer;
+
+    &.is-on { color: var(--good); }
+    &:disabled { opacity: 0.6; cursor: progress; }
+  }
+
+  .rv-switch__track {
+    position: relative;
+    width: 40px;
+    height: 24px;
+    border-radius: 999px;
+    background: rgba(53, 42, 124, 0.18);
+    transition: background 0.2s ease;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(53, 42, 124, 0.22);
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  }
+
+  .rv-switch.is-on .rv-switch__track {
+    background: var(--good);
+
+    &::after { transform: translateX(16px); }
+  }
+}
+
+@keyframes rv-spin { to { transform: rotate(360deg); } }
+
+@keyframes rv-live {
+  0% { box-shadow: 0 0 0 0 rgba(224, 71, 94, 0.55); }
+  70% { box-shadow: 0 0 0 9px rgba(224, 71, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(224, 71, 94, 0); }
+}
+
+@keyframes rv-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes rv-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+// ---------------------------------------------------------------- smaller screens
+
+// A drill row follows the width of its panel, not of the window.
+@container (max-width: 760px) {
+  .rv {
+    .rv-drill-head { display: none; }
+
+    .rv-drill__link,
+    .rv-drill.no-who .rv-drill__link {
+      grid-template-columns: minmax(0, 1fr) auto 20px;
+      grid-template-areas:
+        "who risk open"
+        "call call call"
+        "outcome outcome outcome"
+        "lesson lesson lesson";
+      gap: 10px 14px;
+    }
+
+    .rv-drill.no-who .rv-drill__link {
+      grid-template-areas:
+        "call risk open"
+        "outcome outcome outcome"
+        "lesson lesson lesson";
+    }
+
+    .rv-drill__open { align-self: start; }
+    .rv-drill__outcome { grid-auto-flow: row; }
+  }
+}
+
+@media (max-width: 640px) {
+  .rv {
+    gap: 16px;
+
+    .rv-panel { padding: 16px 14px 18px; border-radius: 20px; }
+    .rv-header__actions { width: 100%; }
+    .rv-header__actions .button { width: 100%; }
+    .rv-drill__link { padding: 14px 8px; }
+    .rv-empty { flex-direction: column; gap: 14px; padding-top: 22px; }
+    .rv-tally { width: 100%; }
+    .rv-group--now { margin: 0; padding: 12px 10px 6px; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv *,
+  .rv *::before,
+  .rv *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

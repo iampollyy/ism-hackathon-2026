@@ -1,0 +1,112 @@
+[
+  {
+    "key": "new_number",
+    "label": "New number",
+    "what_it_sounds_like": [
+      "Hi Mum, it's me. My phone broke, so this is my new number.",
+      "Can you save this one? My old number doesn't work any more."
+    ],
+    "why_it_works": "It explains the strange number before you have time to wonder about it, and a broken phone is everyday bad luck that anyone could have.",
+    "what_to_do": "Say you'll ring them straight back, hang up, and call the number you already have for them. If it really is them, they won't mind at all."
+  },
+  {
+    "key": "urgency",
+    "label": "Urgency",
+    "what_it_sounds_like": [
+      "It has to be done today, I can't explain right now.",
+      "I need it in the next ten minutes or it's too late."
+    ],
+    "why_it_works": "A rush leaves no room to think, and a calm moment of thinking is usually all it takes to notice something is off.",
+    "what_to_do": "Slow down on purpose. Anything real can wait five minutes while you check. Hang up and call back on a number you know."
+  },
+  {
+    "key": "secrecy",
+    "label": "Secrecy",
+    "what_it_sounds_like": [
+      "Please don't tell Dad yet, I'll explain everything later.",
+      "Can we keep this between us? It's a bit embarrassing."
+    ],
+    "why_it_works": "Keeping it quiet stops you from talking to the very people who would say it doesn't sound right.",
+    "what_to_do": "Treat a request for secrecy as a reason to tell someone. Ring another relative, or the family number, before you do anything."
+  },
+  {
+    "key": "authority",
+    "label": "Authority",
+    "what_it_sounds_like": [
+      "Hello, this is the security team at your bank.",
+      "I'm calling from the police fraud team about your account."
+    ],
+    "why_it_works": "Most of us are polite to officials and want to help them, so it feels natural to follow their lead.",
+    "what_to_do": "Thank them, hang up, and call the organisation yourself on the number on your card, a letter or their official website. A real one will understand."
+  },
+  {
+    "key": "emotional_appeal",
+    "label": "Emotional appeal",
+    "what_it_sounds_like": [
+      "I'm so stressed, you're the only one I can ask.",
+      "Please, I really need you to help me out this once."
+    ],
+    "why_it_works": "When someone we love sounds upset, we want to make it better quickly, and that kindness can rush us past our usual care.",
+    "what_to_do": "You can be kind and still check. Ask for the family word, or say you'll call them right back on their usual number."
+  },
+  {
+    "key": "small_ask_first",
+    "label": "Small ask first",
+    "what_it_sounds_like": [
+      "Can you just confirm your date of birth for me?",
+      "Before anything else, could you check the text I just sent?"
+    ],
+    "why_it_works": "Saying yes to something small makes the next, bigger request feel like part of the same friendly chat.",
+    "what_to_do": "You don't owe a caller any detail, however small. Ask who they are, hang up, and call back on a number you trust."
+  },
+  {
+    "key": "isolation",
+    "label": "Don't call anyone",
+    "what_it_sounds_like": [
+      "Don't ring the bank, someone there might be involved.",
+      "Please don't call anyone else about this yet."
+    ],
+    "why_it_works": "It cuts you off from the people who would gently tell you it sounds like a scam.",
+    "what_to_do": "Anyone who tells you not to check is exactly the one to check. Call a relative or the family number straight away."
+  },
+  {
+    "key": "unusual_payment",
+    "label": "Unusual payment",
+    "what_it_sounds_like": [
+      "Could you buy some gift cards and read me the numbers?",
+      "Send it to my friend's account, mine is blocked."
+    ],
+    "why_it_works": "Gift cards, vouchers, crypto and couriers are quick and hard to undo, which is exactly why they get asked for.",
+    "what_to_do": "Never pay with gift cards, vouchers, crypto or a courier because a caller asked. Hang up and talk it over with family first."
+  },
+  {
+    "key": "money_request",
+    "label": "Asks for money",
+    "what_it_sounds_like": [
+      "Could you send me a few hundred euros today?",
+      "I'll pay you back tomorrow, I just need it now."
+    ],
+    "why_it_works": "Money is what most of these calls are about; the whole story is built to lead up to the ask.",
+    "what_to_do": "Let any request for money be your cue: hang up and call the person back on the number you already have."
+  },
+  {
+    "key": "asks_for_code",
+    "label": "Asks for a code",
+    "what_it_sounds_like": [
+      "We've just texted you a code, can you read it out to me?",
+      "To cancel the payment I need your PIN, just to confirm it's you."
+    ],
+    "why_it_works": "A code or PIN is the key to your account; whoever has it can act as you.",
+    "what_to_do": "Never read out a code, PIN or password to someone who called you. Nobody genuine needs it on a call, not your bank and not family."
+  },
+  {
+    "key": "refuses_callback",
+    "label": "Avoids a call-back",
+    "what_it_sounds_like": [
+      "No, don't hang up, we'll lose the connection.",
+      "There's no time for the family word, just help me."
+    ],
+    "why_it_works": "A real caller is happy for you to check. Someone pretending can't afford to let you.",
+    "what_to_do": "If they push back on a call-back or the family word, that tells you enough. Hang up calmly and call back on a number you know."
+  }
+]

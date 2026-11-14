@@ -90,8 +90,13 @@ class BuiltBrief:
 # ---------------------------------------------------------------- fixed wording
 
 
-def reveal_line(target_name: str, voice_name: str | None) -> str:
-    """The reveal, exactly as in ai.md. Never written by a model."""
+def reveal_line(target_name: str, voice_name: str | None, shield: bool = False) -> str:
+    """The reveal, exactly as in ai.md. Never written by a model.
+    shield: a shield call (track 3, services/shield.py), a simulated scam
+    call that shows the Shield; it is not called a practice."""
+    if shield:
+        return (f"{target_name}, this was a simulated scam call to show how Callback Shield protects you. "
+                "The voice you heard was artificial.")
     line = f"{target_name}, this was a Callback practice call. The voice you heard was artificial"
     if voice_name:
         return f"{line}, made with {voice_name}'s permission."

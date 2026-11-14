@@ -1,0 +1,194 @@
+// The family's activity timeline. Shared review styles are in
+// DrillsPage/review.scss; this adds the days and the timeline.
+
+.rv-activity {
+  .rv-days {
+    display: grid;
+    gap: 8px;
+    padding-top: 6px;
+  }
+
+  .rv-day__title {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: 0 -10px;
+    padding: 16px 10px 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px 12px;
+    flex-wrap: wrap;
+    background: #fdfefd;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 1.22rem;
+    letter-spacing: -0.02em;
+
+    span {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 0.9rem;
+      letter-spacing: 0;
+      color: var(--muted);
+    }
+
+    small {
+      margin-left: auto;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0;
+      color: var(--muted);
+    }
+  }
+
+  .rv-timeline {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rv-event {
+    --node: 34px;
+
+    position: relative;
+    display: grid;
+    grid-template-columns: 52px var(--node) minmax(0, 1fr) auto;
+    gap: 0 14px;
+    align-items: start;
+    padding: 10px 8px;
+    border-radius: 14px;
+    transition: background 0.18s ease;
+
+    &:hover { background: var(--rv-row-hover); }
+
+    // The line through the day, behind the icons.
+    &::before {
+      content: '';
+      position: absolute;
+      left: calc(8px + 52px + 14px + var(--node) / 2 - 1px);
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: rgba(53, 42, 124, 0.08);
+    }
+
+    &:first-child::before { top: 20px; }
+    &:last-child::before { bottom: calc(100% - 20px); }
+    &:only-child::before { display: none; }
+  }
+
+  .rv-event__time {
+    padding-top: 7px;
+    color: var(--muted);
+    font-size: 0.86rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rv-event__node {
+    position: relative;
+    width: var(--node);
+    height: var(--node);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #eef1f2;
+    color: var(--navy-soft);
+    box-shadow: 0 0 0 4px #fdfefd;
+  }
+
+  .rv-event.is-good .rv-event__node { background: #e1f1ea; color: var(--good); }
+  .rv-event.is-tip .rv-event__node { background: #fcefd3; color: var(--rv-yellow-ink); }
+  .rv-event.is-alert .rv-event__node { background: var(--accent); color: #fff; }
+
+  .rv-event__body {
+    min-width: 0;
+    padding-top: 5px;
+
+    p {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.45;
+      color: var(--ink);
+      text-wrap: pretty;
+    }
+  }
+
+  .rv-event__meta {
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    .avatar-sm { width: 20px; height: 20px; font-size: 0.56rem; }
+  }
+
+  .rv-event.is-alert {
+    background: rgba(224, 71, 94, 0.07);
+
+    .rv-event__body p { font-weight: 600; }
+    .rv-event__meta { color: #b0503d; }
+  }
+
+  .rv-event__open {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: 12px;
+    color: var(--navy-soft);
+    font-weight: 650;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    transition: background 0.18s ease, color 0.18s ease;
+
+    &:hover { background: rgba(53, 42, 124, 0.06); color: var(--ink); }
+    svg { transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+    &:hover svg { transform: translateX(2px); }
+  }
+}
+
+@media (max-width: 640px) {
+  .rv-activity {
+    .rv-event {
+      --node: 30px;
+
+      grid-template-columns: var(--node) minmax(0, 1fr);
+      grid-template-areas:
+        "node body"
+        "node open";
+      gap: 0 12px;
+      padding: 10px 4px;
+
+      &::before { left: calc(4px + var(--node) / 2 - 1px); }
+    }
+
+    .rv-event__time {
+      grid-area: body;
+      padding-top: 0;
+      font-size: 0.78rem;
+    }
+
+    .rv-event__node { grid-area: node; }
+
+    .rv-event__body {
+      grid-area: body;
+      padding-top: 20px;
+    }
+
+    .rv-event__open {
+      grid-area: open;
+      justify-self: start;
+      padding: 0;
+      margin-top: 2px;
+    }
+
+    .rv-day__title small { margin-left: 0; width: 100%; }
+  }
+}

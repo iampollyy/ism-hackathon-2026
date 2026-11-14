@@ -2,9 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#eef3f0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#edf0ff" />
     <meta name="description" content="Callback helps families practice against AI voice-cloning scams with a safer family callback routine." />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Callback" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link id="manifest" rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // On a phone page, install the app with that member's own manifest, so the
+      // home-screen icon opens their phone page and not the landing page.
+      (function () {
+        var match = location.pathname.match(/^\/phone\/([A-Za-z0-9_-]+)\/?$/);
+        if (match) document.getElementById('manifest').href = '/api/members/' + match[1] + '/manifest.webmanifest';
+      })();
+    </script>
     <title>Callback | Family protection against voice-cloning scams</title>
   </head>
   <body>

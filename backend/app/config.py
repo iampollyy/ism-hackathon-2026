@@ -74,12 +74,35 @@ class Settings(BaseSettings):
     # Background loop (tests switch it off)
     scheduler_enabled: bool = True
 
+    # Track 3: protection, random drills and the Shield (docs/full-app/protection.md).
+    # The scheduler loop plans random drills every drill_pass_seconds, for the
+    # families that switched drills on; false stops that pass for every family.
+    random_drills_enabled: bool = True
+    drill_pass_seconds: int = 60
+
     # Web Push (VAPID). Push is off while either key is empty; make a pair with
     # scripts/make_vapid_keys.py. The public key is the URL-safe base64 form the
     # browser's applicationServerKey takes; the private key is its raw 32 bytes.
     vapid_public_key: str = ""
     vapid_private_key: str = Field(default="", repr=False)
     vapid_subject: str = DEFAULT_VAPID_SUBJECT  # a contact the push services can reach
+
+    # Track 1: organiser accounts, invites and joining (docs/full-app/track1.md)
+    session_days: int = 30  # how long a log-in (the cb_session cookie) lasts
+    login_max_failures: int = 5  # wrong log-ins for one email within the window, then 429
+    login_window_minutes: int = 15
+    # True: a joined member's first phone-state poll starts their welcome call
+    auto_welcome_call: bool = True
+
+    # Track 2: the member's voice from their own side of the welcome call
+    # (services/voice_sample.py). Fewer seconds of their voice than this,
+    # after cleaning, and no clone is made.
+    voice_sample_min_seconds: float = 10.0
+
+    # Track 4 (review, learning, news): the least time between two news
+    # builds (POST /api/families/{id}/news/refresh), for all families
+    # together, since the digest is shared.
+    news_refresh_seconds: int = 600
 
     @property
     def push_enabled(self) -> bool:

@@ -148,3 +148,13 @@ async def test_run_forever_survives_a_failing_pass(client, make_family, monkeypa
     with pytest.raises(asyncio.CancelledError):
         await task
     assert len(passes) >= 2
+
+
+async def test_a_drill_waits_two_minutes_after_the_previous_call_ended(client, make_family, started):
+    family = make_family()
+    add_call(family, "scored", ended_at=later(-30))  # the reveal may still be on screen
+    due = add_call(family, "scheduled", scheduled_for=later(-1))
+    await tick()
+    assert status_of(due) == "scheduled"
+    await tick(scheduler.AFTER_CALL_QUIET_SECONDS)
+    assert status_of(due) == "ringing"

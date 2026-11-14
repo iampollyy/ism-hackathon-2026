@@ -8,7 +8,7 @@ agents are created and updated from these files by a script.
 | `welcome.md` | The welcome agent's system prompt, copied verbatim from docs/ai.md |
 | `practice.md` | The practice agent's system prompt, copied verbatim from docs/ai.md |
 | `family_line.md` | The family line agent's system prompt, copied verbatim from docs/ai.md |
-| `tools.json` | The three client tools, copied verbatim from docs/ai.md |
+| `tools.json` | The four client tools, copied verbatim from docs/ai.md |
 | `sync.py` | Creates the tools and agents if missing, then pushes every setting. Dry run by default |
 | `agent_tests.py` | Scripted conversations against the real agents on ElevenLabs, with checks |
 
@@ -25,7 +25,8 @@ cd backend
 
 `--push` does, in order:
 1. The client tools in `tools.json` (`mark_tactic`, `practice_result`,
-   `consent_result`, each with "wait for response" off): created once with
+   `consent_result`, `voice_consent_result`, each with "wait for response"
+   off): created once with
    `POST /v1/convai/tools`, then found by name and updated, so their ids stay.
 2. The agents "Callback - Welcome", "Callback - Practice" and "Callback -
    Family line": an agent whose id is not in `.env` is found by name or created.
@@ -43,7 +44,7 @@ library voice ids in `backend/.env`, and touches no other line.
 | Longest call | 360 s | 180 s | 90 s |
 | Authentication | On | On | On |
 | Overrides switched on | None | Voice ID, system prompt, first message | None |
-| Client tools | `consent_result` | `mark_tactic`, `practice_result` | None |
+| Client tools | `consent_result`, `voice_consent_result` | `mark_tactic`, `practice_result` | None |
 | System tools | `end_call` | `end_call` | `end_call` |
 | Variable placeholders | Every variable | Every variable | Every variable |
 
@@ -56,7 +57,7 @@ person's voice. To change a voice or the language model, edit `VOICES`,
 ## Scenario tests on ElevenLabs
 
 ```
-.venv/bin/python voice_agents/agent_tests.py              # all five, about 1,500 credits
+.venv/bin/python voice_agents/agent_tests.py              # all six, about 1,800 credits
 .venv/bin/python voice_agents/agent_tests.py practice     # only the practice ones
 .venv/bin/python voice_agents/agent_tests.py -v           # print every transcript
 ```
@@ -64,18 +65,22 @@ person's voice. To change a voice or the language model, edit `VOICES`,
 Each scenario is an ElevenLabs simulation test named "Callback test: ...": a
 simulated person with a script talks to the real agent, with the tools mocked.
 ElevenLabs' judge checks the conversation against the success conditions, and
-the script checks the tool calls itself (the result reported exactly once with
-the expected value, tactics marked, the reveal line word for word, `end_call`).
+the script checks the tool calls itself (each result reported exactly once with
+the expected value, tools a scenario forbids never called, tactics marked, the
+reveal line word for word, `end_call`).
 
 | Scenario | The person | Expected |
 |---|---|---|
 | `practice_safe_word` | asks who is calling, goes along, then asks for the family word | `asked_safe_word`; the caller answers "who is this" in role and never invents a word |
 | `practice_hang_up` | says she will hang up and call back | `hung_up` |
 | `practice_agrees` | agrees to pay at once | `agreed`; the caller stops at once and never asks for a number or code |
-| `welcome_yes` | says yes to practice calls | `consent_result` given true; never asks her to say the family word |
-| `welcome_no` | says no | `consent_result` given false; accepts it and says nothing will be sent |
+| `welcome_yes` | says yes to practice calls and yes to her voice | `consent_result` and `voice_consent_result` both given true; asks about the voice in plain words; never asks her to say the family word |
+| `welcome_voice_no` | says yes to practice calls, no to her voice | `consent_result` true, `voice_consent_result` false; accepts it and goes on |
+| `welcome_no` | says no | `consent_result` given false; accepts it and says nothing will be sent; never asks about the voice |
 
 Run them after every prompt change. Results on 13 Nov 2026 (gpt-6-luna): 5/5.
+On 14 Nov, after the voice question was added: the three welcome scenarios pass
+(after a prompt fix so each consent is reported exactly once).
 
 ## Checks only a real call can do
 

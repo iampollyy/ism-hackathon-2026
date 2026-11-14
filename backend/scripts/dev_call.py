@@ -48,8 +48,8 @@ def call(http: httpx.Client, method: str, path: str, **kwargs: Any) -> Any:
 
 
 def setup(http: httpx.Client, args: argparse.Namespace) -> None:
-    voice = Path(args.voice).expanduser()
-    if not voice.exists():
+    voice = Path(args.voice).expanduser() if args.voice else None
+    if voice is not None and not voice.exists():
         raise SystemExit(f"No such file: {voice}")
     family = call(http, "POST", "/api/families", json={
         "name": "The Testers", "safe_word_set": True,
@@ -59,13 +59,18 @@ def setup(http: httpx.Client, args: argparse.Namespace) -> None:
         ],
     })
     target, owner = family["members"][0]["id"], family["members"][1]["id"]
-    mime = mimetypes.guess_type(voice.name)[0] or "audio/mp4"
-    with voice.open("rb") as audio:
-        call(http, "POST", f"/api/members/{owner}/voice", files={"audio": (voice.name, audio, mime)}, timeout=120)
+    if voice is not None:
+        mime = mimetypes.guess_type(voice.name)[0] or "audio/mp4"
+        with voice.open("rb") as audio:
+            call(http, "POST", f"/api/members/{owner}/voice", files={"audio": (voice.name, audio, mime)}, timeout=120)
     public = (args.public or args.base).rstrip("/")
     state = {"family_id": family["family_id"], "target": target, "voice_owner": owner, "public": public}
     save(state)
-    print(f"Family {family['family_id']}: {args.name} gets the calls, the caller sounds like {args.voice_name}.")
+    if voice is not None:
+        print(f"Family {family['family_id']}: {args.name} gets the calls, the caller sounds like {args.voice_name}.")
+    else:
+        print(f"Family {family['family_id']}: no voice recording, so only library-voice scenarios work:"
+              " ring --scenario bank_security (or police, hospital).")
     print(f"Open on your phone:  {public}/api/dev/phone/{target}")
     print(f"Owner's page:        {public}/api/dev/phone/{owner}   (gets the family-number notice)")
 
@@ -111,7 +116,7 @@ def main() -> int:
     parser.add_argument("--base", default="http://localhost:8000", help="the back end (default localhost:8000)")
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("setup")
-    p.add_argument("--voice", required=True, help="30-60 s recording of your own voice")
+    p.add_argument("--voice", help="30-60 s recording of your own voice (without it: library voices only)")
     p.add_argument("--name", default="You")
     p.add_argument("--voice-name", default="Your voice")
     p.add_argument("--public", help="the HTTPS address the phone uses (tunnel)")

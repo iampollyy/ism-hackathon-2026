@@ -7,6 +7,9 @@ OWNER: track A.
   own default voice speaks).
 - dynamic_variables: every value a string or a number, never a safe word.
 - max_seconds = schemas.MAX_SECONDS[kind]; reveal only for practice calls.
+- A shield call (a practice call with a call_shield row, track 3) gets the
+  shield reveal_line and reveal.kind "shield"; every other practice
+  reveal.kind "practice".
 """
 
 import json
@@ -19,7 +22,7 @@ from sqlalchemy.orm import Session as DbSession
 from app import schemas
 from app.config import Settings, get_settings
 from app.models import Call, CallEvent, Family, Member, Result
-from app.services import briefs, elevenlabs
+from app.services import briefs, elevenlabs, shield
 from app.services import scenarios as scenario_files
 
 log = logging.getLogger("app.sessions")
@@ -146,9 +149,11 @@ def practice_parts(db: DbSession, call: Call, settings: Settings
     variables = plain_variables(brief)
     variables.setdefault("target_name", target.name)
     variables.setdefault("difficulty", call.difficulty)
-    # Always the fixed wording, matching the voice that really speaks.
-    variables["reveal_line"] = briefs.reveal_line(target.name, voice_name)
-    return overrides, variables, schemas.Reveal(voice_of=voice_name)
+    # Always the fixed wording, matching the voice that really speaks. A
+    # shield call (track 3) reveals itself as a simulated scam call.
+    is_shield = shield.is_shield_call(db, call.id)
+    variables["reveal_line"] = briefs.reveal_line(target.name, voice_name, shield=is_shield)
+    return overrides, variables, schemas.Reveal(voice_of=voice_name, kind="shield" if is_shield else "practice")
 
 
 def welcome_variables(db: DbSession, call: Call) -> Variables:

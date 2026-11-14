@@ -1165,7 +1165,8 @@ def test_tools_json_matches_ai_md() -> None:
     expected = json.loads(ai_md_block("### Tools", "json"))
     actual = json.loads((BACKEND_DIR / "voice_agents" / "tools.json").read_text())
     assert actual == expected
-    assert [tool["name"] for tool in actual] == ["mark_tactic", "practice_result", "consent_result"]
+    assert [tool["name"] for tool in actual] == ["mark_tactic", "practice_result", "consent_result",
+                                                 "voice_consent_result"]  # the last: full app, track 2
     assert all(tool["type"] == "client" and tool["expects_response"] is False for tool in actual)
 
 

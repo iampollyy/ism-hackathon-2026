@@ -553,7 +553,8 @@ def test_phone_state_idle_shape(client, make_family):
     fam = make_family()
     sara, _ = ids(fam)
     body = client.get(f"/api/members/{sara}/phone-state").json()
-    assert body["member"] == {"id": sara, "name": "Sara", "family": "The Kovacs"}
+    assert body["member"] == {"id": sara, "name": "Sara", "family": "The Kovacs",
+                              "family_id": fam["family_id"], "voice_ready": False}  # the last two added on Saturday
     assert body["incoming_call"] is None
     assert body["messages"] == []
     assert body["family_number"]["enabled"] in (True, False)

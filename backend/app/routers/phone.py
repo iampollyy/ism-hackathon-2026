@@ -3,7 +3,11 @@
 - GET /api/members/{id}/phone-state, once a second: records last_seen_at;
   incoming_call is set only while a welcome or practice call for this
   member is ringing, and never once the member has opted out; messages are
-  the unread ones.
+  the unread ones. For a member who joined by their invite link and never
+  had a welcome call, the poll first starts one (services/joining.py,
+  auto_welcome_call), so it rings on this same answer. shield (track 3,
+  services/shield.py) is the live warning while a shield call is in
+  progress, else null.
 - POST /api/members/{id}/messages/read: marks messages read (all, or `ids`).
 - POST /api/members/{id}/family-line: finds this member's latest practice
   that ended in the last ten minutes (404 no_recent_practice if none),
@@ -38,6 +42,7 @@ from datetime import timedelta
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
@@ -47,7 +52,7 @@ from app.ids import new_call_id
 from app.models import Call, Family, Member, Message, ReadinessSnapshot, Result
 from app.routers.calls import (DEFAULT_CALLER_LABEL, DEFAULT_CALLER_NUMBER, change_status, get_member,
                                start_after_call, start_session)
-from app.services import limits, readiness
+from app.services import joining, limits, readiness, shield
 
 router = APIRouter(tags=["phone"])
 
@@ -91,13 +96,42 @@ async def phone_state(member_id: str, db: DbSession = Depends(get_db)) -> schema
     member = get_member(db, member_id)
     member.last_seen_at = now_iso()
     db.commit()
+    joining.auto_welcome_call(db, member)  # track 1: a joined member's first welcome call; never raises
     family = db.get(Family, member.family_id)
     return schemas.PhoneState(
-        member=schemas.PhoneMember(id=member.id, name=member.name, family=family.name if family else ""),
+        member=schemas.PhoneMember(id=member.id, name=member.name, family=family.name if family else "",
+                                   family_id=member.family_id,
+                                   voice_ready=bool(member.voice_id) and member.voice_status == "ready"),
         incoming_call=incoming_call(db, member.id) if member.opted_out_at is None else None,
         messages=unread_messages(db, member.id),
         family_number=schemas.FamilyNumber(enabled=True),
+        shield=shield.phone_shield(db, member),  # track 3: None unless a shield call is in progress
     )
+
+
+@router.get("/members/{member_id}/manifest.webmanifest", include_in_schema=False)
+async def member_manifest(member_id: str, db: DbSession = Depends(get_db)) -> JSONResponse:
+    """The web app manifest for one member's phone page, so the app installed
+    from it opens that member's phone page (frontend/index.html points the
+    manifest link here on /phone/{id}). Added after backend.md."""
+    member = get_member(db, member_id)
+    start = f"/phone/{member.id}"
+    return JSONResponse({
+        "id": start,
+        "name": "Callback",
+        "short_name": "Callback",
+        "description": f"{member.name}'s Callback phone",
+        "start_url": start,
+        "scope": "/",
+        "display": "standalone",
+        "background_color": "#edf0ff",
+        "theme_color": "#edf0ff",
+        "icons": [
+            {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"},
+            {"src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        ],
+    }, media_type="application/manifest+json", headers={"Cache-Control": "no-cache"})
 
 
 @router.post("/members/{member_id}/messages/read", response_model=schemas.Ok)

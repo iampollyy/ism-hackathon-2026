@@ -101,3 +101,25 @@ def test_frontend_is_served_with_spa_fallback(client, monkeypatch, dist) -> None
 
 def test_no_frontend_route_without_the_setting(client) -> None:
     assert client.get("/phone/mem_abc").status_code == 404
+
+
+def test_member_manifest_opens_their_phone_page(client) -> None:
+    family = client.post("/api/families", json=family_body()).json()
+    sara = family["members"][0]["id"]
+    response = client.get(f"/api/members/{sara}/manifest.webmanifest")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/manifest+json")
+    body = response.json()
+    assert body["start_url"] == f"/phone/{sara}" and body["display"] == "standalone"
+    assert "Sara" in body["description"]
+    assert client.get("/api/members/mem_nope/manifest.webmanifest").status_code == 404
+
+
+def test_webmanifest_files_get_the_manifest_type(client, monkeypatch, dist) -> None:
+    (dist / "manifest.webmanifest").write_text("{}")
+    monkeypatch.setenv("FRONTEND_DIST", str(dist))
+    get_settings.cache_clear()
+    from app.main import create_app
+
+    with TestClient(create_app()) as app_client:
+        assert app_client.get("/manifest.webmanifest").headers["content-type"].startswith("application/manifest+json")

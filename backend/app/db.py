@@ -59,7 +59,13 @@ def get_engine() -> Engine:
     if _engine is None:
         url = resolve_database_url(get_settings().database_url)
         connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
-        _engine = create_engine(url, connect_args=connect_args)
+        # A file-backed SQLite connection is cheap, so allow many: an async
+        # route that raises keeps its pooled connection for a few event-loop
+        # turns, and with the default pool (5 + 10) a burst of such requests
+        # froze the app for the 30 s pool timeout. Fail fast instead.
+        pool_args = ({"pool_size": 20, "max_overflow": 40, "pool_timeout": 10}
+                     if url.startswith("sqlite") and ":memory:" not in url else {})
+        _engine = create_engine(url, connect_args=connect_args, **pool_args)
         if url.startswith("sqlite"):
             event.listen(_engine, "connect", _set_sqlite_pragmas)
         _session_factory = sessionmaker(bind=_engine, expire_on_commit=False)

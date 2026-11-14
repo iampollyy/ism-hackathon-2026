@@ -19,7 +19,10 @@ Rules (docs/backend.md):
   `consent` with given=true sets consent_practice_at and writes a consents
   row (practice, welcome_call); given=false is an explicit no: it clears
   consent_practice_at and writes a row (practice_withdrawn, welcome_call),
-  so the consent gate refuses practice calls (services/consent.py). A batch
+  so the consent gate refuses practice calls (services/consent.py). A
+  welcome `voice_consent` (track 2) goes to services.voice_sample, which
+  records a yes and may start the clone of the call's recording; on other
+  kinds of call it is stored and changes nothing. A batch
   for a practice call that holds a caller turn (speaker "agent") starts the
   live risk check in the background (services.live_risk); the answer does
   not wait for it.
@@ -49,7 +52,8 @@ from app import events, schemas
 from app.db import get_db, now_iso, parse_time, seconds_between, to_iso, utcnow
 from app.ids import new_call_id
 from app.models import Call, CallEvent, Consent, Member, Result
-from app.services import briefs, consent, limits, live_risk, pipeline, run_in_background, sessions
+from app.services import briefs, consent, limits, live_risk, pipeline, run_in_background, sessions, shield
+from app.services import voice_sample  # track 2
 
 log = logging.getLogger("app.calls")
 
@@ -246,17 +250,23 @@ async def create_practice_call(body: schemas.PracticeCallCreate,
     return schemas.CallCreated(call_id=call.id, status=call.status)
 
 
-@router.post("/members/{member_id}/welcome-call", status_code=201, response_model=schemas.CallCreated)
-async def create_welcome_call(member_id: str, db: DbSession = Depends(get_db)) -> schemas.CallCreated:
-    """Ring the member's phone page with the welcome agent. No consent is
-    needed: the welcome call is where consent is asked."""
-    member = get_member(db, member_id)
+def start_welcome_call(db: DbSession, member: Member, check_phone_online: bool = True) -> Call:
+    """Create one welcome call, ringing now; the only code that makes one
+    (POST /api/members/{id}/welcome-call, and a joined member's phone-state
+    poll through services/joining.auto_welcome_call, with
+    check_phone_online=False since the poll itself proves the page is
+    open; track 1). No consent is needed:
+    the welcome call is where consent is asked. Checks, each raising
+    schemas.ApiError: not opted out (409 consent_missing), the daily call
+    cap (429 daily_limit), not busy (409 busy), and if check_phone_online
+    the page seen within ten seconds (409 phone_offline). Commits and
+    publishes call.status {status: ringing}."""
     if member.opted_out_at is not None:
         raise schemas.ApiError(409, "consent_missing", f"{member.name} has left Callback.")
     limits.check(db, "call")
     if is_busy(db, member.id):
         raise busy_error(member)
-    if not seen_within(member.last_seen_at, PHONE_ONLINE_SECONDS):
+    if check_phone_online and not seen_within(member.last_seen_at, PHONE_ONLINE_SECONDS):
         raise phone_offline_error(member)
     now = now_iso()
     call = Call(
@@ -273,6 +283,13 @@ async def create_welcome_call(member_id: str, db: DbSession = Depends(get_db)) -
     )
     db.add(call)
     change_status(db, call, "ringing")
+    return call
+
+
+@router.post("/members/{member_id}/welcome-call", status_code=201, response_model=schemas.CallCreated)
+async def create_welcome_call(member_id: str, db: DbSession = Depends(get_db)) -> schemas.CallCreated:
+    """Ring the member's phone page with the welcome agent (start_welcome_call)."""
+    call = start_welcome_call(db, get_member(db, member_id))
     return schemas.CallCreated(call_id=call.id, status=call.status)
 
 
@@ -392,9 +409,13 @@ async def post_events(call_id: str, body: schemas.EventsBatch,
             outcome_seen = True
         if item.type == "consent" and call.kind == "welcome":
             record_consent_answer(db, call, item.given)
+        if item.type == "voice_consent" and call.kind == "welcome":  # track 2
+            voice_sample.record_voice_consent(db, call, item.given)
         events.publish(call.id, item.type, data, db=db)  # commits the consent too
     if call.kind == "practice" and any(item.type == "turn" and item.speaker == "agent" for item in body.events):
         live_risk.start_check(call.id)  # in the background, on the transcript so far
+    if call.kind == "welcome" and any(item.type == "voice_consent" for item in body.events):
+        voice_sample.settle(call.id)  # a recording waiting for this answer: clone it, or let it go
     return schemas.Ok()
 
 
@@ -484,6 +505,7 @@ def call_view(db: DbSession, call: Call) -> schemas.CallView:
     voice = db.get(Member, call.voice_member_id) if call.voice_member_id else None
     stored = events.list_events(call.id, db=db)
     turns, tactics = turns_and_tactics(stored)
+    live = live_answers(stored)
     return schemas.CallView(
         id=call.id,
         kind=call.kind,
@@ -496,12 +518,31 @@ def call_view(db: DbSession, call: Call) -> schemas.CallView:
         turns=turns,
         tactics=tactics,
         risk=risk_points(stored),
+        shield=shield.call_shield_view(db, call),  # track 3: None unless a shield call
         result=result_view(db, call),
         callback_seconds=call.callback_seconds,
         answered_at=call.answered_at,
         ended_at=call.ended_at,
         ended_by=call.ended_by,
+        family_id=call.family_id,
+        live_outcome=live.get("outcome"),
+        live_seconds_to_challenge=live.get("seconds_to_challenge"),
+        consent_given=live.get("consent"),
     )
+
+
+def live_answers(stored: list[dict[str, Any]]) -> dict[str, Any]:
+    """The first outcome (with its seconds to the challenge) and the last
+    consent answer among the stored events, before any scoring."""
+    found: dict[str, Any] = {}
+    for event in stored:
+        data = event.get("data") or {}
+        if event.get("type") == "outcome" and "outcome" not in found and data.get("outcome") in schemas.OUTCOMES:
+            found["outcome"] = data["outcome"]
+            found["seconds_to_challenge"] = data.get("seconds_to_challenge")
+        elif event.get("type") == "consent" and isinstance(data.get("given"), bool):
+            found["consent"] = data["given"]
+    return found
 
 
 @router.get("/calls/{call_id}", response_model=schemas.CallView)

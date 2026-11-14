@@ -12,5 +12,10 @@
   { "type": "client", "name": "consent_result", "expects_response": false,
     "description": "Call this once, right after the person answers the question about receiving practice calls.",
     "parameters": { "type": "object", "required": ["given"], "properties": {
+      "given": { "type": "boolean", "description": "true only for a clear yes" } } } },
+
+  { "type": "client", "name": "voice_consent_result", "expects_response": false,
+    "description": "Call this once, right after the person answers the question about using their voice from this call for practice calls to their family.",
+    "parameters": { "type": "object", "required": ["given"], "properties": {
       "given": { "type": "boolean", "description": "true only for a clear yes" } } } }
 ]

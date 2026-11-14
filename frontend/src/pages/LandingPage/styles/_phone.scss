@@ -1,0 +1,247 @@
+// The CSS phone: navy titanium, black glass, a 390 x 844 screen scaled to fit.
+// Its box is also the 3D phone's anchor; in 3D mode the frame hides and the box stays.
+
+.lp-phone {
+  --ph: 600px;
+  position: relative;
+  flex: none;
+  height: var(--ph);
+  aspect-ratio: 78 / 162;
+  container-type: size;
+  color: transparent;
+}
+
+.lp-phone__body {
+  position: absolute;
+  inset: 0;
+  border-radius: 6.8cqh;
+  background: linear-gradient(
+    152deg,
+    #5f568a 0%,
+    #271f4d 9%,
+    #191433 30%,
+    #110d25 55%,
+    #1e183b 80%,
+    #544b80 100%
+  );
+  box-shadow:
+    0 3cqh 7cqh -1.5cqh rgba(0, 0, 0, 0.6),
+    0 1cqh 2cqh -0.6cqh rgba(0, 0, 0, 0.45),
+    inset 0 0 0 0.14cqh rgba(255, 255, 255, 0.16),
+    inset 0 0.3cqh 0.6cqh rgba(255, 255, 255, 0.08);
+  transform-style: preserve-3d;
+
+  // The black glass border between the metal and the screen.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0.55cqh;
+    border-radius: 6.3cqh;
+    background: #04030b;
+    box-shadow: inset 0 0 0 0.1cqh rgba(255, 255, 255, 0.05);
+  }
+}
+
+.lp-phone__btn {
+  position: absolute;
+  width: 0.5cqh;
+  border-radius: 0.3cqh;
+  background: linear-gradient(90deg, #2e255b, #554c80);
+
+  &--power {
+    right: -0.4cqh;
+    top: 26%;
+    height: 9.5%;
+  }
+  &--vol1,
+  &--vol2 {
+    left: -0.4cqh;
+    height: 6.5%;
+  }
+  &--vol1 {
+    top: 19%;
+  }
+  &--vol2 {
+    top: 28%;
+  }
+}
+
+.lp-phone__screen {
+  --s: 0.7;
+  position: absolute;
+  inset: 1.85cqh;
+  border-radius: 5cqh;
+  overflow: hidden;
+  background: #05040c;
+  isolation: isolate;
+}
+
+.lp-phone__content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 390px;
+  height: 844px;
+  transform: scale(var(--s));
+  transform-origin: 0 0;
+}
+
+.lp-phone__glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.02) 28%,
+    transparent 42%
+  );
+  z-index: 2;
+}
+
+// Tilts
+.lp-phone--tilt-hero {
+  perspective: 2200px;
+
+  .lp-phone__body {
+    transform: rotateX(4deg) rotateY(var(--yaw)) rotateZ(2deg);
+  }
+}
+
+// ---------------------------------------------------------------- rings
+
+.lp-rings {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 250ms ease;
+
+  // Thick and bright enough to read as ringing before anyone clicks, with a soft glow.
+  i {
+    position: absolute;
+    inset: 0;
+    border: 3px solid currentColor;
+    border-radius: 6.8cqh;
+    box-shadow:
+      0 0 14px -2px currentColor,
+      inset 0 0 14px -2px currentColor;
+    opacity: 0;
+    animation: lp-ring 2.4s cubic-bezier(0.25, 0.55, 0.4, 1) infinite;
+    animation-play-state: paused;
+
+    &:nth-child(2) {
+      animation-delay: 0.8s;
+    }
+    &:nth-child(3) {
+      animation-delay: 1.6s;
+    }
+  }
+}
+
+[data-rings='scam'] > .lp-rings {
+  color: var(--lp-scam);
+}
+
+[data-rings='safe'] > .lp-rings {
+  color: var(--lp-safe);
+}
+
+[data-rings='scam'] > .lp-rings,
+[data-rings='safe'] > .lp-rings {
+  opacity: 1;
+
+  i {
+    animation-play-state: running;
+  }
+}
+
+// A short reach, so the rings stay clear of the text under the phone and the nav.
+@keyframes lp-ring {
+  0% {
+    transform: scale(1, 1);
+    opacity: 0;
+    border-radius: 6.8cqh;
+  }
+  6% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.44, 1.18);
+    opacity: 0;
+    border-radius: 40%;
+  }
+}
+
+// One green burst as a call connects (the close).
+[data-rings='bloom'] > .lp-rings {
+  opacity: 1;
+  color: var(--lp-safe);
+
+  i {
+    animation: lp-bloom 1.5s var(--lp-ease) both;
+    animation-play-state: running;
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+}
+
+@keyframes lp-bloom {
+  0% {
+    transform: scale(1, 1);
+    opacity: 0.9;
+    border-radius: 6.8cqh;
+  }
+  100% {
+    transform: scale(1.7, 1.32);
+    opacity: 0;
+    border-radius: 40%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp .lp-rings i {
+    animation: none !important;
+    opacity: 0.55;
+    transform: scale(1.1, 1.05);
+    border-radius: 9cqh;
+
+    &:nth-child(2) {
+      opacity: 0.32;
+      transform: scale(1.22, 1.1);
+    }
+    &:nth-child(3) {
+      opacity: 0.16;
+      transform: scale(1.34, 1.15);
+    }
+  }
+}
+
+// ---------------------------------------------------------------- 3D mode
+// The WebGL phone lands exactly on the anchor boxes, so their frames hide.
+
+.lp[data-mode='3d'] {
+  .lp-phone[data-phone-anchor] {
+    > .lp-phone__body,
+    > .lp-rings {
+      visibility: hidden;
+      opacity: 0;
+      transition:
+        opacity 300ms ease,
+        visibility 0s 300ms;
+    }
+  }
+
+  .lp-field,
+  .lp-hero__glow,
+  .lp-story__glow,
+  .lp-shield__glow {
+    opacity: 0;
+    transition: opacity 400ms ease;
+  }
+}

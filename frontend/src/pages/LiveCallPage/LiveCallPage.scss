@@ -1,0 +1,951 @@
+// The laptop's live call screen. Builds on Polina's practice-call classes in
+// index.scss (practice-header, call-stage, live-transcript, transcript-row,
+// tag-chip, lesson-box...) and adds its own, all under .live-call.
+
+.live-call {
+  // The traffic light's three colours. Green and yellow are the design's
+  // --good and --warning; red is a true red, so it never reads as the
+  // orange-red accent used for tactics.
+  --lc-green: var(--good);
+  --lc-yellow: var(--warning);
+  --lc-red: #d8402f;
+  --lc-red-ink: #a8301f;
+  --lc-yellow-ink: #8a5c08;
+
+  display: flex;
+  flex-direction: column;
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  // Back and the badge on one line, the title centred under them, so a
+  // long title never squeezes either.
+  .lc-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "back badge"
+      "title title";
+    gap: 6px 16px;
+    min-height: 0;
+    margin-bottom: 18px;
+
+    .header-back { grid-area: back; justify-self: start; }
+    .header-center { grid-area: title; margin-top: -2px; }
+    .header-badge { grid-area: badge; }
+    .header-badge svg { flex: none; }
+  }
+
+  .lc-back {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .lc-grid {
+    display: grid;
+    grid-template-columns: minmax(330px, 0.82fr) minmax(0, 1.3fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .lc-col {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .lc-card {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 30px rgba(53, 42, 124, 0.05);
+    padding: 18px 20px;
+  }
+
+  .lc-message p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+  }
+
+  .lc-spin {
+    animation: lc-spin 1s linear infinite;
+  }
+
+  // ------------------------------------------------------------ the call
+
+  .lc-call {
+    padding: 18px 20px 16px;
+    gap: 16px;
+  }
+
+  // index.scss has good, warn and accent pills; this screen also needs a quiet one.
+  .status-pill.neutral {
+    background: rgba(53, 42, 124, 0.06);
+    color: var(--muted);
+  }
+
+  .lc-call__top {
+    min-height: 26px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .lc-connection {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .lc-connection--live::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--good);
+  }
+
+  .lc-call__main {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .lc-call__icon {
+    position: relative;
+    flex: none;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(53, 42, 124, 0.06);
+    color: var(--muted);
+    transition: background 0.4s ease, color 0.4s ease;
+
+    &.is-active {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    &.is-ringing {
+      background: var(--accent);
+
+      &::before,
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+        animation: lc-ring 1.8s ease-out infinite;
+      }
+
+      &::after {
+        animation-delay: 0.9s;
+      }
+    }
+  }
+
+  .lc-call__meta {
+    text-align: left;
+    margin: 0;
+    min-width: 0;
+
+    h2 {
+      margin: 6px 0 4px;
+      font-size: clamp(2rem, 2.6vw, 2.8rem);
+    }
+  }
+
+  .lc-call__voice {
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 1rem;
+    animation: lc-rise 0.5s ease;
+  }
+
+  .call-meta .lc-call__caller {
+    margin-top: 4px;
+    font-size: 0.88rem;
+  }
+
+  .lc-call__footer {
+    margin-top: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    align-items: center;
+
+    .duration-block strong {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.9rem;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .lc-call__status {
+    margin: 0;
+    max-width: 62%;
+    text-align: right;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.4;
+  }
+
+  // ------------------------------------------------------------ the traffic light
+
+  .lc-light {
+    padding: 18px 20px 16px;
+    transition: background-color 0.6s ease, border-color 0.6s ease;
+
+    &--green { border-color: rgba(19, 134, 83, 0.22); }
+    &--yellow { background: #fffaf0; border-color: rgba(245, 185, 77, 0.55); }
+    &--red { background: #fff5f3; border-color: rgba(216, 64, 47, 0.4); }
+  }
+
+  .lc-light__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .lc-light__state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .lc-light__body {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .lc-light__housing {
+    flex: none;
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 32px;
+    background: linear-gradient(180deg, #231c45 0%, #140f2b 100%);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45), 0 14px 28px rgba(53, 42, 124, 0.22);
+  }
+
+  .lc-lamp {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    transition: background 0.6s ease, box-shadow 0.6s ease, transform 0.6s ease;
+
+    &--red { background: #46201c; color: var(--lc-red); }
+    &--yellow { background: #4a3a17; color: var(--lc-yellow); }
+    &--green { background: #163a2d; color: var(--lc-green); }
+
+    &.is-on { transform: scale(1.04); }
+    &--red.is-on {
+      background: radial-gradient(circle at 34% 30%, #ff9c8c 0%, var(--lc-red) 58%);
+      box-shadow: 0 0 30px 6px rgba(216, 64, 47, 0.55);
+    }
+    &--yellow.is-on {
+      background: radial-gradient(circle at 34% 30%, #ffe7a6 0%, var(--lc-yellow) 58%);
+      box-shadow: 0 0 30px 6px rgba(245, 185, 77, 0.55);
+    }
+    &--green.is-on {
+      background: radial-gradient(circle at 34% 30%, #8ee6bf 0%, var(--lc-green) 58%);
+      box-shadow: 0 0 30px 6px rgba(19, 134, 83, 0.45);
+    }
+  }
+
+  // Replays on each new reading: a ring that grows out of the lit lamp.
+  .lc-lamp__burst {
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 3px solid currentColor;
+    opacity: 0;
+    animation: lc-burst 1.2s ease-out 2;
+  }
+
+  .lc-light__text {
+    min-width: 0;
+  }
+
+  .lc-light__heading {
+    display: block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1.7rem, 2.3vw, 2.3rem);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    animation: lc-rise 0.5s ease;
+  }
+
+  .lc-light--green .lc-light__heading { color: var(--good); }
+  .lc-light--yellow .lc-light__heading { color: var(--lc-yellow-ink); }
+  .lc-light--red .lc-light__heading { color: var(--lc-red-ink); }
+
+  .lc-light__reason {
+    margin: 8px 0 0;
+    font-size: 1.05rem;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+
+  .lc-light__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .lc-signal {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(53, 42, 124, 0.06);
+    color: var(--ink);
+    font-size: 0.78rem;
+    font-weight: 700;
+    animation: lc-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &.is-agreed { box-shadow: inset 0 0 0 1.5px currentColor; }
+  }
+
+  .lc-light--yellow .lc-signal { background: rgba(245, 185, 77, 0.22); color: var(--lc-yellow-ink); }
+  .lc-light--red .lc-signal { background: rgba(216, 64, 47, 0.12); color: var(--lc-red-ink); }
+
+  .lc-light__note {
+    margin: 16px 0 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--muted);
+
+    svg { vertical-align: -2px; }
+  }
+
+  // ------------------------------------------------------------ the stages
+
+  .lc-stages {
+    padding: 14px 20px 12px;
+  }
+
+  .lc-stages__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .lc-stages__stopped {
+    color: var(--good);
+    font-weight: 700;
+    font-size: 0.86rem;
+    animation: lc-rise 0.5s ease;
+  }
+
+  .lc-stages__line {
+    list-style: none;
+    margin: 14px 0 8px;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .lc-stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    text-align: center;
+
+    // The line into this stage from the one before.
+    &::before {
+      content: '';
+      position: absolute;
+      top: 7px;
+      right: 50%;
+      width: 100%;
+      height: 2px;
+      background: rgba(53, 42, 124, 0.12);
+      transition: background 0.5s ease;
+    }
+
+    &:first-child::before { display: none; }
+    &.is-reached::before { background: var(--accent); }
+    &.is-reveal.is-reached::before { background: var(--good); }
+  }
+
+  .lc-stage__dot {
+    position: relative;
+    z-index: 1;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(53, 42, 124, 0.22);
+    background: #fff;
+    transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  }
+
+  .lc-stage.is-reached .lc-stage__dot {
+    background: var(--accent);
+    border-color: var(--accent);
+    animation: lc-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .lc-stage.is-reveal.is-reached .lc-stage__dot,
+  .lc-stage.is-stopped .lc-stage__dot {
+    background: var(--good);
+    border-color: var(--good);
+  }
+
+  .lc-stage.is-stopped .lc-stage__dot { box-shadow: 0 0 0 5px var(--good-soft); }
+  .lc-stage.is-current .lc-stage__dot { animation: lc-stage-pulse 1.6s ease-out infinite; }
+  .lc-stage.is-skipped .lc-stage__dot { border-style: dashed; }
+
+  .lc-stage__label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .lc-stage.is-reached .lc-stage__label { color: var(--ink); }
+
+  .lc-stages__note {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  // ------------------------------------------------------------ what they did, family number
+
+  .lc-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .lc-tile {
+    padding: 14px 18px;
+    transition: background-color 0.7s ease, border-color 0.7s ease;
+  }
+
+  .lc-tile__value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    animation: lc-rise 0.45s ease;
+
+    svg { flex: none; }
+
+    strong {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.22rem;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+  }
+
+  .lc-tile__detail {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--muted);
+  }
+
+  .lc-tile.is-safe,
+  .lc-tile--line.is-done {
+    background: #e9f6f0;
+    border-color: rgba(19, 134, 83, 0.35);
+
+    .lc-tile__value { color: var(--good); }
+  }
+
+  .lc-tile.is-unsafe {
+    background: #fffaf0;
+    border-color: rgba(245, 185, 77, 0.55);
+
+    .lc-tile__value { color: var(--lc-yellow-ink); }
+  }
+
+  .lc-tile--line.is-waiting .lc-tile__value svg {
+    color: var(--muted);
+    animation: lc-breathe 1.8s ease-in-out infinite;
+  }
+
+  // ------------------------------------------------------------ the result
+
+  .lc-result {
+    animation: lc-rise 0.5s ease;
+
+    &--pending {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+    }
+
+    &--empty p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+  }
+
+  .lc-result__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .lc-result__lesson {
+    margin-top: 12px;
+
+    p { font-size: 1.05rem; }
+  }
+
+  .lc-result__debrief {
+    margin: 12px 0 0;
+    line-height: 1.6;
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+
+  .lc-result__tactics {
+    margin-top: 14px;
+  }
+
+  .lc-result__tactics-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--muted);
+  }
+
+  .lc-result__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .lc-result__learn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 14px;
+    color: var(--navy);
+    font-size: 0.9rem;
+    font-weight: 650;
+    text-decoration: underline;
+    text-decoration-color: rgba(53, 42, 124, 0.25);
+    text-underline-offset: 4px;
+    transition: text-decoration-color 160ms ease-out, color 160ms ease-out;
+
+    svg:last-child { transition: transform 160ms ease-out; }
+
+    &:hover {
+      text-decoration-color: currentColor;
+
+      svg:last-child { transform: translateX(2px); }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--navy);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+  }
+
+  .lc-used {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px;
+    border-radius: 12px;
+    background: var(--good-soft);
+    color: var(--good);
+    font-size: 0.8rem;
+    font-weight: 700;
+
+    small {
+      font-weight: 600;
+      opacity: 0.8;
+    }
+
+    &.is-worked {
+      background: var(--accent-soft);
+      color: #a94f3e;
+    }
+  }
+
+  // ------------------------------------------------------------ the conversation
+
+  .lc-conversation {
+    min-height: 240px;
+  }
+
+  .lc-conversation__body {
+    gap: 0;
+    // Fills the screen below the stages and tiles, so the newest line stays in view.
+    max-height: max(240px, calc(100vh - 500px));
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+
+    // Not live (a replay, or before the call is answered): the whole
+    // conversation, top to bottom, with the page's own scroll.
+    &.is-whole {
+      max-height: none;
+      overflow: visible;
+    }
+  }
+
+  .lc-turn {
+    padding: 12px 0;
+    animation: lc-rise 0.35s ease;
+
+    &.is-caller .speaker-badge::before { background: var(--accent-soft); }
+    &.is-person .speaker-badge::before { background: var(--good-soft); }
+  }
+
+  .lc-turn__marks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .lc-tactic {
+    gap: 5px;
+    transform-origin: left center;
+    animation: lc-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+    // The caller marked it and the independent check heard it too.
+    &.is-agreed {
+      background: rgba(216, 64, 47, 0.12);
+      border-color: rgba(216, 64, 47, 0.5);
+      color: var(--lc-red-ink);
+      box-shadow: 0 0 0 3px rgba(216, 64, 47, 0.08);
+    }
+  }
+
+  .lc-turn__light {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--muted);
+    animation: lc-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .lc-turn__light-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .lc-turn__light--yellow .lc-turn__light-dot { background: var(--lc-yellow); }
+  .lc-turn__light--red .lc-turn__light-dot { background: var(--lc-red); }
+
+  .lc-empty {
+    margin: 14px 0;
+    color: var(--muted);
+  }
+
+  // ------------------------------------------------------------ the Shield
+
+  .lc-badge--shield {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: #fff;
+  }
+
+  .lc-shield {
+    display: grid;
+    gap: 12px;
+    padding: 18px 20px;
+    transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
+
+    h2 {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 1.5rem;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      text-wrap: balance;
+    }
+  }
+
+  .lc-shield__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .lc-shield__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--navy-soft);
+  }
+
+  .lc-shield__main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .lc-shield__text {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+    font-size: 0.95rem;
+  }
+
+  .lc-shield__radar {
+    position: relative;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(53, 42, 124, 0.06);
+    color: var(--navy-soft);
+  }
+
+  .lc-shield.is-listening {
+    border-color: rgba(41, 33, 82, 0.28);
+
+    .lc-shield__radar {
+      background: var(--navy);
+      color: #fff;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2px solid rgba(41, 33, 82, 0.5);
+        animation: lc-ring 2s ease-out infinite;
+      }
+
+      svg { animation: lc-spin 3s linear infinite; }
+    }
+  }
+
+  .lc-shield.is-warning {
+    background: #fff5f3;
+    border-color: rgba(216, 64, 47, 0.4);
+
+    h2 { color: var(--lc-red-ink); }
+
+    .lc-shield__bell {
+      background: var(--lc-red);
+      color: #fff;
+    }
+  }
+
+  .lc-shield__bell {
+    position: relative;
+    flex: none;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--accent);
+    color: #fff;
+  }
+
+  // The moment the family is alerted: the screen's loudest card.
+  .lc-shield.is-alerted {
+    background: linear-gradient(160deg, #201847 0%, var(--navy) 70%);
+    border-color: var(--navy);
+    color: #fff;
+    box-shadow: 0 18px 40px rgba(53, 42, 124, 0.28);
+    animation: lc-alert-in 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+
+    .lc-shield__name { color: rgba(255, 255, 255, 0.75); }
+
+    h2 {
+      font-size: 1.75rem;
+      color: #fff;
+    }
+
+    .lc-shield__bell {
+      box-shadow: 0 0 0 6px rgba(224, 71, 94, 0.25);
+
+      &::before,
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2px solid rgba(224, 71, 94, 0.7);
+        animation: lc-ring 1.8s ease-out 3;
+      }
+
+      &::after { animation-delay: 0.6s; }
+
+      svg { animation: lc-bell 0.9s ease-in-out 3; transform-origin: 50% 10%; }
+    }
+
+    .lc-shield__text { color: rgba(255, 255, 255, 0.8); }
+  }
+
+  .lc-shield__time {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .lc-shield__steps {
+    margin: 2px 0 0;
+    padding: 12px 0 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 600;
+      font-size: 0.93rem;
+    }
+
+    svg { color: #7fe0b5; flex: none; }
+  }
+
+  .lc-turn__shield {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    animation: lc-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+    svg { color: #ffb4a3; }
+  }
+}
+
+@keyframes lc-alert-in {
+  0% { opacity: 0; transform: translateY(8px) scale(0.98); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes lc-bell {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(14deg); }
+  40% { transform: rotate(-12deg); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-4deg); }
+}
+
+@keyframes lc-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes lc-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes lc-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes lc-burst {
+  0% { opacity: 0.9; transform: scale(0.9); }
+  100% { opacity: 0; transform: scale(1.55); }
+}
+
+@keyframes lc-ring {
+  0% { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.7); }
+}
+
+@keyframes lc-stage-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(224, 71, 94, 0.5); }
+  70% { box-shadow: 0 0 0 9px rgba(224, 71, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(224, 71, 94, 0); }
+}
+
+@keyframes lc-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (max-width: 1100px) {
+  .live-call .lc-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .live-call .lc-header {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "back" "title" "badge";
+    row-gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .live-call {
+    .lc-tiles { grid-template-columns: minmax(0, 1fr); }
+    .lc-light__body { gap: 16px; }
+    .lc-lamp { width: 52px; height: 52px; }
+    .lc-stage__label { font-size: 0.68rem; }
+    .lc-call__footer { align-items: flex-start; }
+    .lc-call__status { max-width: none; text-align: left; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-call *,
+  .live-call *::before,
+  .live-call *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
