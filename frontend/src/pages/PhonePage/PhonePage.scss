@@ -1832,3 +1832,138 @@ $shield-amber: #f5b94d;
     outline-offset: 3px;
   }
 }
+
+// ---------------------------------------------------------------- installing and call alerts (pwa.ts)
+
+.phone-app-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .phone-card__title {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.phone-app-card__icon {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--navy);
+}
+
+.phone-app-card__close {
+  appearance: none;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -6px -10px -6px 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.phone-page .phone-install {
+  border-color: rgba(115, 90, 200, 0.22);
+  background: linear-gradient(160deg, #fff 0%, #f6f2ff 100%);
+}
+
+.phone-install__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: install-step;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    line-height: 1.4;
+    color: var(--ink);
+    counter-increment: install-step;
+
+    &::before {
+      content: counter(install-step);
+      flex-shrink: 0;
+      width: 1em;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      color: var(--accent);
+    }
+  }
+}
+
+.phone-install__step-icon {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(10, 114, 232, 0.08);
+  color: #0a72e8; // the blue of iOS's own Share button, so the icon is recognised
+}
+
+.phone-page .phone-install__button,
+.phone-page .phone-alerts__button {
+  min-height: 56px;
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 12px 26px rgba(53, 42, 124, 0.22);
+}
+
+.phone-alerts__state {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(53, 42, 124, 0.05);
+  line-height: 1.5;
+  color: var(--ink);
+
+  > svg {
+    flex-shrink: 0;
+    margin-top: 3px;
+    color: var(--navy);
+  }
+}
+
+.phone-page .phone-alerts--on {
+  gap: 8px;
+  border-color: rgba(19, 134, 83, 0.3);
+  background: #f2faf6;
+}
+
+.phone-alerts__on {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 700;
+  color: var(--good-ink);
+}
+
+.phone-page .phone-alerts__off {
+  align-self: flex-start;
+  min-height: 44px;
+  color: var(--muted);
+  font-weight: 600;
+}
