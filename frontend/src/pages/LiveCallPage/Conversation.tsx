@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { CheckCheck, MessageSquareText } from 'lucide-react';
+import { BellRing, CheckCheck, MessageSquareText } from 'lucide-react';
 import type { RiskPointView } from '../../api/types';
 import { clock } from './format';
-import type { LiveTactic, LiveTurn } from './liveCallState';
+import type { LiveTactic, LiveTurn, ShieldAlert } from './liveCallState';
 
 type ConversationProps = {
   turns: LiveTurn[];
@@ -13,6 +13,8 @@ type ConversationProps = {
   agreed: Set<string>;
   callerName: string;
   personName: string;
+  /** On a shield call: when the Shield alerted the family, marked on the caller line that set it off. */
+  shieldAlert?: ShieldAlert | null;
   listening: boolean;
   emptyText: string;
 };
@@ -21,7 +23,7 @@ const LEVEL_WORDS = { green: 'green', yellow: 'yellow', red: 'red' } as const;
 
 /** The conversation, line by line, with each tactic popping in on the caller line it belongs to. */
 export function Conversation({
-  turns, tactics, lightChanges, agreed, callerName, personName, listening, emptyText,
+  turns, tactics, lightChanges, agreed, callerName, personName, shieldAlert = null, listening, emptyText,
 }: ConversationProps) {
   const body = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -31,7 +33,7 @@ export function Conversation({
   useEffect(() => {
     const el = body.current;
     if (el && stick.current) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [turns.length, tactics.length, lightChanges.size]);
+  }, [turns.length, tactics.length, lightChanges.size, shieldAlert]);
 
   // Only a scroll upwards (someone reading back) stops the following, and
   // reaching the bottom again restarts it. The page's own smooth scroll only
@@ -66,6 +68,7 @@ export function Conversation({
           const isCaller = turn.speaker === 'agent';
           const chips = tactics.filter((tactic) => tactic.turnIndex === index);
           const change = lightChanges.get(index);
+          const alerted = shieldAlert && shieldAlert.turnIndex === index ? shieldAlert : null;
           return (
             <div key={index} className={`transcript-row lc-turn ${isCaller ? 'is-caller' : 'is-person'}`}>
               <div className="row-header">
@@ -73,7 +76,7 @@ export function Conversation({
                 {turn.t !== null ? <time>{clock(turn.t)}</time> : null}
               </div>
               <p>{turn.text}</p>
-              {chips.length || change ? (
+              {chips.length || change || alerted ? (
                 <div className="lc-turn__marks">
                   {chips.map((tactic, chipIndex) => (
                     <span
@@ -89,6 +92,12 @@ export function Conversation({
                     <span className={`lc-turn__light lc-turn__light--${change.level}`}>
                       <span className="lc-turn__light-dot" aria-hidden />
                       Light turned {LEVEL_WORDS[change.level]}
+                    </span>
+                  ) : null}
+                  {alerted ? (
+                    <span className="lc-turn__shield">
+                      <BellRing size={13} aria-hidden />
+                      Shield alerted the family{alerted.t !== null ? ` at ${clock(alerted.t)}` : ''}
                     </span>
                   ) : null}
                 </div>

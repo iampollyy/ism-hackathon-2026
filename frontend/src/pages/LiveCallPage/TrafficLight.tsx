@@ -17,10 +17,12 @@ type TrafficLightProps = {
   listening: boolean;
   /** The call is over: the light holds its last reading. */
   over: boolean;
+  /** The panel's name (default "Risk check"). */
+  title?: string;
 };
 
 /** The live risk check: an independent read of the caller's words. */
-export function TrafficLight({ risk, callerMarked, listening, over }: TrafficLightProps) {
+export function TrafficLight({ risk, callerMarked, listening, over, title = 'Risk check' }: TrafficLightProps) {
   const level: RiskLevel = risk?.level ?? 'green';
   const reason = risk?.reason?.trim();
   const showReason = !!reason && reason.toLowerCase() !== HEADINGS[level].toLowerCase();
@@ -30,7 +32,7 @@ export function TrafficLight({ risk, callerMarked, listening, over }: TrafficLig
   return (
     <section className={`lc-card lc-light lc-light--${level}`} aria-labelledby="lc-light-title">
       <div className="lc-light__top">
-        <span className="small-label" id="lc-light-title">Risk check</span>
+        <span className="small-label" id="lc-light-title">{title}</span>
         {listening ? (
           <span className="lc-light__state"><Ear size={14} /> Listening to the caller</span>
         ) : over ? (
