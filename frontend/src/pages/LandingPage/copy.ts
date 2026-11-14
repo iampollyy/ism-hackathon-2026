@@ -130,7 +130,7 @@ export const problem = {
       post: ' of the time.',
       source: 1,
     },
-    { pre: 'People in Lithuania lose about ', num: '€20 million', post: ' a year to phone scams.', source: 2 },
+    { pre: 'Fraudsters took more than ', num: '€20 million', post: ' from people in Lithuania last year.', source: 2 },
   ],
 };
 
@@ -150,7 +150,7 @@ export const story = {
   chapters: [
     {
       h3: 'Everyone says yes first',
-      body: 'Lukas adds his parents. Each of them gives their own consent, then confirms it out loud on a short welcome call. Lukas records one minute of his voice, starting with a spoken yes. Without consent, no call can start.',
+      body: 'Lukas adds his parents and sends each of them a link. Each person agrees on their own phone, then says yes out loud on a short welcome call. Only after that yes is their voice copied from their side of the call. Without consent, no call can start.',
     },
     {
       h3: 'The phone rings on an ordinary day',
@@ -158,7 +158,7 @@ export const story = {
     },
     {
       h3: 'A risk light reads the caller',
-      body: 'A separate model hears only what the caller says. Code turns its signals into green, yellow or red as the scam builds, and Lukas can watch it live on his laptop.',
+      body: 'A separate model hears only what the caller says. Code turns its signals into green, yellow or red as the scam builds, and Lukas can follow it live.',
       small:
         'On ten written test transcripts, it matched the tactics our agent used with 0.80 precision and 0.87 recall, in about 1.2 seconds a check.',
     },
@@ -172,16 +172,17 @@ export const story = {
     },
   ],
   cta: 'Start your free trial',
-  // Chapter 1 screen
+  // Chapter 1 screen: Lukas's own welcome call, with the agent's real question
+  // (backend/voice_agents/welcome.md).
   rec: {
-    title: 'Record your voice',
-    read: 'Read this aloud:',
-    sentence: 'I’m Lukas, and I agree to Callback cloning my voice for practice calls inside my family.',
-    recording: 'Recording',
+    title: 'Welcome call',
+    read: 'Callback asks:',
+    sentence: '‘May Callback use your voice from this call to make practice calls to your family, in your voice?’',
+    recording: 'Recording your side of the call',
     people: [
       { initial: 'R', name: 'Rasa', role: 'Mum', status: 'Agreed to practice calls', done: true },
       { initial: 'J', name: 'Jonas', role: 'Dad', status: 'Agreed to practice calls', done: true },
-      { initial: 'L', name: 'Lukas', role: 'You', status: 'Recording…', done: false },
+      { initial: 'L', name: 'Lukas', role: 'You', status: 'On the welcome call…', done: false },
     ],
   },
   // Chapter 2 transcript; t is the scroll-time (seconds) the line appears at.
@@ -195,7 +196,7 @@ export const story = {
   ],
   callerName: 'Unknown number',
   risk: {
-    title: 'Risk light',
+    title: 'Risk light · what Lukas sees',
     green: 'Nothing worrying yet',
     yellow: 'Caller calls from a new number and plays on your feelings',
     red1: 'Caller asks for money and rushes you',
@@ -234,7 +235,7 @@ export const story = {
         before: 0.22,
         now: 0.56,
       },
-      { initial: 'L', name: 'Lukas', role: 'You', did: 'Voice recorded · consent given', next: null, before: 0, now: 0 },
+      { initial: 'L', name: 'Lukas', role: 'You', did: 'Voice from his welcome call · consent given', next: null, before: 0, now: 0 },
     ],
     weekTitle: 'This week’s scam',
     week: 'Callers posing as a bank’s security team ask people to move money to a ‘safe account’. Hang up and call the number on your card.',
@@ -246,7 +247,7 @@ export const shield = {
   h2: 'Callback Shield warns during the call',
   lead: 'Practice builds the habit. Shield is there when a call that sounds like a scam is still going: it warns the person on screen and alerts the family automatically.',
   points: [
-    { icon: 'shield', text: 'A clear warning mid-call: ‘This sounds like a scam. Hang up and call Lukas on their usual number.’' },
+    { icon: 'shield', text: 'A clear warning mid-call: ‘This sounds like a scam. Hang up and call Lukas on his usual number.’' },
     { icon: 'bell', text: 'The family hears about it at once, without anyone pressing a button.' },
     { icon: 'hand', text: 'A ‘Something’s wrong’ button alerts the family any time, call or no call.' },
   ],
@@ -255,7 +256,7 @@ export const shield = {
     caller: 'Unknown number',
     time: '1:12',
     banner: 'Callback Shield',
-    warning: 'This sounds like a scam. Hang up and call Lukas on their usual number.',
+    warning: 'This sounds like a scam. Hang up and call Lukas on his usual number.',
     hangUp: 'Hang up',
     wrong: 'Something’s wrong',
   },
@@ -275,7 +276,7 @@ export const rules = {
     {
       icon: 'user',
       title: 'Consent from both sides',
-      text: 'The person whose voice is used records a spoken yes. The person called agrees at sign-up and again on the welcome call. A ‘no’ stops every practice call.',
+      text: 'Each person agrees on their phone and again out loud on the welcome call. A voice is copied only after its owner says yes. A ‘no’ stops every practice call.',
     },
     { icon: 'phone', title: 'Every call reveals itself', text: 'The reveal uses fixed words, spoken in full, however the call ends.' },
     {
@@ -291,8 +292,13 @@ export const rules = {
     },
     { icon: 'check', title: 'Scored on actions', text: 'Each call is scored on what the person did. Nobody sees a list of who was fooled.' },
   ],
-  consentSentence: 'I’m Lukas, and I agree to Callback cloning my voice for practice calls inside my family.',
-  consentDone: 'Consent recorded · 0:58',
+  // The same question the welcome agent asks, and Lukas's answer.
+  consentLabel: 'A spoken yes on the welcome call',
+  consentAsker: 'Callback',
+  consentSentence: '‘May Callback use your voice from this call to make practice calls to your family, in your voice?’',
+  consentWho: 'Lukas',
+  consentAnswer: '‘Yes.’',
+  consentDone: 'Spoken yes on the welcome call',
 };
 
 export const pricing = {
@@ -311,28 +317,68 @@ export const banks = {
   h2: 'Callback for banks',
   lead: 'Banks are being made liable for scam losses. Callback is the practice you can give your customers’ families.',
   body: 'The UK has required scam refunds since October 2024. In February 2026, Lithuania’s central bank proposed that banks compensate customers when they fail to stop a suspicious payment.',
-  gets: [
-    'Free enrolment for your customers’ families',
-    'An anonymous count of enrolled families who practised and kept the habit',
-    'A prevention step you can show customers and your regulator',
-  ],
+  gets: ['Free enrolment for your customers’ families', 'A prevention step you can show customers and your regulator'],
   priceLine: 'Priced per enrolled family.',
+  pilot: {
+    title: 'How a pilot works',
+    steps: [
+      'You give each customer a Callback code in your app or online banking.',
+      'Their family joins free with the code and practises at home.',
+      'Each month you get a report, and you pay only for families who joined with your code.',
+    ],
+  },
+  // The measures Callback already records for every practice call; no figures until a pilot has them.
+  report: {
+    title: 'What your report shows',
+    items: [
+      'Families enrolled with your code',
+      'Practice calls completed',
+      'The share of calls handled the safe way',
+      'The median seconds to challenge the caller',
+      'Shield alerts raised',
+    ],
+    countsOnly: 'Counts only: never names, recordings or transcripts.',
+  },
+  evaluation:
+    'In a pilot we compare enrolled customers with a matched group on your own scam claims. We don’t claim a drop in losses yet.',
   form: {
     title: 'Talk to the Callback team',
     email: 'Work email',
     org: 'Bank or organisation',
     message: 'Message (optional)',
-    messageHint: 'What would you like to know?',
+    messageHint: 'Your name, your role and what you’d like to know',
     submit: 'Talk to us',
     sending: 'Sending…',
     under: 'We’ll reply to this email.',
     successTitle: (org: string) => `Thanks, ${org}.`,
-    success: (email: string) => `Your note is with the Callback team. We’ll reply to ${email}.`,
+    success: (email: string) => `Your note is saved. We’ll reply to ${email}.`,
   },
+};
+
+// Inside the banks section (#data), linked from the footer. Every line is what the code
+// does today (backend/app/models.py, routers/voice.py, services/voice_sample.py, config.py).
+export const dataProtection = {
+  title: 'Data protection',
+  lead: 'What Callback keeps about every family, who handles it, and what a bank sees.',
+  items: [
+    {
+      term: 'What we store',
+      text: 'Names, the organiser’s email, phone numbers if given, consent and survey answers, call transcripts and results, and each person’s voice clone with the recording it came from. A voice is kept only after its owner’s spoken yes. Never the family word.',
+    },
+    {
+      term: 'Who processes it',
+      text: 'ElevenLabs runs the voices and the calls. Anthropic and OpenAI read transcripts to plan practice, score calls and run the risk light. Firecrawl reads only public news.',
+    },
+    { term: 'Deleting a voice', text: 'A clone is deleted on request, or when that person opts out.' },
+    { term: 'What a bank receives', text: 'Aggregate counts only, for the families who joined with its code.' },
+  ],
+  next: 'Before any bank pilot: EU hosting, a data processing agreement and a fixed retention period.',
 };
 
 export const errors = {
   email: 'That email address doesn’t look complete. Check it and send again.',
+  emailEmpty: 'Add your email.',
+  workEmailEmpty: 'Add your work email.',
   org: 'Add the name of your bank or organisation.',
   limit: 'We’ve had more messages than we can take today. Please try again tomorrow.',
   network: 'We couldn’t reach Callback. Check your connection and try again.',
@@ -344,7 +390,7 @@ export const faq = {
   items: [
     {
       q: 'Is it all right to call my parents in a cloned voice?',
-      a: 'Only with everyone’s agreement. The person whose voice is used records a spoken yes, and the person called agrees at sign-up and again on the welcome call. Every call says it was practice before it ends.',
+      a: 'Only with everyone’s agreement. Each person agrees on their phone and again out loud on the welcome call, and a voice is copied only after its owner says yes. Every call says it was practice before it ends.',
     },
     {
       q: 'Won’t a practice call frighten my mum?',
@@ -380,7 +426,7 @@ export const faq = {
 
 export const close = {
   h2: 'Practice calls for your family, free for 30 days',
-  body: 'Add your family, record a minute of your voice and let Callback handle the rest. Cancel any time.',
+  body: 'Add your family and send their links. Each person takes a short welcome call, and Callback handles the rest. Cancel any time.',
   cta: 'Start your free trial',
   waitText:
     'Today Callback rings a web page on each person’s phone. Join the waitlist to hear when it rings real phones, and when it speaks Lithuanian.',
@@ -405,6 +451,7 @@ export const footer = {
     { href: '#pricing', label: 'Pricing' },
     { href: '#banks', label: 'For banks' },
     { href: '#faq', label: 'Questions' },
+    { href: '#data', label: 'Data protection' },
   ],
   signIn: 'Sign in',
   source: 'Source code',

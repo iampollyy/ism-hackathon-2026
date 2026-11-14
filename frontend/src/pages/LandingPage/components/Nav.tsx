@@ -8,7 +8,7 @@ import { SoundToggle } from './SoundToggle';
 export function NavLinkItem({ href, label, onHome, onClick }: { href: string; label: string; onHome: boolean; onClick?: () => void }) {
   if (href === '#pricing' && !onHome)
     return (
-      <Link to="/pricing" onClick={onClick}>
+      <Link to="/pricing" onClick={onClick} aria-current="page">
         {label}
       </Link>
     );

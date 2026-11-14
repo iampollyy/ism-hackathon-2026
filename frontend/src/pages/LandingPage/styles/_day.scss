@@ -100,8 +100,39 @@
   margin-bottom: 16px;
 }
 
+.lp-consent__who {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lp-muted);
+  margin-bottom: 6px;
+}
+
+// Lukas's answer: one short word, so a short wave beside it.
+.lp-consent__answer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--lp-line-light);
+
+  p {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+}
+
+.lp-consent__yes {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
 .lp-wave--consent {
-  height: 44px;
+  flex: 0 1 112px;
+  width: 112px;
+  height: 32px;
 
   rect.on {
     fill: var(--lp-safe-brand);
@@ -245,14 +276,15 @@
   background: var(--lp-navy);
   color: var(--lp-text);
 
-  .lp-day {
-    align-items: center;
-  }
-
   .lp-body {
     margin-bottom: 28px;
     color: var(--lp-text-muted);
   }
+}
+
+// The form sits level with the heading, and keeps to its own height once it is sent.
+.lp-banks__top {
+  align-items: start;
 }
 
 .lp-checks {
@@ -277,6 +309,141 @@
   font-family: 'Space Grotesk', sans-serif;
   font-size: 22px;
   font-weight: 600;
+}
+
+// How a pilot works: three numbered steps across the section.
+.lp-banks__pilot {
+  margin-top: clamp(64px, 8vh, 96px);
+  padding-top: 40px;
+  border-top: 1px solid var(--lp-line-dark);
+
+  .lp-h3 {
+    margin-bottom: 28px;
+  }
+}
+
+.lp-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px 40px;
+
+  li {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  p {
+    max-width: 32ch;
+    color: var(--lp-text);
+    text-wrap: pretty;
+  }
+}
+
+.lp-steps__n {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(234, 241, 238, 0.28);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1;
+}
+
+// What the report shows, beside the data protection block.
+.lp-banks__more {
+  margin-top: clamp(56px, 7vh, 88px);
+}
+
+.lp-banks__report {
+  max-width: 480px;
+
+  .lp-h4 {
+    margin-bottom: 14px;
+  }
+}
+
+.lp-measures {
+  border-bottom: 1px solid var(--lp-line-dark);
+
+  li {
+    padding: 11px 0;
+    border-top: 1px solid var(--lp-line-dark);
+    font-size: 16px;
+    line-height: 1.45;
+  }
+}
+
+.lp-banks__counts {
+  margin-top: 16px;
+  font-weight: 600;
+}
+
+.lp-banks__eval {
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--lp-text-muted);
+  text-wrap: pretty;
+}
+
+// Data protection (#data, linked from the footer).
+.lp-data {
+  scroll-margin-top: calc(var(--nav-h) + 16px);
+  padding: 28px 32px;
+  border-radius: 16px;
+  background: rgba(234, 241, 238, 0.04);
+  border: 1px solid var(--lp-line-dark);
+}
+
+.lp-data__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  svg {
+    flex: none;
+    color: var(--lp-text-muted);
+  }
+}
+
+.lp-data__lead {
+  margin: 6px 0 20px;
+  font-size: 15px;
+  color: var(--lp-text-muted);
+}
+
+.lp-data__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 32px;
+
+  dt {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--lp-text);
+  }
+
+  dd {
+    margin: 4px 0 0;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--lp-text-muted);
+    text-wrap: pretty;
+  }
+}
+
+.lp-data__next {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--lp-line-dark);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
 // ---------------------------------------------------------------- questions
@@ -341,6 +508,8 @@
 
   input,
   textarea {
+    // Focus moves here on a bad submit: keep the label clear of the sticky nav.
+    scroll-margin-top: calc(var(--nav-h) + 40px);
     width: 100%;
     min-height: 48px;
     padding: 12px 14px;
@@ -478,10 +647,15 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .lp-rules__list,
-  .lp-faq__list {
+  .lp-faq__list,
+  .lp-steps,
+  .lp-data__list {
     grid-template-columns: minmax(0, 1fr);
   }
   .lp-form--paper {
+    padding: 24px 20px;
+  }
+  .lp-data {
     padding: 24px 20px;
   }
   .lp-field-row {

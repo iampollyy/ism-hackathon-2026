@@ -1,8 +1,8 @@
 // Sections 6 to 9, in daylight: the rules, pricing, banks and questions.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, CircleCheck, Hand, KeyRound, Lock, PhoneCall, UserCheck } from 'lucide-react';
-import { banks, faq, pricing, rules, SIGNUP } from '../copy';
+import { ArrowRight, Check, CircleCheck, Hand, KeyRound, Lock, LockKeyhole, PhoneCall, UserCheck } from 'lucide-react';
+import { banks, dataProtection, faq, pricing, rules, SIGNUP } from '../copy';
 import { FALLBACK_PRICING, getPricing, type Pricing as PricingData } from '../api';
 import { afterLoadIdle } from '../capability';
 import { BankForm } from './Forms';
@@ -28,9 +28,16 @@ export function Rules() {
             {rules.h2}
           </h2>
           <p className="lp-lead">{rules.lead}</p>
-          <figure className="lp-consent" aria-label="A recorded consent sentence">
+          <figure className="lp-consent" aria-label={rules.consentLabel}>
+            <p className="lp-consent__who">{rules.consentAsker}:</p>
             <p className="lp-consent__quote">{rules.consentSentence}</p>
-            <StaticWave lit={1} className="lp-wave--consent" />
+            <div className="lp-consent__answer">
+              <p>
+                <span className="lp-consent__who">{rules.consentWho}:</span>{' '}
+                <span className="lp-consent__yes">{rules.consentAnswer}</span>
+              </p>
+              <StaticWave lit={1} bars={18} className="lp-wave--consent" />
+            </div>
             <figcaption className="lp-consent__done">
               <Check size={18} {...ICON} aria-hidden="true" />
               <span className="lp-tnum">{rules.consentDone}</span>
@@ -131,32 +138,84 @@ export function PricingSection({ data, headingLevel = 2, onHome = true }: { data
 export function Banks() {
   return (
     <section id="banks" className="lp-sec lp-banks" aria-labelledby="banks-h" data-theme="dark">
-      <div className="lp-wrap lp-day">
-        <div className="lp-day__copy">
-          <h2 id="banks-h" className="lp-h2">
-            {banks.h2}
-          </h2>
-          <p className="lp-lead">{banks.lead}</p>
-          <p className="lp-body">
-            {banks.body}
-            <sup className="lp-sup">
-              <a href="#src-2" aria-label="Source 2: LRT, February 2026">
-                2
-              </a>
-            </sup>
-          </p>
-          <ul className="lp-checks">
-            {banks.gets.map((g) => (
-              <li key={g}>
-                <Check size={20} {...ICON} aria-hidden="true" />
-                {g}
+      <div className="lp-wrap">
+        <div className="lp-day lp-banks__top">
+          <div className="lp-day__copy">
+            <h2 id="banks-h" className="lp-h2">
+              {banks.h2}
+            </h2>
+            <p className="lp-lead">{banks.lead}</p>
+            <p className="lp-body">
+              {banks.body}
+              <sup className="lp-sup">
+                <a href="#src-2" aria-label="Source 2: LRT, February 2026">
+                  2
+                </a>
+              </sup>
+            </p>
+            <ul className="lp-checks">
+              {banks.gets.map((g) => (
+                <li key={g}>
+                  <Check size={20} {...ICON} aria-hidden="true" />
+                  {g}
+                </li>
+              ))}
+            </ul>
+            <p className="lp-banks__price">{banks.priceLine}</p>
+          </div>
+          <BankForm />
+        </div>
+
+        <div className="lp-banks__pilot">
+          <h3 className="lp-h3">{banks.pilot.title}</h3>
+          <ol className="lp-steps">
+            {banks.pilot.steps.map((step, i) => (
+              <li key={step}>
+                <span className="lp-steps__n lp-tnum" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <p>{step}</p>
               </li>
             ))}
-          </ul>
-          <p className="lp-banks__price">{banks.priceLine}</p>
+          </ol>
         </div>
-        <BankForm />
+
+        <div className="lp-day lp-banks__more">
+          <div className="lp-banks__report">
+            <h3 className="lp-h4">{banks.report.title}</h3>
+            <ul className="lp-measures">
+              {banks.report.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <p className="lp-banks__counts">{banks.report.countsOnly}</p>
+            <p className="lp-banks__eval">{banks.evaluation}</p>
+          </div>
+          <DataProtection />
+        </div>
       </div>
+    </section>
+  );
+}
+
+/** What is stored, who processes it and what a bank sees. Linked from the footer (#data). */
+function DataProtection() {
+  return (
+    <section id="data" className="lp-data" aria-labelledby="data-h">
+      <h3 id="data-h" className="lp-h4 lp-data__title">
+        <LockKeyhole size={20} {...ICON} aria-hidden="true" />
+        {dataProtection.title}
+      </h3>
+      <p className="lp-data__lead">{dataProtection.lead}</p>
+      <dl className="lp-data__list">
+        {dataProtection.items.map((item) => (
+          <div key={item.term}>
+            <dt>{item.term}</dt>
+            <dd>{item.text}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="lp-data__next">{dataProtection.next}</p>
     </section>
   );
 }

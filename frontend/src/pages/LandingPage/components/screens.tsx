@@ -537,6 +537,8 @@ export function HeroScreenView({
 
 // ---------------------------------------------------------------- the story
 
+// Lukas's welcome call: the agent asks about his voice, and only his own side of
+// the call is recorded. A call has no fixed length, so the timer just runs.
 export function RecordingScreen({ p }: { p: number }) {
   const sec = Math.round(12 + p * 46);
   return (
@@ -548,9 +550,8 @@ export function RecordingScreen({ p }: { p: number }) {
         <p className="lp-app__quote">{story.rec.sentence}</p>
         <div className="lp-rec">
           <span className="lp-rec__dot" />
-          <span className="lp-tnum">
-            {story.rec.recording} {fmt(sec)} / 1:00
-          </span>
+          <span className="lp-rec__label">{story.rec.recording}</span>
+          <span className="lp-tnum lp-rec__time">{fmt(sec)}</span>
           <Mic size={18} {...ICON} aria-hidden="true" />
         </div>
         <StaticWave lit={0.15 + p * 0.85} className="lp-wave--rec" />

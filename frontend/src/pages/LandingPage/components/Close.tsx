@@ -85,18 +85,21 @@ export function Footer({ onHome = true }: { onHome?: boolean }) {
         </nav>
         <div className="lp-footer__fine">
           <p>{footer.disclosure}</p>
-          <p className="lp-footer__sources">
-            {footer.sourcesTitle}:{' '}
-            {SOURCES.map((s, i) => (
-              <span key={s.id} id={`src-${s.id}`}>
-                <sup>{s.id}</sup>{' '}
-                <a href={s.href} target="_blank" rel="noopener noreferrer">
-                  {s.label}
-                </a>
-                {i < SOURCES.length - 1 ? '. ' : '.'}
-              </span>
-            ))}
-          </p>
+          {/* The footnote markers are on the landing page only. */}
+          {onHome ? (
+            <p className="lp-footer__sources">
+              {footer.sourcesTitle}:{' '}
+              {SOURCES.map((s, i) => (
+                <span key={s.id} id={`src-${s.id}`}>
+                  <sup>{s.id}</sup>{' '}
+                  <a href={s.href} target="_blank" rel="noopener noreferrer">
+                    {s.label}
+                  </a>
+                  {i < SOURCES.length - 1 ? '. ' : '.'}
+                </span>
+              ))}
+            </p>
+          ) : null}
           <p>{footer.built}</p>
           <p>{footer.copyright}</p>
         </div>
