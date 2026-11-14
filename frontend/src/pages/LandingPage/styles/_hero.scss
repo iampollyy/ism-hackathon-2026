@@ -1,0 +1,682 @@
+// Section 1: the call.
+
+.lp-night {
+  position: relative;
+}
+
+.lp-night > .lp-sec {
+  background-color: var(--lp-night-1);
+  background-image: var(--grain, none);
+  background-size: 64px 64px;
+}
+
+.lp-hero {
+  --lvl: 0;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  padding-top: calc(var(--nav-h) + 24px);
+  padding-bottom: 48px;
+}
+
+.lp-night > .lp-hero {
+  background-color: var(--lp-night-0);
+}
+
+.lp-hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.lp-hero__copy {
+  max-width: 760px;
+
+  .lp-h1 {
+    margin-bottom: 28px;
+  }
+}
+
+// The stage under the h1: the sub-line and button, then captions, then the outcome.
+// Fixed height on desktop so nothing below it moves.
+.lp-stage {
+  position: relative;
+  display: grid;
+  min-height: 280px;
+}
+
+.lp-stage__panel {
+  grid-area: 1 / 1;
+  align-self: start;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 200ms ease,
+    visibility 0s 200ms;
+
+  &.is-on {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 280ms ease 60ms,
+      visibility 0s;
+  }
+
+  .lp-lead {
+    margin-bottom: 32px;
+  }
+}
+
+.lp-hero__cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.lp-done {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(24px, 2.2vw, 30px);
+  line-height: 1.25;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  margin-bottom: 28px;
+  max-width: 22em;
+  text-wrap: balance;
+}
+
+.lp-stage__panel--done .lp-row {
+  margin-bottom: 12px;
+}
+
+.lp-stage__panel--declined .lp-lead,
+.lp-stage__panel--stopped .lp-lead {
+  margin-bottom: 24px;
+}
+
+.lp-display {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: clamp(36px, 4.6vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  margin-bottom: 16px;
+}
+
+.lp-display--sm {
+  font-size: clamp(32px, 3.6vw, 52px);
+}
+
+.lp-display--in {
+  animation: lp-fade 200ms ease both;
+}
+
+.lp-display.is-glitching {
+  color: #fff;
+  text-shadow:
+    -3px 0 rgba(231, 109, 82, 0.75),
+    3px 0 rgba(93, 200, 220, 0.6);
+}
+
+// Captions: large, word by word, always on screen while sound plays.
+.lp-capstage {
+  min-height: 200px;
+}
+
+.lp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lp-text-muted);
+}
+
+.lp-status__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--lp-scam);
+  box-shadow: 0 0 0 4px rgba(231, 109, 82, 0.18);
+  animation: lp-blink 1.2s ease-in-out infinite;
+}
+
+.lp-caps {
+  min-height: 2.5em;
+}
+
+.lp-cap {
+  animation: lp-fade 120ms ease both;
+  text-wrap: balance;
+}
+
+.lp-cap--lg {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: clamp(26px, 2.5vw, 36px);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.lp-cap--md {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: clamp(20px, 1.6vw, 22px);
+  line-height: 1.4;
+}
+
+.lp-cap__w {
+  opacity: 0.38;
+  transition: opacity 120ms ease, color 200ms ease;
+
+  &.is-lit {
+    opacity: 1;
+  }
+  &.is-lit.is-safe {
+    color: var(--lp-safe);
+  }
+}
+
+.lp-nosound {
+  margin-top: 16px;
+  font-size: 15px;
+  color: var(--lp-text-muted);
+
+  .lp-link {
+    min-height: 32px;
+    color: var(--lp-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+// The object column.
+.lp-hero__object {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lp-hero__glow {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 150%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  pointer-events: none;
+  z-index: -1;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    transition: opacity 400ms ease;
+  }
+
+  &::before {
+    background: radial-gradient(closest-side, rgba(231, 109, 82, 1), rgba(231, 109, 82, 0) 72%);
+    opacity: 0;
+  }
+
+  &::after {
+    background: radial-gradient(closest-side, rgba(60, 197, 143, 1), rgba(60, 197, 143, 0) 72%);
+    opacity: 0;
+  }
+}
+
+.lp-hero[data-glow='scam-rest'] .lp-hero__glow::before {
+  opacity: 0.1;
+}
+.lp-hero[data-glow='scam'] .lp-hero__glow::before {
+  opacity: calc(0.08 + var(--lvl) * 0.14);
+  transition: none;
+}
+.lp-hero[data-glow='cool'] .lp-hero__glow {
+  background: radial-gradient(closest-side, rgba(93, 114, 128, 0.16), transparent 72%);
+}
+.lp-hero[data-glow='safe-soft'] .lp-hero__glow::after {
+  opacity: 0.08;
+}
+.lp-hero[data-glow='safe'] .lp-hero__glow::after {
+  opacity: 0.14;
+}
+
+.lp-hero__phonewrap {
+  position: relative;
+  animation:
+    lp-phone-in 900ms var(--lp-ease) 150ms both,
+    lp-float 4s ease-in-out 1.1s infinite;
+}
+
+.lp-phone--hero {
+  --ph: min(600px, calc(100svh - 280px));
+  margin-block: 8px 28px;
+  animation: lp-yaw-in 900ms var(--lp-ease) 150ms backwards;
+
+  .lp-rings i {
+    animation-delay: 0.6s;
+    &:nth-child(2) {
+      animation-delay: 1.4s;
+    }
+    &:nth-child(3) {
+      animation-delay: 2.2s;
+    }
+  }
+}
+
+.lp-hero[data-call='in-call'] .lp-phone--hero,
+.lp-hero[data-call='hung-up'] .lp-phone--hero,
+.lp-hero[data-call='glitch'] .lp-phone--hero,
+.lp-hero[data-call='reveal'] .lp-phone--hero {
+  --yaw: -6deg;
+  scale: 1.04;
+  transition:
+    --yaw 1.2s var(--lp-ease),
+    scale 1.2s var(--lp-ease);
+}
+
+.lp-phone--hero {
+  transition:
+    --yaw 1.2s var(--lp-ease),
+    scale 1.2s var(--lp-ease);
+}
+
+.lp-hero[data-call='glitch'] .lp-hero__phonewrap {
+  animation: lp-shake 0.3s steps(5) 1;
+}
+
+@keyframes lp-phone-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@keyframes lp-yaw-in {
+  from {
+    --yaw: -22deg;
+  }
+}
+
+@keyframes lp-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.8%);
+  }
+}
+
+@keyframes lp-shake {
+  0% {
+    translate: 4px 0;
+    rotate: 1deg;
+  }
+  25% {
+    translate: -5px 2px;
+    rotate: -1.2deg;
+  }
+  50% {
+    translate: 3px -2px;
+    rotate: 0.6deg;
+  }
+  75% {
+    translate: -2px 1px;
+    rotate: -0.4deg;
+  }
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+}
+
+// The 3D phone's screen is portalled here.
+.lp-stage-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.lp[data-mode='lite'] .lp-stage-ui {
+  display: none;
+}
+
+.lp-hero__notes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 440px;
+  text-align: center;
+}
+
+.lp-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--lp-text);
+}
+
+.lp-sound--inline {
+  min-width: 40px;
+  height: 40px;
+  color: var(--lp-text-muted);
+}
+
+.lp-disclosure {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--lp-text-muted);
+}
+
+.lp-details {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--lp-text-muted);
+  text-align: left;
+
+  summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: rgba(159, 178, 191, 0.4);
+    text-underline-offset: 3px;
+    list-style: none;
+    justify-content: center;
+    width: 100%;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+    &:hover {
+      color: var(--lp-text);
+    }
+  }
+
+  p {
+    margin-top: 8px;
+    color: var(--lp-text);
+  }
+
+  &[open] {
+    padding: 4px 16px 16px;
+    border-radius: 16px;
+    background: rgba(33, 61, 82, 0.5);
+  }
+}
+
+.lp-hero__card,
+.lp-hero__mcta {
+  display: none;
+}
+
+// ---------------------------------------------------------------- mobile: the visitor's phone is the phone
+
+.lp-callcard {
+  position: relative;
+  padding: 20px 20px 22px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(33, 61, 82, 0.75), rgba(17, 34, 49, 0.85));
+  border: 1px solid var(--lp-line-dark);
+
+  .lp-rings--card {
+    inset: 0;
+    z-index: -1;
+
+    i {
+      border-radius: 28px;
+      animation-name: lp-ring-card;
+    }
+  }
+
+  .lp-avatar {
+    width: 56px;
+    height: 56px;
+    margin: 0;
+    font-size: 24px;
+  }
+
+  .lp-bubble {
+    margin: 0 0 16px;
+  }
+}
+
+@keyframes lp-ring-card {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.14, 1.5);
+    opacity: 0;
+  }
+}
+
+.lp-callcard__who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.lp-callcard__name {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.lp-callcard__sub {
+  font-size: 15px;
+  color: var(--lp-text-muted);
+}
+
+.lp-callcard__actions {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 22px;
+
+  .lp-rb__btn {
+    width: 72px;
+    height: 72px;
+  }
+  .lp-rb__label {
+    font-size: 14px;
+  }
+}
+
+// The full-screen call on a phone.
+.lp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(231, 109, 82, 0.22), transparent 60%),
+    linear-gradient(180deg, #13212d 0%, #07111a 100%);
+  color: var(--lp-text);
+  animation: lp-overlay-in 280ms var(--lp-ease) both;
+  overscroll-behavior: contain;
+
+  &--safe {
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(60, 197, 143, 0.22), transparent 60%),
+      linear-gradient(180deg, #102722 0%, #07111a 100%);
+  }
+
+  &[data-call='reveal'],
+  &[data-call='glitch'],
+  &[data-call='hung-up'] {
+    background:
+      radial-gradient(120% 60% at 50% 0%, rgba(93, 114, 128, 0.32), transparent 60%),
+      linear-gradient(180deg, #172836 0%, #07111a 100%);
+  }
+}
+
+@keyframes lp-overlay-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+.lp-overlay__inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
+  padding: max(28px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
+}
+
+.lp-overlay--glitch {
+  animation: lp-jitter 0.9s steps(1) 1;
+}
+
+.lp-overlay__top {
+  text-align: center;
+  padding-top: 24px;
+}
+
+.lp-overlay__who {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.lp-overlay__sub {
+  min-height: 1.5em;
+  font-size: 16px;
+  color: var(--lp-text-muted);
+}
+
+.lp-overlay__mid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+
+  .lp-capstage {
+    min-height: 0;
+  }
+  .lp-cap--md {
+    font-size: 24px;
+  }
+  .lp-cap--lg,
+  .lp-capstage--compact .lp-cap--md:first-child {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .lp-display {
+    font-size: 36px;
+  }
+}
+
+.lp-reveal__lesson--overlay {
+  margin-top: 0;
+}
+
+.lp-overlay__actions {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 8px;
+  min-height: 120px;
+  align-items: center;
+}
+
+@media (max-width: 1100px) and (min-width: 860px) {
+  .lp-hero__grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  }
+}
+
+@media (max-width: 859px) {
+  .lp-hero {
+    min-height: 0;
+    align-items: flex-start;
+    padding-top: calc(var(--nav-h) + 16px);
+    padding-bottom: 40px;
+  }
+
+  .lp-hero__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .lp-hero__copy .lp-h1 {
+    font-size: clamp(32px, 8.4vw, 52px);
+    margin-bottom: 12px;
+  }
+
+  .lp-stage {
+    min-height: 0;
+  }
+
+  .lp-stage__panel:not(.is-on) {
+    display: none;
+  }
+
+  .lp-stage__panel .lp-lead {
+    font-size: 16px;
+    margin-bottom: 0;
+  }
+
+  .lp-stage__panel--intro .lp-hero__cta {
+    display: none;
+  }
+
+  .lp-hero__phonewrap,
+  .lp-hero__glow {
+    display: none;
+  }
+
+  .lp-hero__card {
+    display: block;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .lp-hero__object {
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .lp-hero__notes {
+    max-width: none;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .lp-hint {
+    font-size: 13px;
+  }
+
+  .lp-disclosure {
+    font-size: 13px;
+  }
+
+  .lp-details summary {
+    justify-content: flex-start;
+  }
+
+  .lp-hero__mcta {
+    display: flex;
+  }
+
+  .lp-done {
+    font-size: 22px;
+  }
+}

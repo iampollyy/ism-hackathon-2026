@@ -1,0 +1,26 @@
+// Callback landing page styles. Scoped under .lp; class prefix lp-.
+@use './base';
+@use './nav';
+@use './phone';
+@use './screens';
+@use './hero';
+@use './sections';
+@use './day';
+
+// The WebGL canvas: fixed behind the night sections' text, never catching pointers.
+.lp-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+
+  &.is-off {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  canvas {
+    display: block;
+  }
+}

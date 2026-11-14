@@ -1,0 +1,793 @@
+// Sections 2 to 5 (night) and the close and footer.
+
+.lp-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px 48px;
+  align-items: center;
+}
+
+.lp-split__copy {
+  max-width: 560px;
+
+  > .lp-lead {
+    margin-bottom: 40px;
+  }
+}
+
+.lp-split__object {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 520px;
+}
+
+// ---------------------------------------------------------------- problem and habit
+
+.lp-night > .lp-problem {
+  background-color: var(--lp-night-0);
+  background-image: var(--grain, none), linear-gradient(180deg, var(--lp-night-0), var(--lp-night-1));
+  background-size:
+    64px 64px,
+    100% 100%;
+  min-height: 120svh;
+  display: flex;
+  align-items: center;
+}
+
+.lp-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.lp-fact {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  padding-top: 24px;
+  border-top: 1px solid var(--lp-line-dark);
+  text-wrap: pretty;
+}
+
+.lp-fact__num {
+  color: var(--lp-scam);
+  font-weight: 600;
+}
+
+.lp-habit {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+}
+
+.lp-statement {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: clamp(56px, 8vw, 96px);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  margin: 12px 0 14px;
+
+  span {
+    display: block;
+  }
+}
+
+.lp-or {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(20px, 1.8vw, 24px);
+  font-weight: 500;
+  color: var(--lp-text-muted);
+  margin-bottom: 32px;
+}
+
+// The field of phones (lite mode). The 3D field replaces it on capable desktops.
+.lp-fieldwrap {
+  min-height: 600px;
+}
+
+.lp-field {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 18px 22px;
+  align-content: center;
+  padding: 8px 4%;
+  -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 62%, transparent 100%);
+}
+
+.lp-field__phone {
+  position: relative;
+  justify-self: center;
+  width: 46px;
+  aspect-ratio: 78 / 162;
+  border-radius: 9px;
+  border: 1px solid rgba(234, 241, 238, 0.16);
+  background: rgba(234, 241, 238, 0.025);
+  transition:
+    opacity 600ms ease,
+    border-color 600ms ease;
+
+  i {
+    position: absolute;
+    left: 50%;
+    top: 34%;
+    width: 7px;
+    height: 7px;
+    margin-left: -3.5px;
+    border-radius: 50%;
+    background: var(--lp-scam);
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+
+  &.is-ringing i {
+    opacity: 1;
+    animation: lp-dot 2.4s ease-out infinite;
+    animation-delay: var(--delay, 0ms);
+  }
+
+  &.is-ringing {
+    border-color: rgba(231, 109, 82, 0.4);
+  }
+}
+
+@keyframes lp-dot {
+  0% {
+    box-shadow: 0 0 0 0 rgba(231, 109, 82, 0.6);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 12px rgba(231, 109, 82, 0);
+  }
+}
+
+.lp-field.is-dark .lp-field__phone {
+  opacity: 0.35;
+  border-color: rgba(234, 241, 238, 0.1);
+}
+
+// The phone that stays lit sits in the middle of the field.
+.lp-phone--field {
+  --ph: 300px;
+}
+
+.lp-phone--habit {
+  --ph: min(500px, 64svh);
+}
+
+.lp-problem .lp-phone--field {
+  box-shadow: 0 0 0 9999px transparent;
+}
+
+// ---------------------------------------------------------------- the story
+
+.lp-night > .lp-story {
+  background-color: var(--lp-night-1);
+  background-image: var(--grain, none), linear-gradient(180deg, var(--lp-night-1) 0%, var(--lp-night-1) 55%, var(--lp-navy) 100%);
+  background-size:
+    64px 64px,
+    100% 100%;
+  padding-bottom: 0;
+}
+
+.lp-story__head {
+  max-width: 640px;
+  margin-bottom: 24px;
+}
+
+.lp-story__grid {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 0 32px;
+  align-items: stretch;
+}
+
+.lp-rail {
+  position: relative;
+
+  ol {
+    position: sticky;
+    top: calc(50vh - 130px);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 8px 0 0;
+    border: 0;
+    background: none;
+    color: var(--lp-text-muted);
+    font: 500 15px/1.2 'Inter', sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: color 200ms ease;
+
+    &:hover {
+      color: var(--lp-text);
+    }
+    &.is-on {
+      color: var(--lp-text);
+      font-weight: 600;
+    }
+  }
+}
+
+.lp-rail__bar {
+  position: relative;
+  width: 2px;
+  height: 28px;
+  border-radius: 1px;
+  background: var(--lp-line-dark);
+  overflow: hidden;
+  flex: none;
+
+  i {
+    position: absolute;
+    inset: 0;
+    background: var(--lp-safe);
+    transform-origin: 50% 0;
+  }
+}
+
+.lp-chapters {
+  position: relative;
+}
+
+.lp-chapter {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 10vh 0;
+
+  .lp-h3 {
+    margin-bottom: 16px;
+  }
+  .lp-body {
+    margin-bottom: 16px;
+  }
+}
+
+.lp-chapter__panel {
+  max-width: 460px;
+  opacity: 0.4;
+  transition: opacity 300ms ease;
+}
+
+.lp-chapter.is-on .lp-chapter__panel {
+  opacity: 1;
+}
+
+.lp-story__cta {
+  margin-top: 16px;
+}
+
+.lp-story__stick {
+  position: relative;
+}
+
+.lp-story__sticky {
+  position: sticky;
+  top: max(calc(var(--nav-h) + 16px), calc(50vh - min(320px, 37vh)));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.lp-story__progress {
+  display: none;
+}
+
+.lp-story__phonebox {
+  position: relative;
+  margin-right: 6%;
+}
+
+.lp-phone--story {
+  --ph: min(640px, 74vh);
+}
+
+.lp-story__glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 260%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.18;
+  transition: background-color 600ms ease, opacity 600ms ease;
+  background: radial-gradient(closest-side, var(--risk, rgba(93, 114, 128, 0.7)), transparent 70%);
+}
+
+.lp-story__phonebox[data-risk='green'] {
+  --risk: rgba(60, 197, 143, 0.9);
+}
+.lp-story__phonebox[data-risk='yellow'] {
+  --risk: rgba(245, 185, 77, 0.9);
+}
+.lp-story__phonebox[data-risk='red'],
+.lp-story__phonebox[data-risk='scam'] {
+  --risk: rgba(231, 109, 82, 0.9);
+}
+.lp-story__phonebox[data-risk='safe'] {
+  --risk: rgba(60, 197, 143, 0.7);
+}
+
+// Tactic chips.
+.lp-chips {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.lp-chip {
+  position: absolute;
+  right: calc(100% + 22px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px 0 12px;
+  border-radius: 999px;
+  background: rgba(7, 17, 26, 0.82);
+  border: 1px solid rgba(231, 109, 82, 0.55);
+  color: var(--lp-text);
+  font: 600 15px/1 'Inter', sans-serif;
+  white-space: nowrap;
+  transition: filter 300ms ease;
+  will-change: transform, opacity;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lp-scam);
+  }
+
+  &.is-dim {
+    filter: opacity(0.4);
+  }
+}
+
+// Reduced motion: five rows, each with its finished screen.
+.lp-story__static {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+  padding-bottom: 96px;
+}
+
+.lp-story__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+
+  .lp-h3 {
+    margin-bottom: 12px;
+  }
+  .lp-body {
+    margin-bottom: 12px;
+  }
+}
+
+.lp-story__rowphone {
+  display: flex;
+  justify-content: center;
+
+  .lp-phone--story {
+    --ph: 520px;
+  }
+}
+
+// ---------------------------------------------------------------- Shield
+
+.lp-night > .lp-shield {
+  background-color: var(--lp-navy);
+  background-image: var(--grain, none), linear-gradient(180deg, var(--lp-navy) 0%, var(--lp-navy-soft) 30%, var(--lp-navy-soft) 100%);
+  background-size:
+    64px 64px,
+    100% 100%;
+  min-height: 110svh;
+  display: flex;
+  align-items: center;
+}
+
+.lp-points {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 28px;
+
+  li {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 16px;
+    padding: 18px 0;
+    border-top: 1px solid var(--lp-line-dark);
+  }
+
+  svg {
+    color: var(--lp-doubt);
+    margin-top: 2px;
+  }
+}
+
+.lp-shield__object {
+  min-height: 640px;
+}
+
+.lp-phone--shield {
+  --ph: min(600px, 70vh);
+  margin-right: 18%;
+}
+
+.lp-shield__glow {
+  position: absolute;
+  left: 40%;
+  top: 50%;
+  width: 120%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(231, 109, 82, 0.12), transparent 72%);
+}
+
+.lp-shield__second {
+  position: absolute;
+  right: 0;
+  bottom: 4%;
+  z-index: 4;
+}
+
+.lp-phone--small {
+  --ph: min(360px, 42vh);
+}
+
+// ---------------------------------------------------------------- the close and the footer
+
+.lp-close {
+  position: relative;
+  z-index: 1;
+  background-color: var(--lp-night-0);
+  background-image: var(--grain, none);
+  background-size: 64px 64px;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+
+  .lp-split__copy > .lp-lead {
+    margin-bottom: 32px;
+  }
+}
+
+.lp-close__object {
+  min-height: 600px;
+}
+
+.lp-phone--close {
+  --ph: min(560px, 68vh);
+}
+
+.lp-close__glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 130%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(60, 197, 143, 0.14), transparent 72%);
+}
+
+.lp-footer {
+  position: relative;
+  z-index: 1;
+  padding-block: 56px 40px;
+  background: var(--lp-night-0);
+  border-top: 1px solid var(--lp-line-dark);
+  color: var(--lp-text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+
+  a {
+    color: var(--lp-text);
+    text-decoration: underline;
+    text-decoration-color: rgba(234, 241, 238, 0.3);
+    text-underline-offset: 3px;
+
+    &:hover {
+      text-decoration-color: currentColor;
+    }
+  }
+}
+
+.lp-footer__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 32px 48px;
+}
+
+.lp-footer__brand {
+  .lp-brand {
+    color: var(--lp-text);
+    margin-bottom: 8px;
+  }
+}
+
+.lp-brand--static {
+  pointer-events: none;
+}
+
+.lp-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  align-content: flex-start;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 15px;
+  }
+}
+
+.lp-footer__fine {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 24px;
+  border-top: 1px solid var(--lp-line-dark);
+
+  sup {
+    font-size: 0.75em;
+  }
+}
+
+.lp-mbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .lp-mbar {
+    display: block;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    height: 64px;
+    padding: 8px 16px max(8px, env(safe-area-inset-bottom));
+    background: rgba(7, 17, 26, 0.96);
+    border-top: 1px solid var(--lp-line-dark);
+    transform: translateY(110%);
+    transition: transform 240ms var(--lp-ease);
+
+    &.is-on {
+      transform: none;
+    }
+
+    .lp-btn {
+      min-height: 48px;
+    }
+  }
+
+  .lp-footer {
+    padding-bottom: 96px;
+  }
+}
+
+// ---------------------------------------------------------------- responsive (night)
+
+@media (max-width: 1100px) {
+  .lp-story__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .lp-rail {
+    display: none;
+  }
+  .lp-story__progress {
+    display: block;
+    width: min(320px, 80%);
+    height: 3px;
+    margin: 0 auto 12px;
+    border-radius: 2px;
+    background: var(--lp-line-dark);
+    overflow: hidden;
+    align-self: center;
+
+    i {
+      display: block;
+      height: 100%;
+      background: var(--lp-safe);
+      transform-origin: 0 50%;
+    }
+  }
+  .lp-story__sticky {
+    align-items: center;
+  }
+  .lp-story__phonebox {
+    margin-right: 0;
+  }
+  .lp-chip {
+    right: calc(100% + 12px);
+    font-size: 14px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 859px) {
+  .lp-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lp-split__object {
+    min-height: 0;
+  }
+
+  .lp-night > .lp-problem,
+  .lp-habit,
+  .lp-night > .lp-shield,
+  .lp-close {
+    min-height: 0;
+    display: block;
+  }
+
+  .lp-fieldwrap {
+    order: -1;
+    min-height: 0;
+    height: 260px;
+  }
+
+  .lp-field {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px 12px;
+
+    .lp-field__phone {
+      width: 30px;
+      border-radius: 6px;
+    }
+    .lp-field__phone:nth-child(n + 25) {
+      display: none;
+    }
+  }
+
+  .lp-phone--field,
+  .lp-phone--habit {
+    display: none;
+  }
+
+  .lp-habit .lp-field__phone.is-one {
+    border-color: var(--lp-safe);
+    opacity: 1;
+    i {
+      opacity: 1;
+      background: var(--lp-safe);
+      animation: none;
+    }
+  }
+
+  // Story: the phone sticks at the top; chapter panels scroll up over it.
+  .lp-story__grid {
+    display: block;
+  }
+
+  .lp-story__stick {
+    position: sticky;
+    top: calc(var(--nav-h) + 8px);
+    z-index: 0;
+  }
+
+  .lp-story__sticky {
+    position: relative;
+    top: 0;
+  }
+
+  .lp-phone--story {
+    --ph: min(54svh, 500px);
+  }
+
+  .lp-chips {
+    display: none;
+  }
+
+  .lp-chapters {
+    z-index: 1;
+    margin-top: -12svh;
+  }
+
+  .lp-chapter {
+    min-height: 85svh;
+    align-items: flex-end;
+    padding: 0 0 6svh;
+  }
+
+  .lp-chapter__panel {
+    opacity: 1;
+    padding: 20px;
+    border-radius: 20px;
+    background: rgba(33, 61, 82, 0.94);
+    border: 1px solid var(--lp-line-dark);
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .lp-story__row {
+    grid-template-columns: minmax(0, 1fr);
+
+    .lp-story__rowphone {
+      order: -1;
+    }
+    .lp-phone--story {
+      --ph: 440px;
+    }
+  }
+
+  .lp-shield .lp-split__object {
+    position: relative;
+    top: 0;
+    order: -1;
+    min-height: 0;
+    padding-bottom: 32px;
+    justify-content: flex-start;
+  }
+
+  .lp-phone--shield {
+    --ph: 440px;
+    margin-right: 0;
+  }
+
+  .lp-shield__second {
+    position: absolute;
+    right: 0;
+    bottom: 8px;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .lp-phone--small {
+    --ph: 250px;
+  }
+
+  .lp-close__object {
+    min-height: 0;
+    margin-top: 32px;
+    justify-content: flex-start;
+  }
+
+  .lp-phone--close {
+    --ph: 380px;
+  }
+
+  .lp-footer__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-height: 600px) and (max-width: 859px) {
+  .lp-story__stick {
+    position: relative;
+    top: 0;
+  }
+}
