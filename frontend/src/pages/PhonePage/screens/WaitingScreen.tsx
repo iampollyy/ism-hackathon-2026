@@ -9,6 +9,7 @@ import type { SoundStatus } from '../phoneSound';
 import type { Notice, PhoneUiState } from '../phoneState';
 import type { AlertState } from '../usePhone';
 import { AlertFamilyCard, NextSteps, WelcomeOfferCard, YourChoicesCard, useMemberChoices } from './HomeCards';
+import { AppCards } from './AppCards';
 import { LearnTab } from './LearnTab';
 import { NewsTab } from './NewsTab';
 import { PRACTICE_SOON } from './WelcomeDoneScreen';
@@ -216,6 +217,8 @@ function HomeTab({
       {state.welcomeOffer === 'show' && (
         <WelcomeOfferCard busy={welcomeStart.busy} error={welcomeStart.error} onStart={onStartWelcome} />
       )}
+
+      <AppCards memberId={memberId} />
 
       {messages.length > 0 && (
         <section className="phone-messages" aria-label="Messages">

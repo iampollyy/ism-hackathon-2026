@@ -9,6 +9,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Link2Off } from 'lucide-react';
 import type { PhoneState } from '../../api/types';
 import { usePhone } from './usePhone';
+import { useMemberManifest } from './pwa';
 import { WaitingScreen, type PhoneTab } from './screens/WaitingScreen';
 import { RingingScreen } from './screens/RingingScreen';
 import { CallScreen } from './screens/CallScreen';
@@ -47,6 +48,8 @@ export function PhonePage() {
 
 function Phone({ memberId }: { memberId: string }) {
   const phone = usePhone(memberId);
+  // Installing from here (even after the Join tap) opens this member's page.
+  useMemberManifest(memberId);
   const { state } = phone;
   const { view } = state;
   const location = useLocation();
