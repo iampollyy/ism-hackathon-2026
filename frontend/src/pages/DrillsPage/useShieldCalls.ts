@@ -11,7 +11,9 @@ import type { DrillView } from './reviewWords';
 
 export type ShieldInfo = { alerted: number; alertedAt: string | null };
 
-const OVER = ['ended', 'scored', 'declined', 'missed', 'failed'];
+// Read once nothing more can change (a late risk check may still alert while
+// a call is `ended` and being scored).
+const OVER = ['scored', 'declined', 'missed', 'failed'];
 
 /** call_id -> its Shield, or null for an ordinary drill. */
 const known = new Map<string, ShieldInfo | null>();

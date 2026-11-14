@@ -418,6 +418,7 @@ function ConsentPanel({ member, protection, memberId, name, onChanged }: Consent
       </dl>
       {error ? <p className="rv-form-error" role="alert">{error}</p> : null}
       <p className="rv-muted rv-consent__note">
+        {consent === false ? `Turn practice calls on only once ${name} has said yes to them. ` : null}
         {name} can change these too, and can leave Callback at any time. A drill always says what it was at the end.
       </p>
     </section>
