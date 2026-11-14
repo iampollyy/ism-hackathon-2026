@@ -20,6 +20,7 @@ import { ShieldPanel } from './ShieldPanel';
 import { StageLine } from './StageLine';
 import { TrafficLight } from './TrafficLight';
 import { useLiveCall } from './useLiveCall';
+import { VoiceTile } from './VoiceTile';
 import { saveFamilyId } from '../FamilySignUpPage/familyStorage';
 import './LiveCallPage.scss';
 
@@ -190,6 +191,10 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
                 </strong>
               </div>
             </section>
+          ) : null}
+
+          {call.kind === 'welcome' && answered ? (
+            <VoiceTile callId={call.id} target={target} status={status} endedAt={call.ended_at} />
           ) : null}
         </div>
 
