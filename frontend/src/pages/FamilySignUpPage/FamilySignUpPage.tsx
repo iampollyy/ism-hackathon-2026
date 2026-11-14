@@ -1,201 +1,235 @@
-// Sign-up in three steps: the family, everyone's voice, each phone's link.
-// The address keeps the step (/signup?family=fam_x&step=voices), so a reload
-// or the family page's "Record a voice" link lands on the right step.
+// Setting up a family plan (/signup), in three steps: the family, the
+// invites, the plan. It needs the organiser's account first, so the family
+// belongs to them. The address keeps the step (/signup?family=fam_x&step=
+// invite|plan), so a reload lands in the same place. The family page's older
+// links (&step=voices) open the invites with the voice recorder open.
 
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Check, RotateCcw } from 'lucide-react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Check, LogIn, RotateCcw, UserPlus } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
-import type { FamilyCreated } from '../../api/types';
+import type { FamilyCreated, FamilyView } from '../../api/types';
+import { authPath, refreshMe, useMe } from '../../layouts/useMe';
+import { useDocumentTitle } from '../../layouts/useDocumentTitle';
 import { FamilyStep } from './FamilyStep';
-import { VoiceStep } from './VoiceStep';
-import { LinksStep } from './LinksStep';
-import { saveFamilyId, useStoredFamilyId } from './familyStorage';
-import type { SignUpMember } from './signUpTypes';
+import { InviteStep } from './InviteStep';
+import { PlanStep } from './PlanStep';
+import { saveFamilyId } from './familyStorage';
 import './familyShared.scss';
 import './FamilySignUpPage.scss';
 
-type Step = 'family' | 'voices' | 'links';
+type Step = 'family' | 'invite' | 'plan';
 
 const STEPS: { key: Step; label: string }[] = [
-  { key: 'family', label: 'The family' },
-  { key: 'voices', label: 'Voices' },
-  { key: 'links', label: 'Phone links' },
+  { key: 'family', label: 'Your family' },
+  { key: 'invite', label: 'Invite everyone' },
+  { key: 'plan', label: 'Choose a plan' },
 ];
 
-type Loaded = { familyId: string; familyName: string; members: SignUpMember[] };
+const HEADINGS: Record<Step, { title: string; intro: string }> = {
+  family: {
+    title: 'Set up your family plan',
+    intro: 'Add the people you want to protect. Nobody gets a call until they have joined and agreed.',
+  },
+  invite: {
+    title: 'Invite your family',
+    intro: 'Send each person their own link. When they open it on their phone and join, their welcome call starts by itself.',
+  },
+  plan: {
+    title: 'Choose a plan',
+    intro: 'Everything is free for the first 30 days. This is a demo: no payment, and never any card details.',
+  },
+};
+
+const REFRESH_MS = 4000;
 
 type LoadError = { notFound: boolean; message: string };
 
-const RETRY_MS = 3000;
-
 export function FamilySignUpPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const meState = useMe();
   const [params, setParams] = useSearchParams();
   const familyParam = params.get('family');
-  const step: Step = !familyParam ? 'family' : params.get('step') === 'links' ? 'links' : 'voices';
-  const storedFamily = useStoredFamilyId();
+  const stepParam = params.get('step');
+  const step: Step = !familyParam ? 'family' : stepParam === 'plan' ? 'plan' : 'invite';
+  const [voicesOpen, setVoicesOpen] = useState(stepParam === 'voices');
+  useDocumentTitle(HEADINGS[step].title);
 
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [family, setFamily] = useState<FamilyView | null>(null);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  // Resumed from the address: load the family's members. A family that does
-  // not exist is an answer; anything else (a network blip, a restarting back
-  // end) is retried every few seconds, so nobody starts a duplicate family.
+  // The family being set up: loaded, then refreshed every few seconds while
+  // the invites show, so each card turns green when that person joins. A
+  // family that does not exist is an answer; anything else is retried.
   useEffect(() => {
     if (!familyParam) {
-      setLoaded(null);
+      setFamily(null);
       setLoadError(null);
       return;
     }
     let live = true;
-    let retry: number | undefined;
-    setLoadError(null);
-    const load = () => api.getFamily(familyParam).then(
-      (family) => {
+    let timer: number | undefined;
+    const load = async () => {
+      try {
+        const next = await api.getFamily(familyParam);
         if (!live) return;
+        setFamily(next);
         setLoadError(null);
-        setLoaded({
-          familyId: family.id,
-          familyName: family.name,
-          members: family.members.map((member) => ({
-            id: member.id,
-            name: member.name,
-            phone_link: member.phone_link,
-            relationship: member.relationship,
-            voiceStatus: member.voice_status,
-            phoneOnline: member.phone_online,
-          })),
-        });
-      },
-      (error) => {
+        if (step === 'invite') timer = window.setTimeout(() => void load(), REFRESH_MS);
+      } catch (error) {
         if (!live) return;
         const notFound = error instanceof ApiError && error.status === 404;
         setLoadError({
           notFound,
           message: notFound
-            ? 'We could not find this family. It may have been set up on another server.'
+            ? 'We couldn’t find this family. It may have been set up on another server.'
             : error instanceof ApiError
               ? error.message
               : 'Callback could not be reached.',
         });
-        if (!notFound) retry = window.setTimeout(() => void load(), RETRY_MS);
-      },
-    );
+        if (!notFound) timer = window.setTimeout(() => void load(), REFRESH_MS);
+      }
+    };
     void load();
     return () => {
       live = false;
-      window.clearTimeout(retry);
+      window.clearTimeout(timer);
     };
-  }, [familyParam, attempt]);
+  }, [familyParam, step, attempt]);
 
-  const created = (result: FamilyCreated, familyName: string, relationships: string[]) => {
+  useEffect(() => {
+    if (stepParam === 'voices') setVoicesOpen(true);
+  }, [stepParam]);
+
+  const created = (result: FamilyCreated) => {
     saveFamilyId(result.family_id);
-    setLoaded({
-      familyId: result.family_id,
-      familyName,
-      members: result.members.map((member, index) => ({
-        ...member,
-        relationship: relationships[index],
-        voiceStatus: 'none',
-      })),
-    });
-    setParams({ family: result.family_id, step: 'voices' });
+    void refreshMe(); // the menu and the list of families pick it up
+    // Replace the empty form in the history: Back from the invites must not
+    // offer to create the same family a second time.
+    setParams({ family: result.family_id, step: 'invite' }, { replace: true });
     window.scrollTo({ top: 0 });
   };
 
   const goTo = (next: Step) => {
-    if (!loaded) return;
-    setParams({ family: loaded.familyId, step: next });
+    if (!familyParam) return;
+    setParams({ family: familyParam, step: next });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const ready = loaded !== null && loaded.familyId === familyParam;
   const stepIndex = STEPS.findIndex((item) => item.key === step);
+  const ready = family !== null && family.id === familyParam;
+  const heading = HEADINGS[step];
+  const here = location.pathname + location.search;
 
   return (
-    <div className="signup-flow">
-      <header className="signup-header">
-        <div>
-          <span className="eyebrow">{ready ? loaded.familyName : 'Set up Callback'}</span>
-          <h1>
-            {step === 'family' ? 'Set up your family' : step === 'voices' ? 'Record everyone’s voice' : 'Open Callback on each phone'}
-          </h1>
+    <div className="signup-flow onb">
+      <header className="onb-head">
+        <div className="onb-head-text">
+          <h1>{heading.title}</h1>
+          <p>
+            {ready && step !== 'family' ? <strong>{family.name}. </strong> : null}
+            {heading.intro}
+          </p>
         </div>
-        <ol className="stepper" aria-label="Sign-up steps">
-          {STEPS.map((item, index) => (
-            <li
-              key={item.key}
-              className={index < stepIndex ? 'done' : index === stepIndex ? 'current' : undefined}
-              aria-current={index === stepIndex ? 'step' : undefined}
-            >
-              <span className="stepper-number">{index < stepIndex ? <Check size={14} /> : index + 1}</span>
-              <span>{item.label}</span>
-            </li>
-          ))}
+        <ol className="onb-steps" aria-label="Steps">
+          {STEPS.map((item, index) => {
+            const state = index < stepIndex ? 'done' : index === stepIndex ? 'current' : 'todo';
+            const canGo = familyParam !== null && item.key !== 'family' && state !== 'current';
+            const content = (
+              <>
+                <span className="onb-step-number">{state === 'done' ? <Check size={14} aria-hidden="true" /> : index + 1}</span>
+                <span>{item.label}</span>
+              </>
+            );
+            return (
+              <li key={item.key} className={state} aria-current={state === 'current' ? 'step' : undefined}>
+                {canGo ? (
+                  <button type="button" onClick={() => goTo(item.key)}>
+                    {content}
+                  </button>
+                ) : (
+                  <span className="onb-step-static">{content}</span>
+                )}
+              </li>
+            );
+          })}
         </ol>
       </header>
 
-      {step === 'family' ? (
+      {meState.status === 'loading' ? (
+        <div className="onb-card onb-skeleton" aria-busy="true" aria-label="Loading" />
+      ) : meState.status === 'out' ? (
+        <div className="onb-card onb-gate">
+          <h2>First, your organiser account</h2>
+          <p>
+            The family plan belongs to your account, so you can come back to it, see who has joined, and change things
+            later. It takes a minute.
+          </p>
+          <div className="onb-gate-actions">
+            <Link to={authPath('register', here)} className="button button-primary">
+              <UserPlus size={18} aria-hidden="true" /> Create an account
+            </Link>
+            <Link to={authPath('login', here)} className="button button-secondary">
+              <LogIn size={18} aria-hidden="true" /> I already have one
+            </Link>
+          </div>
+        </div>
+      ) : step === 'family' ? (
         <>
-          {storedFamily ? (
-            <div className="signup-existing">
-              <span>This browser already set up a family.</span>
-              <Link to={`/family/${storedFamily}`} className="text-link">
-                Open its family page
-              </Link>
-            </div>
+          {meState.status === 'in' && meState.me.families.length > 0 ? (
+            <p className="onb-existing">
+              You already have {meState.me.families.length === 1 ? 'a family plan' : 'family plans'}:{' '}
+              {meState.me.families.map((item, index) => (
+                <span key={item.id}>
+                  {index > 0 ? ', ' : ''}
+                  <Link to={`/family/${item.id}`}>{item.name}</Link>
+                </span>
+              ))}
+              . Only set up another for a different family.
+            </p>
           ) : null}
-          <FamilyStep onCreated={(result, name, relationships) => created(result, name, relationships)} />
+          <FamilyStep
+            organiserName={meState.status === 'in' ? meState.me.account.name : ''}
+            onCreated={created}
+          />
         </>
       ) : !ready && loadError?.notFound ? (
-        <div className="auth-card signup-card">
-          <div className="form-alert" role="alert">{loadError.message}</div>
-          <div className="step-footer">
+        <div className="onb-card">
+          <div className="form-alert" role="alert">
+            {loadError.message}
+          </div>
+          <div className="onb-footer">
             <Link to="/signup" className="button button-primary">
-              Start a new family
+              Start a new family plan
             </Link>
           </div>
         </div>
       ) : !ready && loadError ? (
-        <div className="auth-card signup-card">
+        <div className="onb-card">
           <div className="form-alert" role="alert">
             {loadError.message} Trying again every few seconds.
           </div>
-          <div className="step-footer">
+          <div className="onb-footer">
             <span>No need to set the family up again.</span>
             <button type="button" className="button button-primary" onClick={() => setAttempt((count) => count + 1)}>
-              <RotateCcw size={16} /> Try again now
+              <RotateCcw size={16} aria-hidden="true" /> Try again now
             </button>
           </div>
         </div>
       ) : !ready ? (
-        <div className="auth-card signup-card signup-loading">Loading the family…</div>
-      ) : step === 'voices' ? (
-        <VoiceStep
-          key={loaded.familyId}
-          members={loaded.members}
-          onNext={() => goTo('links')}
-          onBack={() => navigate(`/family/${loaded.familyId}`)}
-          onReady={(memberId) =>
-            setLoaded((current) =>
-              current && {
-                ...current,
-                members: current.members.map((member) =>
-                  member.id === memberId ? { ...member, voiceStatus: 'ready' } : member,
-                ),
-              },
-            )
-          }
+        <div className="onb-card onb-skeleton" aria-busy="true" aria-label="Loading the family" />
+      ) : step === 'invite' ? (
+        <InviteStep
+          family={family}
+          voicesOpen={voicesOpen}
+          onVoicesOpen={setVoicesOpen}
+          onVoiceReady={() => setAttempt((count) => count + 1)}
+          onNext={() => goTo('plan')}
         />
       ) : (
-        <LinksStep
-          familyId={loaded.familyId}
-          members={loaded.members}
-          onBack={() => goTo('voices')}
-          onDone={() => navigate(`/family/${loaded.familyId}`)}
-        />
+        <PlanStep familyId={family.id} onBack={() => goTo('invite')} onDone={() => navigate(`/family/${family.id}`)} />
       )}
     </div>
   );
