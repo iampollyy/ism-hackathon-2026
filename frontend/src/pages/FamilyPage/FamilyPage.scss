@@ -322,7 +322,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
       transition: transform 0.22s $ease-out;
     }
 
-    &.on { color: var(--good); }
+    &.on { color: var(--good-ink); }
     &.on .fh-switch-track { background: var(--good); }
     &.on .fh-switch-track::after { transform: translateX(16px); }
 
@@ -1690,6 +1690,332 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
 @container plan (max-width: 640px) {
   .fh .fh-plan-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+// ---------------------------------------------------------------- add a person (every width)
+
+.fh {
+  .fh-add-slot { margin-bottom: 16px; }
+
+  .fh-add-open { gap: 8px; }
+
+  .fh-add {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(115, 90, 200, 0.28);
+    background: linear-gradient(180deg, rgba(216, 206, 255, 0.28), rgba(216, 206, 255, 0.1));
+    outline: none;
+
+    &:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  }
+
+  .fh-add-head {
+    display: grid;
+    gap: 3px;
+
+    strong { font-size: 1rem; }
+    span { color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
+  }
+
+  .fh-add-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .fh-add-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .fh-add-done {
+    border-color: rgba(19, 134, 83, 0.28);
+    background: linear-gradient(180deg, rgba(26, 214, 112, 0.1), rgba(26, 214, 112, 0.03));
+  }
+
+  .fh-add-done-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    > svg { flex-shrink: 0; margin-top: 1px; color: var(--good); }
+    div { display: grid; gap: 3px; }
+    strong { font-size: 1rem; line-height: 1.35; }
+    span { color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+  }
+
+  .fh-add-invite {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .fh-add-qr {
+    flex-shrink: 0;
+
+    > svg { display: block; padding: 6px; border-radius: 12px; border: 1px solid var(--line); background: #fff; }
+  }
+
+  .fh-add-link { flex: 1; min-width: 0; display: grid; gap: 10px; }
+
+  // ---------------------------------------------------------------- the compact member card (phones)
+
+  .fh-roster.compact .fh-member { gap: 10px; }
+
+  .fh-mc {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .fh-mc-who {
+    min-width: 0;
+    display: grid;
+
+    h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span { color: var(--muted); font-size: 0.84rem; }
+  }
+
+  .fh-mc-action {
+    .fh-share-menu { left: auto; right: 0; }
+    .fh-member-open { min-height: 44px; }
+  }
+
+  .fh-mc-badges {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 56px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .fh-tag { padding: 4px 9px; }
+  }
+
+  .fh-mc-toggle {
+    appearance: none;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    margin-left: 56px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--navy-soft);
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+
+    svg { transition: transform 0.2s $ease-out; }
+    svg.up { transform: rotate(180deg); }
+  }
+
+  .fh-member-details {
+    display: grid;
+    gap: 12px;
+    padding: 12px 0 2px;
+    border-top: 1px dashed var(--line);
+  }
+
+  .fh-mc-ready {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+
+    strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+  }
+
+  // ---------------------------------------------------------------- protection, summarised (phones)
+
+  .fh-prot-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    p { flex: 1; min-width: 0; margin: 0; display: grid; gap: 3px; }
+    strong { color: $on-dark; font-size: 0.95rem; line-height: 1.35; }
+    span { color: $on-dark-muted; font-size: 0.82rem; line-height: 1.45; }
+  }
+
+  .fh-prot-change {
+    appearance: none;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
+    color: $on-dark;
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+
+    &:focus-visible { outline: 3px solid $mint; outline-offset: 2px; }
+    svg { transition: transform 0.2s $ease-out; }
+    svg.up { transform: rotate(180deg); }
+  }
+}
+
+@media (max-width: 640px) {
+  .fh {
+    .fh-add-fields { grid-template-columns: minmax(0, 1fr); }
+    .fh-add-invite { flex-direction: column; align-items: stretch; }
+    .fh-add-qr { align-self: center; }
+  }
+}
+
+// ---------------------------------------------------------------- phones (the same width as PHONE in FamilyPage.tsx)
+
+@media (max-width: 768px) {
+  .fh.fh-phone {
+    gap: 14px;
+    // One column no wider than the screen: the rows that scroll sideways
+    // would otherwise widen the page to their full length.
+    grid-template-columns: minmax(0, 1fr);
+
+    > * { min-width: 0; }
+
+    .fh-header.compact { gap: 10px; grid-template-columns: minmax(0, 1fr); }
+
+    .fh-header.compact .fh-header-top {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+
+      h1 { font-size: 1.7rem; min-width: 0; overflow-wrap: anywhere; }
+    }
+
+    .fh-plan-chip { padding: 8px 10px 8px 12px; font-size: 0.8rem; min-height: 44px; }
+
+    // The facts in one row that scrolls sideways, to the screen's edges.
+    .fh-facts.scroll {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      margin: 0 -16px;
+      padding: 2px 16px 4px;
+      scroll-padding-inline: 16px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+
+      &::-webkit-scrollbar { display: none; }
+      li { flex-shrink: 0; }
+      &:focus-visible { outline-offset: -3px; }
+    }
+
+    .fh-quick-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+
+      .button {
+        gap: 8px;
+        min-height: 52px;
+        padding: 0.7rem 0.8rem;
+        font-size: 0.95rem;
+        white-space: nowrap;
+      }
+    }
+
+    // The parts: tabs that stay under the top bar while the part scrolls.
+    .fh-segments-bar {
+      position: sticky;
+      top: 60px;
+      z-index: 20;
+      margin: 0 -16px;
+      padding: 6px 0;
+      background: rgba(237, 240, 255, 0.94);
+      backdrop-filter: saturate(1.4) blur(10px);
+    }
+
+    .fh-segments {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 0 16px;
+      scroll-padding-inline: 16px;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar { display: none; }
+    }
+
+    .fh-segment {
+      appearance: none;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(53, 42, 124, 0.14);
+      background: #fff;
+      color: var(--muted);
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+
+      small {
+        padding: 1px 7px;
+        border-radius: 99px;
+        background: rgba(53, 42, 124, 0.07);
+        font-size: 0.74rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      &.on {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: #fff;
+
+        small { background: rgba(255, 255, 255, 0.18); }
+      }
+
+      &:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    }
+
+    .fh-seg-panel { display: grid; gap: 14px; min-width: 0; }
+
+    // Touch targets of at least 44px.
+    .fh-chip-button,
+    .fh-member-open,
+    .fh-switch,
+    .fh-zone-button { min-height: 44px; }
+    .fh-text-button { min-height: 44px; padding-top: 0; padding-bottom: 0; }
+    .fh-text-button.quiet { min-height: 32px; }
+    .fh-hours select { height: 44px; }
+    .fh-field select,
+    .fh-field input { min-height: 46px; font-size: 1rem; }
+    .fh-steps label { min-width: 44px; min-height: 44px; }
+    .fh-tabs button { min-height: 44px; }
+
+    .fh-share-menu a { min-height: 44px; }
+  }
+
+  // The loading shape: no screen links on a phone.
+  .fh .fh-quicklinks { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

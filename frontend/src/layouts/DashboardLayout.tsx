@@ -1,5 +1,6 @@
 // The organiser app's frame: the navigation rail on wide screens, a compact
-// top bar with a menu drawer on phones, and the page. The current family is
+// top bar with a menu drawer on tablets, and on phones (768px and narrower,
+// with a family open) a bottom tab bar whose More opens a sheet. The current family is
 // the one in the address (/family/:familyId/...), else the last one opened on
 // this browser (if it belongs to the logged-in account), else the account's
 // first. The landing page (/) is shown on its own, without the app around it.
@@ -15,11 +16,14 @@ import { Menu } from 'lucide-react';
 import { api, ApiError } from '../api/client';
 import { Sidebar, familyInitial, pageLabel } from '../components/organisms/Sidebar';
 import { forgetFamilyId, saveFamilyId, useStoredFamilyId } from '../pages/FamilySignUpPage/familyStorage';
+import { MoreSheet, PhoneTabs } from './PhoneTabs';
 import { authPath, useMe, type MeState } from './useMe';
 import './DashboardLayout.scss';
 
 /** Pages that show a family's people and calls: only for the logged-in organiser. */
 const ACCOUNT_ONLY = ['/family/*', '/calls/*'];
+/** Pages that show the phone's bottom tab bar (with a family open). */
+const WITH_TABS = ['/family/*', '/families', '/signup'];
 
 function currentFamilyId(fromUrl: string | null, stored: string | null, meState: MeState): string | null {
   if (fromUrl) return fromUrl;
@@ -64,8 +68,12 @@ export function DashboardLayout() {
   const fromUrl = matchPath('/family/:familyId/*', location.pathname)?.params.familyId ?? null;
   const familyId = currentFamilyId(fromUrl, stored, meState);
   const familyName = useFamilyName(familyId, meState);
-  const [menuOpen, setMenuOpen] = useState(false);
+  // The menu drawer (tablets) or the More sheet (phones); one at a time.
+  const [overlay, setOverlay] = useState<'menu' | 'more' | null>(null);
+  const menuOpen = overlay !== null;
+  const setMenuOpen = (open: boolean) => setOverlay(open ? 'menu' : null);
   const menuButton = useRef<HTMLButtonElement>(null);
+  const moreButton = useRef<HTMLButtonElement>(null);
   const drawer = useRef<HTMLDivElement>(null);
 
   // Logged in on this page earlier: a later "out" is someone logging out on purpose.
@@ -80,14 +88,14 @@ export function DashboardLayout() {
   }, [fromUrl]);
 
   // Any navigation closes the menu.
-  useEffect(() => setMenuOpen(false), [location.pathname, location.search]);
+  useEffect(() => setOverlay(null), [location.pathname, location.search]);
 
   // While the drawer is open: Escape closes it, the page behind does not scroll.
   useEffect(() => {
-    if (!menuOpen) return;
-    const button = menuButton.current;
+    if (!overlay) return;
+    const button = overlay === 'more' ? moreButton.current : menuButton.current;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenuOpen(false);
+      if (event.key === 'Escape') setOverlay(null);
     };
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -98,7 +106,7 @@ export function DashboardLayout() {
       document.body.style.overflow = overflow;
       button?.focus();
     };
-  }, [menuOpen]);
+  }, [overlay]);
 
   if (location.pathname === '/') return <Outlet />;
   // The landing page's "Sign in" still points at the old mock sign-in form,
@@ -109,9 +117,10 @@ export function DashboardLayout() {
   }
 
   const label = pageLabel(location.pathname, familyId);
+  const tabs = Boolean(familyId) && meState.status === 'in' && WITH_TABS.some((pattern) => matchPath(pattern, location.pathname));
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${tabs ? ' has-tabs' : ''}`}>
       {/* While the phone menu is open everything else is inert, so the keyboard
           and screen readers stay inside the menu, as a dialog promises. */}
       <a className="app-skip" href="#app-main" inert={menuOpen}>
@@ -147,7 +156,7 @@ export function DashboardLayout() {
           type="button"
           className="app-menu-button"
           onClick={() => setMenuOpen(true)}
-          aria-expanded={menuOpen}
+          aria-expanded={overlay === 'menu'}
           aria-controls="app-drawer"
         >
           <Menu size={20} aria-hidden="true" />
@@ -155,7 +164,7 @@ export function DashboardLayout() {
         </button>
       </header>
 
-      {menuOpen ? (
+      {overlay === 'menu' ? (
         <div className="app-drawer-layer">
           <div className="app-drawer-backdrop" onClick={() => setMenuOpen(false)} aria-hidden="true" />
           <div
@@ -189,6 +198,16 @@ export function DashboardLayout() {
           </Suspense>
         </div>
       </main>
+
+      {tabs && familyId ? (
+        <div className="app-tabs-wrap" inert={menuOpen}>
+          <PhoneTabs ref={moreButton} familyId={familyId} moreOpen={overlay === 'more'} onMore={() => setOverlay('more')} />
+        </div>
+      ) : null}
+
+      {overlay === 'more' && familyId ? (
+        <MoreSheet ref={drawer} familyId={familyId} familyName={familyName} meState={meState} onClose={() => setOverlay(null)} />
+      ) : null}
     </div>
   );
 }
