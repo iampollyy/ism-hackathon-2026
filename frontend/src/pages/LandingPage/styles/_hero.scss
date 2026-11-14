@@ -48,6 +48,7 @@
 
 .lp-stage__panel {
   grid-area: 1 / 1;
+  outline: none;
   align-self: start;
   opacity: 0;
   visibility: hidden;
@@ -532,6 +533,7 @@
 }
 
 .lp-overlay__inner {
+  outline: none;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -583,6 +585,13 @@
   .lp-display {
     font-size: 36px;
   }
+  .lp-livewave {
+    height: 72px;
+    justify-content: center;
+  }
+  .lp-done {
+    font-size: 26px;
+  }
 }
 
 .lp-reveal__lesson--overlay {
@@ -629,8 +638,15 @@
     display: none;
   }
 
+  .lp-stage {
+    margin-top: 8px;
+  }
+
   .lp-stage__panel .lp-lead {
     font-size: 16px;
+  }
+
+  .lp-stage__panel--intro .lp-lead {
     margin-bottom: 0;
   }
 
@@ -674,6 +690,10 @@
 
   .lp-hero__mcta {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+    text-align: center;
   }
 
   .lp-done {

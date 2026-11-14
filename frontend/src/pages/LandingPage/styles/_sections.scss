@@ -691,10 +691,12 @@
 
   // Story: the phone sticks at the top; chapter panels scroll up over it.
   .lp-story__grid {
-    display: block;
+    display: flex;
+    flex-direction: column;
   }
 
   .lp-story__stick {
+    order: -1;
     position: sticky;
     top: calc(var(--nav-h) + 8px);
     z-index: 0;
@@ -772,8 +774,8 @@
 
   .lp-close__object {
     min-height: 0;
-    margin-top: 32px;
-    justify-content: flex-start;
+    margin-top: 48px;
+    justify-content: center;
   }
 
   .lp-phone--close {

@@ -9,7 +9,7 @@ import { callMachine, focusMark, isActiveCall, setAnnouncer } from '../callMachi
 import { callAudio } from '../audio';
 import { live, store, useLp, type CallState } from '../store';
 import { Phone, type Rings } from './Phone';
-import { HeroScreen, fmt, scrambleInto } from './screens';
+import { HeroScreen, LiveWave, fmt, scrambleInto } from './screens';
 import { SoundToggle } from './SoundToggle';
 
 const ICON = { strokeWidth: 1.75 } as const;
@@ -301,7 +301,11 @@ function CallOverlay({ returnFocus }: { returnFocus: RefObject<HTMLElement | nul
       ref={ref}
       data-call={call}
     >
-      <div className={`lp-overlay__inner${call === 'glitch' ? ' lp-overlay--glitch' : ''}`}>
+      <div
+        className={`lp-overlay__inner${call === 'glitch' ? ' lp-overlay--glitch' : ''}`}
+        tabIndex={-1}
+        data-lp-focus="stage-overlay"
+      >
         <div className="lp-overlay__top">
           <p className="lp-overlay__who">
             {tone === 'safe' ? hero.son : call === 'reveal' ? hero.practiceBadge : hero.unknown}
@@ -317,7 +321,8 @@ function CallOverlay({ returnFocus }: { returnFocus: RefObject<HTMLElement | nul
           </p>
         </div>
         <div className="lp-overlay__mid">
-          <CaptionStage compact />
+          {call === 'done' ? <p className="lp-done">{hero.doneLine}</p> : <CaptionStage compact />}
+          {call === 'in-call' ? <LiveWave active /> : null}
           {call === 'reveal' ? (
             <div className={`lp-reveal__lesson lp-reveal__lesson--overlay${lesson ? ' is-shown' : ''}`}>
               <span className="lp-reveal__label">{hero.remember}</span>
@@ -425,6 +430,8 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
   useEffect(() => {
     if (call === 'declined' && declineStep === 1) focusMark('hear-anyway');
     if (call === 'stopped') focusMark('replay');
+    // End disappears when the visitor hangs up: keep focus on the call itself.
+    if (call === 'hung-up') focusMark(store.get().overlayOpen ? 'stage-overlay' : 'stage');
   }, [call, declineStep]);
 
   const replay = () => callMachine.replay({ overlay: mobile });
@@ -468,7 +475,7 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
                 <p className="lp-small lp-muted">{hero.priceLine(30)}</p>
               </div>
             </div>
-            <div {...panelProps('call')}>
+            <div {...panelProps('call')} tabIndex={-1} data-lp-focus="stage">
               {panel === 'call' && !overlayOpen ? <CaptionStage /> : null}
             </div>
             <div {...panelProps('done')}>
@@ -526,8 +533,8 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
           <div className="lp-stage-ui" ref={stageUiRef} />
           <div className="lp-hero__notes">
             <p className="lp-hint">
-              <span>{soundOn ? hero.hintSound : hero.hintMuted}</span>
-              <SoundToggle className="lp-sound--inline" />
+              {call === 'ringing' || call === 'connecting' ? <span>{soundOn ? hero.hintSound : hero.hintMuted}</span> : null}
+              <SoundToggle className="lp-sound--inline" withLabel={call !== 'ringing' && call !== 'connecting'} />
             </p>
             <p className="lp-disclosure">{hero.disclosure}</p>
             <details className="lp-details">
@@ -540,9 +547,12 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
               </p>
             </details>
           </div>
-          <Link to="/signup" className="lp-btn lp-btn--ghost lp-btn--block lp-hero__mcta">
-            {hero.cta}
-          </Link>
+          <div className="lp-hero__mcta">
+            <Link to="/signup" className="lp-btn lp-btn--ghost lp-btn--block">
+              {hero.cta}
+            </Link>
+            <p className="lp-small lp-muted">{hero.priceLine(30)}</p>
+          </div>
         </div>
       </div>
       <div className="lp-sr" aria-live="polite" ref={announcerRef} />

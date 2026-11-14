@@ -68,7 +68,7 @@ export function StaticWave({ lit = 1, bars = 56, className = '' }: { lit?: numbe
 }
 
 /** Bars that follow the analyser while a clip plays. */
-function LiveWave({ active }: { active: boolean }) {
+export function LiveWave({ active }: { active: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
