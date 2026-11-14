@@ -92,7 +92,7 @@ def test_incoming_call_only_while_ringing(client, make_family, fakes):
     call_id = client.post("/api/practice-calls", json={"target_member_id": sara}).json()["call_id"]
     incoming = client.get(f"/api/members/{sara}/phone-state").json()["incoming_call"]
     assert incoming == {"call_id": call_id, "kind": "practice",
-                        "caller": {"label": "Unknown number", "number": "+00 600 555 0142"}}
+                        "caller": {"label": "Unknown number", "number": "+00 600 555 0142"}, "live": False}
     client.post(f"/api/calls/{call_id}/answer")
     assert client.get(f"/api/members/{sara}/phone-state").json()["incoming_call"] is None
 
