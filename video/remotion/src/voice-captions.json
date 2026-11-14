@@ -1,0 +1,163 @@
+[
+ {
+  "text": "Mum?",
+  "startMs": 160,
+  "endMs": 560,
+  "timestampMs": 360,
+  "confidence": null
+ },
+ {
+  "text": " It's",
+  "startMs": 1040,
+  "endMs": 1200,
+  "timestampMs": 1120,
+  "confidence": null
+ },
+ {
+  "text": " me.",
+  "startMs": 1280,
+  "endMs": 1800,
+  "timestampMs": 1540,
+  "confidence": null
+ },
+ {
+  "text": " I'm",
+  "startMs": 2080,
+  "endMs": 2160,
+  "timestampMs": 2120,
+  "confidence": null
+ },
+ {
+  "text": " on",
+  "startMs": 2200,
+  "endMs": 2240,
+  "timestampMs": 2220,
+  "confidence": null
+ },
+ {
+  "text": " a",
+  "startMs": 2320,
+  "endMs": 2400,
+  "timestampMs": 2360,
+  "confidence": null
+ },
+ {
+  "text": " friend's",
+  "startMs": 2520,
+  "endMs": 2720,
+  "timestampMs": 2620,
+  "confidence": null
+ },
+ {
+  "text": " phone,",
+  "startMs": 2880,
+  "endMs": 3200,
+  "timestampMs": 3040,
+  "confidence": null
+ },
+ {
+  "text": " mine",
+  "startMs": 3280,
+  "endMs": 3440,
+  "timestampMs": 3360,
+  "confidence": null
+ },
+ {
+  "text": " broke.",
+  "startMs": 3520,
+  "endMs": 3920,
+  "timestampMs": 3720,
+  "confidence": null
+ },
+ {
+  "text": " Listen...",
+  "startMs": 4893,
+  "endMs": 5600,
+  "timestampMs": 5246,
+  "confidence": null
+ },
+ {
+  "text": " I'm",
+  "startMs": 5640,
+  "endMs": 5720,
+  "timestampMs": 5680,
+  "confidence": null
+ },
+ {
+  "text": " in",
+  "startMs": 5760,
+  "endMs": 5840,
+  "timestampMs": 5800,
+  "confidence": null
+ },
+ {
+  "text": " trouble,",
+  "startMs": 5920,
+  "endMs": 6400,
+  "timestampMs": 6160,
+  "confidence": null
+ },
+ {
+  "text": " and",
+  "startMs": 6480,
+  "endMs": 6560,
+  "timestampMs": 6520,
+  "confidence": null
+ },
+ {
+  "text": " I",
+  "startMs": 6600,
+  "endMs": 6640,
+  "timestampMs": 6620,
+  "confidence": null
+ },
+ {
+  "text": " need",
+  "startMs": 6720,
+  "endMs": 6880,
+  "timestampMs": 6800,
+  "confidence": null
+ },
+ {
+  "text": " money",
+  "startMs": 6960,
+  "endMs": 7120,
+  "timestampMs": 7040,
+  "confidence": null
+ },
+ {
+  "text": " today.",
+  "startMs": 7200,
+  "endMs": 7760,
+  "timestampMs": 7480,
+  "confidence": null
+ },
+ {
+  "text": " Please...",
+  "startMs": 8400,
+  "endMs": 9200,
+  "timestampMs": 8800,
+  "confidence": null
+ },
+ {
+  "text": " don't",
+  "startMs": 9240,
+  "endMs": 9360,
+  "timestampMs": 9300,
+  "confidence": null
+ },
+ {
+  "text": " tell",
+  "startMs": 9480,
+  "endMs": 9600,
+  "timestampMs": 9540,
+  "confidence": null
+ },
+ {
+  "text": " Dad.",
+  "startMs": 9640,
+  "endMs": 10320,
+  "timestampMs": 9980,
+  "confidence": null
+ }
+]
