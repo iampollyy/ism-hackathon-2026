@@ -13,6 +13,8 @@ import { HeroScreen, LiveWave, RiskPill, fmt, scrambleInto, type RiskLevel } fro
 import { SoundToggle } from './SoundToggle';
 
 const ICON = { strokeWidth: 1.75 } as const;
+// Same words as the phone screen's ended call (screens.tsx).
+const CALL_ENDED = 'Call ended';
 
 type Panel = 'intro' | 'call' | 'done' | 'declined' | 'stopped';
 
@@ -145,7 +147,7 @@ function CallReading({ t }: { t: number }) {
 /** "Would your mum have known? Send her the call.": the share sheet, or the link copied. */
 function ShareCall({ className = '' }: { className?: string }) {
   const [note, setNote] = useState<'none' | 'copied' | 'manual'>('none');
-  const url = `${window.location.origin}/#top`;
+  const url = `${window.location.origin}/`;
   const share = async () => {
     const data = { title: hero.shareTitle, text: hero.shareText, url };
     if (typeof navigator.share === 'function' && (!navigator.canShare || navigator.canShare(data))) {
@@ -242,12 +244,12 @@ function CallCard({ call, declineStep }: { call: CallState; declineStep: 0 | 1 }
   const intent = () => callAudio.warm();
   const declined = call === 'declined';
   const label =
-    call === 'done' || call === 'connected' || call === 'calling-back'
+    call === 'connected' || call === 'calling-back'
       ? `${hero.son} · ${hero.savedContact}`
       : declined
         ? hero.callDeclined
-        : call === 'stopped'
-          ? 'Call ended'
+        : call === 'stopped' || call === 'done'
+          ? CALL_ENDED
           : ringing
             ? hero.mobile
             : hero.onCall;
@@ -489,6 +491,9 @@ export function Hero({
   const soundOn = useLp((s) => s.soundOn);
   const mode = useLp((s) => s.mode);
   const overlayOpen = useLp((s) => s.overlayOpen);
+  const revealed = useLp(
+    (s) => (s.call === 'reveal' && s.revealShown) || s.call === 'calling-back' || s.call === 'connected',
+  );
   const sectionRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const announcerRef = useRef<HTMLDivElement>(null);
@@ -610,6 +615,19 @@ export function Hero({
             </div>
             <div {...panelProps('call')} tabIndex={-1} data-lp-focus="stage">
               {panel === 'call' && !overlayOpen ? <CaptionStage /> : null}
+              {/* From the reveal on, the next step is on screen while the reveal plays and Son
+                  is called back. Focus stays where the call put it (Call Son on the phone). */}
+              {panel === 'call' && !overlayOpen && revealed ? (
+                <div className="lp-row lp-callcta">
+                  <Link to={SIGNUP} className="lp-btn lp-btn--light lp-callcta__trial">
+                    {hero.cta}
+                  </Link>
+                  <button type="button" className="lp-btn lp-btn--ghost" onClick={replay}>
+                    <RotateCcw size={18} {...ICON} aria-hidden="true" />
+                    {hero.replay}
+                  </button>
+                </div>
+              ) : null}
             </div>
             <div {...panelProps('done')}>
               <p className="lp-done">{hero.doneLine}</p>
