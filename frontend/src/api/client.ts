@@ -11,7 +11,7 @@ import type {
   JoinView, LearnTactics, LoginIn, Me, NewsRefreshed, NewsView, Ok, PhoneEvent, PhoneState, PlanChoice,
   PracticeCallCreate, Pricing, ProgressView, ProtectionMemberView, ProtectionUpdate, ProtectionView, RegisterIn,
   ScenarioView, Session, ShieldCallCreated, ShieldCallRequest, SurpriseDrillCreated, SurpriseDrillRequest,
-  VoiceReady, VoiceSampleAccepted, VoiceSampleStatus, WaitlistCount, WaitlistIn,
+  VoiceReady, VoiceSampleAccepted, VoiceSampleStatus, WaitlistCount, WaitlistIn, MemberAdd, MemberAdded,
 } from './types';
 
 export class ApiError extends Error {
@@ -43,6 +43,8 @@ export const api = {
   // families and members
   createFamily: (body: FamilyCreate) => request<FamilyCreated>('/families', json(body)),
   getFamily: (familyId: string) => request<FamilyView>(`/families/${familyId}`),
+  /** Add a person later (organiser only); they join through the returned invite_link. */
+  addMember: (familyId: string, body: MemberAdd) => request<MemberAdded>(`/families/${familyId}/members`, json(body)),
   setConsent: (memberId: string, body: ConsentUpdate) => request<Ok>(`/members/${memberId}/consent`, json(body)),
   uploadVoice: (memberId: string, audio: Blob, filename: string) => {
     const form = new FormData();

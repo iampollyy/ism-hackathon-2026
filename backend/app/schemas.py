@@ -984,3 +984,21 @@ class NewsView(BaseModel):
 class NewsRefreshed(NewsView):
     refreshed: bool  # True: a new digest was built now
     reason: Literal["too_soon", "fresh", "no_new_digest", "failed"] | None = None
+
+
+# ---------------------------------------------------------------- adding a person later (Saturday)
+
+MAX_FAMILY_MEMBERS = 12  # the same limit as at sign-up
+
+
+class MemberAdd(BaseModel):
+    name: str = Field(min_length=1, max_length=60)
+    relationship: str = Field(min_length=1, max_length=40)
+
+
+class MemberAdded(BaseModel):
+    id: str
+    name: str
+    relationship: str
+    invite_link: str  # /join/{id}: open it on their phone to join
+    phone_link: str
