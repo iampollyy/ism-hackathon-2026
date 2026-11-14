@@ -1,11 +1,12 @@
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 
 /** Film grain: a noise texture whose seed changes every frame. */
 export const Grain: React.FC<{ opacity?: number }> = ({ opacity = 0.09 }) => {
   const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
   return (
     <AbsoluteFill style={{ pointerEvents: "none", mixBlendMode: "overlay", opacity }}>
-      <svg width="1080" height="1920">
+      <svg width={width} height={height}>
         <filter id={`grain-${frame}`}>
           <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed={frame % 9} stitchTiles="stitch" />
           <feColorMatrix type="saturate" values="0" />
