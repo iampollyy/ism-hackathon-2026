@@ -6,7 +6,7 @@
 
 import { useMemo } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Activity, PhoneIncoming, ShieldCheck } from 'lucide-react';
+import { PhoneIncoming, ShieldCheck } from 'lucide-react';
 import { api } from '../../api/client';
 import type { DrillList, FamilyView } from '../../api/types';
 import { DrillListHead, DrillRow } from './DrillRow';
@@ -63,10 +63,13 @@ export function DrillsPage() {
   if (family.notFound || all.notFound) {
     return (
       <div className="rv">
-        <ReviewHeader familyId={familyId} familyName={null} title="Drills" />
-        <EmptyState icon={<Activity size={22} />} title="We couldn’t find this family" action={<Link to="/families" className="button button-primary">See your families</Link>}>
-          <p>The link may be from another server, or the family was removed.</p>
-        </EmptyState>
+        <ReviewHeader
+          familyId={familyId}
+          familyName={null}
+          title="We couldn’t find this family"
+          lead="The link may be from another server, or the family was removed."
+          actions={<Link to="/families" className="button button-primary rv-button">See your families</Link>}
+        />
       </div>
     );
   }

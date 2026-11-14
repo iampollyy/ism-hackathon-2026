@@ -112,10 +112,13 @@ export function ActivityPage() {
   if (family.notFound || activity.notFound) {
     return (
       <div className="rv">
-        <ReviewHeader familyId={familyId} familyName={null} title="Activity" />
-        <EmptyState icon={<Sparkles size={22} />} title="We couldn’t find this family" action={<Link to="/families" className="button button-primary">See your families</Link>}>
-          <p>The link may be from another server, or the family was removed.</p>
-        </EmptyState>
+        <ReviewHeader
+          familyId={familyId}
+          familyName={null}
+          title="We couldn’t find this family"
+          lead="The link may be from another server, or the family was removed."
+          actions={<Link to="/families" className="button button-primary rv-button">See your families</Link>}
+        />
       </div>
     );
   }
@@ -204,8 +207,13 @@ export function ActivityPage() {
   );
 }
 
+// For a message, `member` is who got it, not who did something.
+const SENT_KINDS: readonly Kind[] = ['alert', 'weekly_note', 'reminder', 'message'];
+
 function TimelineItem({ item, look, colorIndex }: { item: ActivityItem; look: Look; colorIndex: number }) {
   const Icon = look.icon;
+  const sent = SENT_KINDS.includes(item.kind);
+  const label = sent ? `${look.label} · sent to ${item.member ? item.member.name : 'the family'}` : look.label;
   return (
     <li className={`rv-event is-${look.tone}`}>
       <time className="rv-event__time" dateTime={item.when}>{clockTime(item.when)}</time>
@@ -214,7 +222,7 @@ function TimelineItem({ item, look, colorIndex }: { item: ActivityItem; look: Lo
         <p>{item.text}</p>
         <span className="rv-event__meta">
           {item.member ? <PersonAvatar name={item.member.name} index={colorIndex} size="sm" /> : null}
-          {look.label}
+          {label}
         </span>
       </div>
       {item.call_id ? (

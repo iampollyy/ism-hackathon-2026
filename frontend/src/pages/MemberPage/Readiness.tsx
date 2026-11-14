@@ -39,7 +39,7 @@ export function Readiness({ readiness, name }: { readiness: ReadinessView; name:
         </ul>
       </div>
 
-      <div className="rv-readiness__total">
+      <div className={`rv-readiness__total${now === 0 ? ' is-zero' : ''}`}>
         <p className="rv-readiness__score">
           <span className="rv-readiness__before">{before}</span>
           <span className="rv-readiness__arrow" aria-hidden>→</span>

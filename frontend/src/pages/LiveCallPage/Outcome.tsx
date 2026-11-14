@@ -1,4 +1,4 @@
-import { CircleCheck, Hourglass, LoaderCircle, PhoneForwarded, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { CircleCheck, Hourglass, Lightbulb, LoaderCircle, PhoneForwarded, ShieldCheck, TriangleAlert } from 'lucide-react';
 import type { CallStatus, Outcome as OutcomeKey, Tactic } from '../../api/types';
 import { OUTCOME_LABELS, TACTIC_LABELS } from '../../api/types';
 import { duration } from './format';
@@ -80,7 +80,7 @@ export function OutcomeTiles({ target, status, outcome, result, callback, callba
       <section className={`lc-card lc-tile${done ? (safe ? ' is-safe' : ' is-unsafe') : ''}`} aria-live="polite">
         <span className="small-label">What {target} did</span>
         <div className="lc-tile__value" key={done ?? 'none'}>
-          {done ? (safe ? <ShieldCheck size={22} /> : <TriangleAlert size={22} />) : status === 'ended' ? <LoaderCircle size={20} className="lc-spin" /> : null}
+          {done ? (safe ? <ShieldCheck size={22} /> : <Lightbulb size={22} />) : status === 'ended' ? <LoaderCircle size={20} className="lc-spin" /> : null}
           <strong>{didText}</strong>
         </div>
         {didDetail ? <p className="lc-tile__detail">{didDetail}</p> : null}

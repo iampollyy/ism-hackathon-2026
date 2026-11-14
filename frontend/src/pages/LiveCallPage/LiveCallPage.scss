@@ -329,7 +329,7 @@
     color: var(--ink);
     font-size: 0.78rem;
     font-weight: 700;
-    animation: lc-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+    animation: lc-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 
     &.is-agreed { box-shadow: inset 0 0 0 1.5px currentColor; }
   }
@@ -413,7 +413,7 @@
   .lc-stage.is-reached .lc-stage__dot {
     background: var(--accent);
     border-color: var(--accent);
-    animation: lc-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+    animation: lc-pop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .lc-stage.is-reveal.is-reached .lc-stage__dot,
@@ -608,7 +608,7 @@
   .lc-tactic {
     gap: 5px;
     transform-origin: left center;
-    animation: lc-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+    animation: lc-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 
     // The caller marked it and the independent check heard it too.
     &.is-agreed {
@@ -626,7 +626,7 @@
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--muted);
-    animation: lc-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+    animation: lc-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .lc-turn__light-dot {
@@ -828,7 +828,7 @@
     color: #fff;
     font-size: 0.75rem;
     font-weight: 700;
-    animation: lc-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+    animation: lc-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 
     svg { color: #ffb4a3; }
   }
@@ -890,6 +890,7 @@
   .live-call .lc-header {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "back" "title" "badge";
+    row-gap: 12px;
   }
 }
 

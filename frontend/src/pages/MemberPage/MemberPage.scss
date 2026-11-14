@@ -81,6 +81,8 @@
     }
   }
 
+  .rv-readiness__total.is-zero .rv-readiness__score strong { color: var(--muted); }
+
   .rv-readiness__before {
     font-size: 2rem;
     font-weight: 600;
@@ -232,6 +234,15 @@
     gap: 8px;
     color: var(--muted);
     font-size: 0.9rem;
+  }
+
+  .rv-record__none { margin-bottom: 14px; }
+
+  .rv-weak.is-unknown {
+    background: rgba(17, 34, 49, 0.04);
+    color: var(--muted);
+
+    h3 { color: var(--muted); }
   }
 
   .rv-weak {

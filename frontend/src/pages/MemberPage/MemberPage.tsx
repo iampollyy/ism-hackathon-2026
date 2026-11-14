@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronRight, Flame, Lightbulb, Mic, Phone, PhoneIncoming, ShieldCheck, Target, UserRound } from 'lucide-react';
+import { ChevronRight, Flame, Lightbulb, Mic, Phone, PhoneIncoming, ShieldCheck, Target } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
 import type { DrillList, FamilyView, MemberView, ProgressView, ProtectionView } from '../../api/types';
 import { DrillListHead, DrillRow } from '../DrillsPage/DrillRow';
@@ -37,10 +37,13 @@ export function MemberPage() {
   if (progress.notFound || drills.notFound || family.notFound) {
     return (
       <div className="rv">
-        <ReviewHeader familyId={familyId} familyName={family.data?.name ?? null} title="Person not found" />
-        <EmptyState icon={<UserRound size={22} />} title="We couldn’t find this person in the family" action={<Link to={`/family/${familyId}`} className="button button-primary">Back to the family</Link>}>
-          <p>The link may be incomplete, or they are in another family.</p>
-        </EmptyState>
+        <ReviewHeader
+          familyId={familyId}
+          familyName={family.data?.name ?? null}
+          title="We couldn’t find this person"
+          lead="The link may be incomplete, or they belong to another family."
+          actions={<Link to={`/family/${familyId}`} className="button button-primary rv-button">Open the family page</Link>}
+        />
       </div>
     );
   }
@@ -191,10 +194,10 @@ function Record({ progress, name }: { progress: ProgressView; name: string }) {
           ) : null}
         </>
       ) : (
-        <p className="rv-muted">No drills with a result yet. {name}’s record starts with the first one.</p>
+        <p className="rv-muted rv-record__none">No drills with a result yet. {name}’s record starts with the first one.</p>
       )}
 
-      <div className="rv-weak">
+      <div className={`rv-weak${progress.weak_spot ? '' : ' is-unknown'}`}>
         <Target size={18} aria-hidden />
         <div>
           <h3>Weak spot</h3>
