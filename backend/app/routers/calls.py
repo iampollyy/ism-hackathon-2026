@@ -52,7 +52,7 @@ from app import events, schemas
 from app.db import get_db, now_iso, parse_time, seconds_between, to_iso, utcnow
 from app.ids import new_call_id
 from app.models import Call, CallEvent, Consent, Member, Result
-from app.services import briefs, consent, limits, live_risk, pipeline, run_in_background, sessions
+from app.services import briefs, consent, limits, live_risk, pipeline, run_in_background, sessions, shield
 from app.services import voice_sample  # track 2
 
 log = logging.getLogger("app.calls")
@@ -517,6 +517,7 @@ def call_view(db: DbSession, call: Call) -> schemas.CallView:
         turns=turns,
         tactics=tactics,
         risk=risk_points(stored),
+        shield=shield.call_shield_view(db, call),  # track 3: None unless a shield call
         result=result_view(db, call),
         callback_seconds=call.callback_seconds,
         answered_at=call.answered_at,

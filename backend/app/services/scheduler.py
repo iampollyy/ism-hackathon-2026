@@ -8,6 +8,8 @@ Every two seconds (backend.md, "Live updates inside the back end"):
   become ended with ended_by timeout, and the after-call work starts.
 Each change publishes call.status. A failure on one call is logged and the
 pass moves on; a failing pass is logged and the loop goes on.
+After each pass the loop also calls protection.start_random_drills (track
+3), which plans random drills about once a minute, in the background.
 """
 
 import asyncio
@@ -22,6 +24,7 @@ from app import schemas
 from app.db import new_session, parse_time, to_iso, utcnow
 from app.models import Call
 from app.routers import calls
+from app.services import protection
 
 log = logging.getLogger("app.scheduler")
 
@@ -42,6 +45,7 @@ async def run_forever() -> None:
         except Exception:  # CancelledError is not an Exception, so cancelling still stops the loop
 
             log.exception("scheduler pass failed; trying again in %s seconds", TICK_SECONDS)
+        protection.start_random_drills(utcnow())  # track 3: about once a minute, in the background; never raises
         await asyncio.sleep(TICK_SECONDS)
 
 

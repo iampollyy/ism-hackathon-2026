@@ -76,7 +76,8 @@ def test_phone_state_records_last_seen_and_shows_the_member(client, make_family)
     sara, _ = members(make_family())
     body = client.get(f"/api/members/{sara}/phone-state").json()
     assert body == {"member": {"id": sara, "name": "Sara", "family": "The Kovacs"},
-                    "incoming_call": None, "messages": [], "family_number": {"enabled": True}}
+                    "incoming_call": None, "messages": [], "family_number": {"enabled": True},
+                    "shield": None}  # track 3: set only during a shield call
     with new_session() as db:
         seen = parse_time(db.get(Member, sara).last_seen_at)
     assert (utcnow() - seen).total_seconds() < 5

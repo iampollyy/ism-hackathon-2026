@@ -5,7 +5,9 @@
   member is ringing, and never once the member has opted out; messages are
   the unread ones. For a member who joined by their invite link and never
   had a welcome call, the poll first starts one (services/joining.py,
-  auto_welcome_call), so it rings on this same answer.
+  auto_welcome_call), so it rings on this same answer. shield (track 3,
+  services/shield.py) is the live warning while a shield call is in
+  progress, else null.
 - POST /api/members/{id}/messages/read: marks messages read (all, or `ids`).
 - POST /api/members/{id}/family-line: finds this member's latest practice
   that ended in the last ten minutes (404 no_recent_practice if none),
@@ -50,7 +52,7 @@ from app.ids import new_call_id
 from app.models import Call, Family, Member, Message, ReadinessSnapshot, Result
 from app.routers.calls import (DEFAULT_CALLER_LABEL, DEFAULT_CALLER_NUMBER, change_status, get_member,
                                start_after_call, start_session)
-from app.services import joining, limits, readiness
+from app.services import joining, limits, readiness, shield
 
 router = APIRouter(tags=["phone"])
 
@@ -101,6 +103,7 @@ async def phone_state(member_id: str, db: DbSession = Depends(get_db)) -> schema
         incoming_call=incoming_call(db, member.id) if member.opted_out_at is None else None,
         messages=unread_messages(db, member.id),
         family_number=schemas.FamilyNumber(enabled=True),
+        shield=shield.phone_shield(db, member),  # track 3: None unless a shield call is in progress
     )
 
 

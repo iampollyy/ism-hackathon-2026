@@ -74,6 +74,12 @@ class Settings(BaseSettings):
     # Background loop (tests switch it off)
     scheduler_enabled: bool = True
 
+    # Track 3: protection, random drills and the Shield (docs/full-app/protection.md).
+    # The scheduler loop plans random drills every drill_pass_seconds, for the
+    # families that switched drills on; false stops that pass for every family.
+    random_drills_enabled: bool = True
+    drill_pass_seconds: int = 60
+
     # Web Push (VAPID). Push is off while either key is empty; make a pair with
     # scripts/make_vapid_keys.py. The public key is the URL-safe base64 form the
     # browser's applicationServerKey takes; the private key is its raw 32 bytes.

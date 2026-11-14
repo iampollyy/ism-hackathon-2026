@@ -54,7 +54,9 @@ MESSAGE_TTL_SECONDS = 24 * 3600
 SEND_TIMEOUT_SECONDS = 10
 GONE_STATUSES = (404, 410)
 BODY_MAX_CHARS = 180
-MESSAGE_TITLES = {"callback_notice": "Family number", "weekly": "This week", "reminder": "Reminder"}
+MESSAGE_TITLES = {"callback_notice": "Family number", "weekly": "This week", "reminder": "Reminder",
+                  "alert": "Family alert"}
+URGENT_MESSAGE_KINDS = ("alert",)  # the Shield's family alert (track 3) is pushed with Urgency: high
 
 _NOTED = "push_wake_ups"  # session.info key: {(what, member_id, ref): None}, in order
 _pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="push")
@@ -174,6 +176,8 @@ def deliver(what: str, member_id: str, ref: Any) -> int:
     if not targets:
         return 0
     ttl, urgency = (CALL_TTL_SECONDS, "high") if what == "call" else (MESSAGE_TTL_SECONDS, "normal")
+    if payload.get("kind") in URGENT_MESSAGE_KINDS:
+        urgency = "high"
     statuses: dict[int, int | None] = {}
     for subscription_id, info in targets:
         try:
