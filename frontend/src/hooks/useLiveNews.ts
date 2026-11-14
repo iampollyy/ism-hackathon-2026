@@ -119,7 +119,7 @@ export function ago(iso: string | null | undefined, now: number): string | null 
   return days === 1 ? 'yesterday' : `${days} days ago`;
 }
 
-const CLOCK = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
+const CLOCK = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
 
 /** When the server will look at the warnings again: "at 14:05", or "in a few minutes". */
 export function nextCheck(iso: string | null | undefined, now: number): string {
