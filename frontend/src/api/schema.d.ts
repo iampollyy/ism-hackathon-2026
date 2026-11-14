@@ -1061,6 +1061,11 @@ export interface components {
             lesson: string | null;
             /** Callback Seconds */
             callback_seconds: number | null;
+            /**
+             * Shield
+             * @default false
+             */
+            shield: boolean;
         };
         /** EndRequest */
         EndRequest: {
@@ -1534,6 +1539,13 @@ export interface components {
             name: string;
             /** Family */
             family: string;
+            /** Family Id */
+            family_id?: string | null;
+            /**
+             * Voice Ready
+             * @default false
+             */
+            voice_ready: boolean;
         };
         /** PhoneMessage */
         PhoneMessage: {

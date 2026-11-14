@@ -29,6 +29,11 @@ const listeners = new Set<() => void>();
 
 function needsReading(drill: DrillView): boolean {
   if (drill.status === 'scheduled') return false;
+  // The list now says which drills are Shield calls; ordinary drills need no read.
+  if ((drill as DrillView & { shield?: boolean }).shield === false) {
+    isShield.set(drill.call_id, false);
+    return false;
+  }
   const known = isShield.get(drill.call_id);
   if (known === undefined) return true;
   return known && !settled.has(drill.call_id);

@@ -33,3 +33,21 @@ def test_call_view_has_family_id_and_live_outcome(client, make_family) -> None:
     assert view["family_id"] == family["family_id"]
     assert view["live_outcome"] == "hung_up" and view["live_seconds_to_challenge"] is not None
     assert view["consent_given"] is None
+
+
+def test_phone_state_has_family_id_and_voice_ready(client, make_family) -> None:
+    family = make_family()
+    sara = family["members"][0]["id"]
+    member = client.get(f"/api/members/{sara}/phone-state").json()["member"]
+    assert member["family_id"] == family["family_id"] and member["voice_ready"] is False
+
+
+def test_drills_mark_shield_calls(client, make_family) -> None:
+    family = make_family()
+    sara = family["members"][0]["id"]
+    client.get(f"/api/members/{sara}/phone-state")
+    started = client.post(f"/api/families/{family['family_id']}/shield-call", json={"member_id": sara, "scenario": "bank_security"})
+    assert started.status_code in (200, 201), started.text
+    rows = client.get(f"/api/families/{family['family_id']}/drills").json()
+    items = rows["drills"] if isinstance(rows, dict) else rows
+    assert any(item["shield"] for item in items)

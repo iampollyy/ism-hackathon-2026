@@ -38,7 +38,7 @@ from sqlalchemy.orm import Session as DbSession
 from app import schemas
 from app.agents import risk
 from app.db import parse_time
-from app.models import Call, CallEvent, Consent, Member, Message, Result
+from app.models import Call, CallEvent, CallShield, Consent, Member, Message, Result
 from app.routers import families as family_view
 from app.services import readiness
 from app.services import scenarios as scenario_files
@@ -150,8 +150,9 @@ def drills(db: DbSession, family_id: str, member_id: str | None = None,
             levels.setdefault(event.call_id, []).append(data.get("level"))
     members = family_members(db, family_id)
     titles: dict[str, str] = {}
+    shields = set(db.scalars(select(CallShield.call_id).where(CallShield.call_id.in_(ids))))
     return [drill_view(call, results.get(call.id), marked.get(call.id, []), levels.get(call.id, []),
-                       members, titles) for call in calls]
+                       members, titles).model_copy(update={"shield": call.id in shields}) for call in calls]
 
 
 def drill_view(call: Call, result: Result | None, marked: list[Any], levels: list[Any],

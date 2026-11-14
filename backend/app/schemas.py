@@ -407,6 +407,8 @@ class PhoneMember(BaseModel):
     id: str
     name: str
     family: str  # the family's name
+    family_id: str | None = None  # for the phone's News tab
+    voice_ready: bool = False  # a copy of this member's voice exists
 
 
 class Caller(BaseModel):
@@ -877,6 +879,7 @@ class DrillView(BaseModel):
     tactics: list[TacticRef]
     lesson: str | None
     callback_seconds: float | None  # practice end to the family-number tap
+    shield: bool = False  # a Shield demo call (a simulated scam call), not a training drill
 
 
 class DrillList(BaseModel):

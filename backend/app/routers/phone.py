@@ -99,7 +99,9 @@ async def phone_state(member_id: str, db: DbSession = Depends(get_db)) -> schema
     joining.auto_welcome_call(db, member)  # track 1: a joined member's first welcome call; never raises
     family = db.get(Family, member.family_id)
     return schemas.PhoneState(
-        member=schemas.PhoneMember(id=member.id, name=member.name, family=family.name if family else ""),
+        member=schemas.PhoneMember(id=member.id, name=member.name, family=family.name if family else "",
+                                   family_id=member.family_id,
+                                   voice_ready=bool(member.voice_id) and member.voice_status == "ready"),
         incoming_call=incoming_call(db, member.id) if member.opted_out_at is None else None,
         messages=unread_messages(db, member.id),
         family_number=schemas.FamilyNumber(enabled=True),
