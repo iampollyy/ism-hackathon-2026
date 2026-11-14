@@ -7,7 +7,7 @@ import { createTikTokStyleCaptions, type Caption } from "@remotion/captions";
 import { Audio } from "@remotion/media";
 import { useMemo } from "react";
 import {
-  AbsoluteFill, interpolate, OffthreadVideo, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig,
+  AbsoluteFill, Easing, interpolate, OffthreadVideo, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig,
 } from "remotion";
 import data from "./pitchData.json";
 import { Grain } from "./Grain";
@@ -17,18 +17,11 @@ const FPS = 30;
 const s = (seconds: number) => Math.round(seconds * FPS);
 const P = (name: string) => staticFile(`pitch/${name}`);
 
-// Section lengths in seconds.
-export const SECTIONS = {
-  hook: 12.8, title: 3.5, problem: 11.5, shield: 25.4, setup: 9.0, consent: 18.0, sharp: 7.0, roadmap: 14.0, end: 5.0,
-};
-const order = ["hook", "title", "problem", "shield", "setup", "consent", "sharp", "roadmap", "end"] as const;
-const starts: Record<string, number> = {};
-let acc = 0;
-for (const key of order) {
-  starts[key] = acc;
-  acc += SECTIONS[key];
-}
-export const PITCH_FRAMES = s(acc);
+type SectionRow = { key: string; start: number; dur: number };
+const SECTION_ROWS = (data as unknown as { sections: SectionRow[] }).sections;
+const TOTAL = (data as unknown as { total: number }).total;
+const SPEECH = (data as unknown as { speech: [number, number][] }).speech;
+export const PITCH_FRAMES = s(TOTAL);
 
 // ---------------------------------------------------------------- building blocks
 
@@ -142,6 +135,61 @@ const Callouts: React.FC<{ items: CalloutSpec[] }> = ({ items }) => {
   );
 };
 
+
+type Key = { t: number; k: number; cx: number; cy: number };
+const ease = (x: number) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+const PushIn: React.FC<{ src: string; keys: Key[]; from?: number }> = ({ src, keys, from = 0 }) => {
+  const frame = useCurrentFrame();
+  const t = frame / FPS;
+  let a = keys[0];
+  let b = keys[keys.length - 1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (t >= keys[i].t && t <= keys[i + 1].t) { a = keys[i]; b = keys[i + 1]; break; }
+  }
+  const span = Math.max(0.001, b.t - a.t);
+  const x = t <= a.t ? 0 : t >= b.t ? 1 : ease((t - a.t) / span);
+  const k = a.k + (b.k - a.k) * x;
+  const cx = a.cx + (b.cx - a.cx) * x;
+  const cy = a.cy + (b.cy - a.cy) * x;
+  const tx = Math.min(0, Math.max(1920 - 1920 * k, 960 - cx * k));
+  const ty = Math.min(0, Math.max(1080 - 1080 * k, 540 - cy * k));
+  return (
+    <AbsoluteFill style={{ overflow: "hidden", background: "#eef0fb" }}>
+      <div style={{ position: "absolute", width: 1920, height: 1080, transformOrigin: "0 0", transform: `translate(${tx}px, ${ty}px) scale(${k})` }}>
+        <OffthreadVideo src={P(src)} muted startFrom={from} style={{ width: 1920, height: 1080 }} />
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+const ChipStack: React.FC<{ items: CalloutSpec[] }> = ({ items }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  return (
+    <div style={{ position: "absolute", left: 70, top: 150, display: "flex", flexDirection: "column", gap: 16 }}>
+      {items.map((item, index) => {
+        const enter = spring({ frame: frame - s(item.at), fps, config: { damping: 14, stiffness: 160 } });
+        if (frame < s(item.at)) return null;
+        return (
+          <div
+            key={item.text}
+            style={{
+              display: "flex", alignItems: "center", gap: 14, padding: "14px 24px", borderRadius: 18, alignSelf: "flex-start",
+              background: "rgba(13,9,38,0.9)", border: `2px solid ${item.tone}`, fontFamily: HEAD, fontWeight: 700, fontSize: 34,
+              color: "#fff", boxShadow: "0 20px 50px rgba(13,9,38,0.35)", transform: `translateX(${(1 - enter) * -40}px)`, opacity: enter,
+            }}
+          >
+            <span style={{ width: 36, height: 36, borderRadius: 18, background: item.tone, color: C.deep, display: "grid", placeItems: "center", fontSize: 20 }}>
+              {index + 1}
+            </span>
+            {item.text}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 type Area = { cx: number; bottom: number; maxWidth: number; size: number };
 const FULL_AREA: Area = { cx: 960, bottom: 70, maxWidth: 1500, size: 54 };
 const CARD_AREA: Area = { cx: CARD.x + CARD.w / 2, bottom: 1080 - (CARD.y + CARD.h) + 24, maxWidth: 980, size: 42 };
@@ -210,27 +258,35 @@ const Kinetic: React.FC<{ lines: { at: number; text: string; color: string }[] }
 
 const StatCard: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const a = spring({ frame, fps, config: { damping: 14 } });
-  const b = spring({ frame: frame - 8, fps, config: { damping: 16 } });
+  const ease = (from: number) => interpolate(frame, [from, from + 14], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const a = ease(0);
+  const b = ease(8);
+  const c = ease(16);
   return (
     <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", textAlign: "center" }}>
       <Background />
-      <div style={{ fontFamily: HEAD, fontWeight: 700, fontSize: 190, letterSpacing: -6, color: C.pink, transform: `scale(${0.7 + a * 0.3})`, opacity: a }}>
+      <div style={{ fontFamily: HEAD, fontWeight: 700, fontSize: 180, letterSpacing: -6, color: C.pink, opacity: a, transform: `translateY(${(1 - a) * 24}px)` }}>
         €20 million
       </div>
-      <div style={{ fontFamily: HEAD, fontWeight: 700, fontSize: 58, color: C.onDeep, marginTop: 10, opacity: b }}>
-        lost to phone scammers in Lithuania last year
+      <div style={{ fontFamily: HEAD, fontWeight: 700, fontSize: 56, color: C.onDeep, marginTop: 6, opacity: b, transform: `translateY(${(1 - b) * 16}px)` }}>
+        lost to phone scammers in Lithuania in a year
       </div>
-      <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 30, color: C.onDeepMuted, marginTop: 28, opacity: b }}>
-        Source: LRT, February 2026
+      <div style={{ marginTop: 40, opacity: c, display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+        <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 30, color: C.onDeepMuted }}>
+          Source: LRT.lt, 27 February 2026
+        </div>
+        <div style={{ fontFamily: BODY, fontWeight: 500, fontSize: 26, color: C.onDeepMuted, opacity: 0.85, fontStyle: "italic" }}>
+          "Twenty million euros, 15 million calls: Lithuanian authorities tackle phone swindlers"
+        </div>
       </div>
       <Grain opacity={0.06} />
     </AbsoluteFill>
   );
 };
 
-const caps = (key: keyof typeof data) => (data[key] as { captions: Caption[] }).captions;
+const anyData = data as unknown as Record<string, { captions?: Caption[]; cues?: Record<string, number>; src?: string; dur?: number; b1?: number } | null>;
+const caps = (key: string) => (anyData[key]?.captions ?? []) as Caption[];
+const cue = (key: string, name: string) => (anyData[key]?.cues?.[name] ?? 0);
 
 // ---------------------------------------------------------------- sections
 
@@ -241,8 +297,8 @@ const Hook: React.FC = () => (
       <Captions captions={caps("hook")} area={FULL_AREA} />
     </Sequence>
     <Sequence from={s(8.3)}>
-      <Full src="hookB.mp4" volume={0.45} dim={0.35} />
-      <Audio src={P("alert.mp3")} volume={0.7} />
+      <Full src="hookB.mp4" volume={0.5} dim={0.35} />
+      <Audio src={P("alert.mp3")} volume={0.45} />
       <Kinetic
         lines={[
           { at: 0.5, text: "That was a scam call.", color: "#fff" },
@@ -256,45 +312,50 @@ const Hook: React.FC = () => (
 const Title: React.FC = () => (
   <AbsoluteFill>
     <OffthreadVideo src={P("TitleCard.mp4")} muted style={{ width: "100%", height: "100%" }} />
-    <Audio src={P("whoosh.mp3")} volume={0.55} />
+    <Audio src={P("whoosh.mp3")} volume={0.4} />
   </AbsoluteFill>
 );
 
-const Problem: React.FC = () => (
+const Team: React.FC<{ slot: "teamIntro" | "teamClose" }> = ({ slot }) => (
   <AbsoluteFill>
-    <Sequence durationInFrames={s(4.75)}>
-      <Full src="introB1.mp4" />
-    </Sequence>
-    <Sequence from={s(4.75)} durationInFrames={s(3.2)}>
-      <StatCard />
-    </Sequence>
-    <Sequence from={s(7.95)} durationInFrames={s(2.2)}>
-      <Full src="introB2.mp4" />
-    </Sequence>
-    <Sequence from={s(10.15)}>
-      <Full src="introA.mp4" />
-    </Sequence>
-    <Captions captions={caps("problem")} area={FULL_AREA} />
+    <Full src={anyData[slot]?.src ?? ""} />
+    {slot === "teamIntro" ? <Label text="The team behind Callback" tone={C.lavender} /> : null}
+    <Captions captions={caps(slot)} area={FULL_AREA} />
   </AbsoluteFill>
 );
 
-const cue = (key: keyof typeof data, name: string) => ((data[key] as { cues: Record<string, number> }).cues[name]);
+const Problem: React.FC = () => {
+  const b1 = anyData.problem?.b1 ?? 3.23;
+  return (
+    <AbsoluteFill>
+      <Sequence durationInFrames={s(b1)}>
+        <Full src="introB1.mp4" />
+      </Sequence>
+      <Sequence from={s(b1)} durationInFrames={s(3.2)}>
+        <StatCard />
+      </Sequence>
+      <Sequence from={s(b1 + 3.2)} durationInFrames={s(2.2)}>
+        <Full src="introB2.mp4" />
+      </Sequence>
+      <Sequence from={s(b1 + 5.4)}>
+        <Full src="introA.mp4" />
+      </Sequence>
+      <Captions captions={caps("problem")} area={FULL_AREA} />
+    </AbsoluteFill>
+  );
+};
 
 const Shield: React.FC = () => {
   const split = 21.8;
   const vo2end = cue("shield", "vo2end");
-  const callVolume = (f: number) => interpolate(f, [0, s(vo2end), s(vo2end + 0.5)], [0.22, 0.22, 1], { extrapolateRight: "clamp" });
+  // the real call: quietly under the voice-over, then up on its own
+  const callVolume = (f: number) => interpolate(f, [0, s(vo2end), s(vo2end + 0.6)], [0.42, 0.42, 1], { extrapolateRight: "clamp" });
   return (
     <AbsoluteFill>
       <Sequence durationInFrames={s(split)}>
         <Background />
         <FootageCard src="shield.mp4" volume={callVolume} />
-        <Sequence durationInFrames={s(16.5)}>
-          <Phone src="p_shield.mp4" from={4} />
-        </Sequence>
-        <Sequence from={s(16.5)}>
-          <Phone src="p_alert.mp4" />
-        </Sequence>
+        <Phone src="p_shield2.mp4" from={4} />
         <Label text="Killer feature · Callback Shield" />
         <Callouts
           items={[
@@ -309,27 +370,63 @@ const Shield: React.FC = () => {
       </Sequence>
       <Sequence from={s(split)}>
         <Full src="shield.mp4" />
+        <Captions
+          captions={caps("shield")
+            .map((c) => ({ ...c, startMs: c.startMs - split * 1000, endMs: c.endMs - split * 1000, timestampMs: (c.timestampMs ?? c.startMs) - split * 1000 }))
+            .filter((c) => c.endMs > 0)}
+          area={FULL_AREA}
+        />
       </Sequence>
-      <Sequence from={s(split)}>
-        {/* the same clip continues full-bleed: offset its captions */}
-        <Captions captions={caps("shield").map((c) => ({ ...c, startMs: c.startMs - split * 1000, endMs: c.endMs - split * 1000, timestampMs: (c.timestampMs ?? c.startMs) - split * 1000 })).filter((c) => c.endMs > 0)} area={FULL_AREA} />
+      <Sequence from={s(cue("shield", "v1"))}>
+        <Audio src={P("vo1-shield.wav")} />
       </Sequence>
-      <Sequence from={s(0.5)}>
-        <Audio src={P("vo1-shield.mp3")} volume={1} />
-      </Sequence>
-      <Sequence from={s(7.0)}>
-        <Audio src={P("vo2-shield.mp3")} volume={1} />
+      <Sequence from={s(cue("shield", "v2"))}>
+        <Audio src={P("vo2-shield.wav")} />
       </Sequence>
       <Sequence from={s(cue("shield", "red"))}>
-        <Audio src={P("alert.mp3")} volume={0.35} />
+        <Audio src={P("alert.mp3")} volume={0.3} />
       </Sequence>
     </AbsoluteFill>
   );
 };
 
+// The family's laptop: the live view, with the camera moving onto each part.
+const Laptop: React.FC = () => (
+  <AbsoluteFill>
+    <PushIn
+      src="l_live.mp4"
+      keys={[
+        { t: 0, k: 1.0, cx: 960, cy: 540 },
+        { t: 2.2, k: 1.55, cx: 1425, cy: 290 },
+        { t: 6.0, k: 1.55, cx: 1425, cy: 290 },
+        { t: 7.6, k: 1.5, cx: 1425, cy: 780 },
+        { t: 11.4, k: 1.5, cx: 1425, cy: 780 },
+        { t: 13.0, k: 1.7, cx: 690, cy: 735 },
+        { t: 17.0, k: 1.7, cx: 690, cy: 735 },
+        { t: 19.2, k: 1.0, cx: 960, cy: 540 },
+      ]}
+    />
+    <Label text="Your family sees it live" tone={C.lavender} />
+    <ChipStack
+      items={[
+        { at: cue("laptop", "c1"), text: "Every sentence, live", tone: C.lavender },
+        { at: cue("laptop", "c2"), text: "Every trick, named", tone: C.pink },
+        { at: cue("laptop", "c3"), text: "Family alerted automatically", tone: C.good },
+      ]}
+    />
+    <Captions captions={caps("laptop")} area={FULL_AREA} />
+    <Sequence from={s(cue("laptop", "vo"))}>
+      <Audio src={P("vo8-laptop.wav")} />
+    </Sequence>
+    <Sequence from={s(12.2)}>
+      <Audio src={P("alert.mp3")} volume={0.25} />
+    </Sequence>
+  </AbsoluteFill>
+);
+
 const Split: React.FC<{
   label: string; tone?: string; left: string; leftVolume: number | ((f: number) => number); phone: string; callouts: CalloutSpec[];
-  captionsKey: keyof typeof data; vo: string; voAt: number;
+  captionsKey: string; vo: string; voAt: number;
 }> = ({ label, tone, left, leftVolume, phone, callouts, captionsKey, vo, voAt }) => (
   <AbsoluteFill>
     <Background />
@@ -339,9 +436,77 @@ const Split: React.FC<{
     <Callouts items={callouts} />
     <Captions captions={caps(captionsKey)} area={CARD_AREA} />
     <Sequence from={s(voAt)}>
-      <Audio src={P(vo)} volume={1} />
+      <Audio src={P(vo)} />
     </Sequence>
     <Grain opacity={0.05} />
+  </AbsoluteFill>
+);
+
+// Consent: the real welcome call (two cuts), then the voice-over over a second shot.
+const Consent: React.FC = () => {
+  const a = cue("consent", "a");
+  const b = cue("consent", "b");
+  const v = cue("consent", "vo");
+  return (
+    <AbsoluteFill>
+      <Background />
+      <Sequence durationInFrames={s(a)}>
+        <FootageCard src="consentA.mp4" />
+      </Sequence>
+      <Sequence from={s(a)} durationInFrames={s(b)}>
+        <FootageCard src="consentB.mp4" />
+      </Sequence>
+      <Sequence from={s(a + b)}>
+        <FootageCard src="consentC.mp4" volume={0} />
+      </Sequence>
+      <Phone src="p_join.mp4" from={4} />
+      <Label text="Consent first" tone={C.good} />
+      <Callouts
+        items={[
+          { at: 1.0, text: "A short welcome call", tone: C.lavender },
+          { at: cue("consent", "yes"), text: "Nothing happens without their yes", tone: C.good },
+        ]}
+      />
+      <Captions captions={caps("consent")} area={CARD_AREA} />
+      <Sequence from={s(v)}>
+        <Audio src={P("vo4-consent.wav")} />
+      </Sequence>
+      <Grain opacity={0.05} />
+    </AbsoluteFill>
+  );
+};
+
+// Practice, and how you did: the call's result page, then the drills list.
+const Result: React.FC = () => (
+  <AbsoluteFill>
+    <Sequence durationInFrames={s(14.6)}>
+      <PushIn
+        src="l_result.mp4"
+        keys={[
+          { t: 0, k: 1.0, cx: 960, cy: 540 },
+          { t: 1.4, k: 1.6, cx: 1200, cy: 470 },
+          { t: 4.0, k: 1.6, cx: 1200, cy: 470 },
+          { t: 5.6, k: 1.3, cx: 930, cy: 560 },
+          { t: 12.6, k: 1.3, cx: 930, cy: 520 },
+          { t: 14.6, k: 1.0, cx: 960, cy: 540 },
+        ]}
+      />
+    </Sequence>
+    <Sequence from={s(14.6)}>
+      <PushIn src="l_drills.mp4" keys={[{ t: 0, k: 1.0, cx: 960, cy: 540 }, { t: 3.2, k: 1.12, cx: 1100, cy: 600 }]} />
+    </Sequence>
+    <Label text="Practice, and how you did" tone={C.pink} />
+    <ChipStack
+      items={[
+        { at: cue("result", "how"), text: "How you did", tone: C.lavender },
+        { at: cue("result", "tricks"), text: "Which tricks were tried", tone: C.pink },
+        { at: cue("result", "fast"), text: "Seconds to hang up", tone: C.good },
+      ]}
+    />
+    <Captions captions={caps("result")} area={FULL_AREA} />
+    <Sequence from={s(cue("result", "vo"))}>
+      <Audio src={P("vo9-result.wav")} />
+    </Sequence>
   </AbsoluteFill>
 );
 
@@ -349,7 +514,7 @@ const Roadmap: React.FC = () => (
   <AbsoluteFill>
     <OffthreadVideo src={P("Roadmap.mp4")} muted style={{ width: "100%", height: "100%" }} />
     <Sequence from={s(1.0)}>
-      <Audio src={P("vo6-roadmap.mp3")} />
+      <Audio src={P("vo6-roadmap.wav")} />
     </Sequence>
     <Captions captions={caps("roadmap")} area={{ ...FULL_AREA, bottom: 40, size: 46 }} />
   </AbsoluteFill>
@@ -359,51 +524,63 @@ const End: React.FC = () => (
   <AbsoluteFill>
     <OffthreadVideo src={P("EndCard.mp4")} muted style={{ width: "100%", height: "100%" }} />
     <Sequence from={s(0.6)}>
-      <Audio src={P("vo7-end.mp3")} />
+      <Audio src={P("vo7-end.wav")} />
     </Sequence>
   </AbsoluteFill>
 );
 
+const BODY_OF: Record<string, React.FC> = {
+  hook: Hook,
+  title: Title,
+  teamIntro: () => <Team slot="teamIntro" />,
+  problem: Problem,
+  shield: Shield,
+  laptop: Laptop,
+  setup: () => (
+    <Split
+      label="Set up in two minutes" tone={C.lavender} left="setup.mp4" leftVolume={0.12} phone="p_signup.mp4"
+      captionsKey="setup" vo="vo3-setup.wav" voAt={cue("setup", "vo")}
+      callouts={[
+        { at: cue("setup", "create"), text: "Create a family plan", tone: C.lavender },
+        { at: cue("setup", "add"), text: "Add the people you love", tone: C.pink },
+        { at: cue("setup", "send"), text: "Send each a link", tone: C.good },
+      ]}
+    />
+  ),
+  consent: Consent,
+  result: Result,
+  sharp: () => (
+    <Split
+      label="Always sharp" tone={C.pink} left="sharp.mp4" leftVolume={0} phone="p_news.mp4" captionsKey="sharp"
+      vo="vo5-more.wav" voAt={cue("sharp", "vo")}
+      callouts={[
+        { at: cue("sharp", "practice"), text: "Practice calls", tone: C.pink },
+        { at: cue("sharp", "news"), text: "Scam news every hour", tone: C.lavender },
+      ]}
+    />
+  ),
+  roadmap: Roadmap,
+  teamClose: () => <Team slot="teamClose" />,
+  end: End,
+};
+
+// Music: quiet under speech, a little fuller in the gaps.
+const musicVolume = (f: number) => {
+  const t = f / FPS;
+  const near = SPEECH.some(([a, b]) => t >= a - 0.35 && t <= b + 0.35);
+  return near ? 0.12 : 0.24;
+};
+
 export const Pitch: React.FC = () => (
   <AbsoluteFill style={{ background: C.deep }}>
-    <Sequence from={s(starts.hook)} durationInFrames={s(SECTIONS.hook)}><Hook /></Sequence>
-    <Sequence from={s(starts.title)} durationInFrames={s(SECTIONS.title)}><Title /></Sequence>
-    <Sequence from={s(starts.problem)} durationInFrames={s(SECTIONS.problem)}><Problem /></Sequence>
-    <Sequence from={s(starts.shield)} durationInFrames={s(SECTIONS.shield)}><Shield /></Sequence>
-    <Sequence from={s(starts.setup)} durationInFrames={s(SECTIONS.setup)}>
-      <Split
-        label="Set up in two minutes" tone={C.lavender} left="setup.mp4" leftVolume={0.12} phone="p_signup.mp4"
-        captionsKey="setup" vo="vo3-setup.mp3" voAt={0.6}
-        callouts={[
-          { at: cue("setup", "create"), text: "Create a family plan", tone: C.lavender },
-          { at: cue("setup", "add"), text: "Add the people you love", tone: C.pink },
-          { at: cue("setup", "send"), text: "Send each a link", tone: C.good },
-        ]}
-      />
-    </Sequence>
-    <Sequence from={s(starts.consent)} durationInFrames={s(SECTIONS.consent)}>
-      <Split
-        label="Consent first" tone={C.good} left="consent.mp4"
-        leftVolume={(f) => interpolate(f, [0, s(10.1), s(10.5)], [1, 1, 0.18], { extrapolateRight: "clamp" })}
-        phone="p_join.mp4" captionsKey="consent" vo="vo4-consent.mp3" voAt={10.4}
-        callouts={[
-          { at: 1.0, text: "A short welcome call", tone: C.lavender },
-          { at: cue("consent", "yes"), text: "Nothing happens without their yes", tone: C.good },
-        ]}
-      />
-    </Sequence>
-    <Sequence from={s(starts.sharp)} durationInFrames={s(SECTIONS.sharp)}>
-      <Split
-        label="Always sharp" tone={C.pink} left="sharp.mp4" leftVolume={0} phone="p_news.mp4" captionsKey="sharp"
-        vo="vo5-more.mp3" voAt={0.5}
-        callouts={[
-          { at: cue("sharp", "practice"), text: "Practice calls", tone: C.pink },
-          { at: cue("sharp", "news"), text: "Scam news every hour", tone: C.lavender },
-        ]}
-      />
-    </Sequence>
-    <Sequence from={s(starts.roadmap)} durationInFrames={s(SECTIONS.roadmap)}><Roadmap /></Sequence>
-    <Sequence from={s(starts.end)} durationInFrames={s(SECTIONS.end)}><End /></Sequence>
-    <Audio src={P("pitch-bed.mp3")} volume={0.08} />
+    {SECTION_ROWS.map((row) => {
+      const Body = BODY_OF[row.key];
+      return (
+        <Sequence key={row.key} from={s(row.start)} durationInFrames={s(row.dur)}>
+          <Body />
+        </Sequence>
+      );
+    })}
+    <Audio src={P("pitch-bed.mp3")} volume={musicVolume} loop />
   </AbsoluteFill>
 );
