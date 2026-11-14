@@ -10,8 +10,13 @@
   background: #07111a;
 }
 
+:root[data-route='landing-day'] body {
+  background: #eef3f0;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  :root[data-route='landing'] {
+  :root[data-route='landing'],
+  :root[data-route='landing-day'] {
     scroll-behavior: auto;
   }
 }

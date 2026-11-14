@@ -22,13 +22,23 @@ function upsertMeta(name: string, content: string, attr: 'name' | 'property' = '
 }
 
 /** Title, description, theme colour and the night body background while on the landing. */
-export function useLandingHead({ title, description, theme }: { title: string; description: string; theme: string }) {
+export function useLandingHead({
+  title,
+  description,
+  theme,
+  route = 'landing',
+}: {
+  title: string;
+  description: string;
+  theme: string;
+  route?: 'landing' | 'landing-day';
+}) {
   useLayoutEffect(() => {
     const html = document.documentElement;
     const prevTitle = document.title;
     const prevRoute = html.dataset.route;
     document.title = title;
-    html.dataset.route = 'landing';
+    html.dataset.route = route;
     const undo = [upsertMeta('description', description), upsertMeta('theme-color', theme)];
     return () => {
       document.title = prevTitle;
@@ -36,7 +46,7 @@ export function useLandingHead({ title, description, theme }: { title: string; d
       else html.dataset.route = prevRoute;
       undo.forEach((u) => u());
     };
-  }, [title, description, theme]);
+  }, [title, description, theme, route]);
 }
 
 /** A 64 x 64 tile of random greys, drawn once, used at 4% on night grounds to stop banding. */

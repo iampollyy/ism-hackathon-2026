@@ -2,7 +2,7 @@
 // phone carries you through the product, from night (the scam) into day (the plan).
 // Lite mode (CSS phone) renders first everywhere; the WebGL phone loads after the
 // page has loaded, only on capable desktops.
-import { Suspense, useEffect, useRef, useState, type ComponentType, type RefObject } from 'react';
+import { Component, Suspense, useEffect, useRef, useState, type ComponentType, type ReactNode, type RefObject } from 'react';
 import './styles/landing.scss';
 import { head } from './copy';
 import { store, useLp } from './store';
@@ -18,6 +18,20 @@ import { Banks, Dawn, Faq, PricingSection, Rules, usePricing } from './component
 import { Close, Footer, MobileBar } from './components/Close';
 
 type StageProps = { portal: RefObject<HTMLDivElement | null>; onReady: () => void; onFail: () => void };
+
+/** If the 3D stage throws (no WebGL after all, a driver bug), the page carries on in lite mode. */
+class StageBoundary extends Component<{ onFail: () => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onFail();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 
 export default function LandingPage() {
   useLandingHead({ title: head.title, description: head.description, theme: '#07111a' });
@@ -86,9 +100,14 @@ export default function LandingPage() {
       return false;
     };
     if (trySwap()) return;
-    const unsub = store.subscribe(() => {
-      if (trySwap()) unsub();
-    });
+    // Retry when the call or the focus changes.
+    const retry = () => {
+      if (!trySwap()) return;
+      unsub();
+      document.removeEventListener('focusin', retry);
+    };
+    const unsub = store.subscribe(retry);
+    document.addEventListener('focusin', retry);
   };
   const onFail = () => {
     store.set({ mode: 'lite' });
@@ -101,9 +120,11 @@ export default function LandingPage() {
       <main id="content" tabIndex={-1}>
         <div className="lp-night">
           {Stage ? (
-            <Suspense fallback={null}>
-              <Stage portal={stageUiRef} onReady={onReady} onFail={onFail} />
-            </Suspense>
+            <StageBoundary onFail={onFail}>
+              <Suspense fallback={null}>
+                <Stage portal={stageUiRef} onReady={onReady} onFail={onFail} />
+              </Suspense>
+            </StageBoundary>
           ) : null}
           <Hero stageUiRef={stageUiRef} />
           <Problem />

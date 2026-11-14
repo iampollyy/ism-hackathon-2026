@@ -410,8 +410,12 @@ export function Hero({ stageUiRef }: { stageUiRef?: RefObject<HTMLDivElement | n
     const el = sectionRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.intersectionRatio < 0.4 && !store.get().overlayOpen) callMachine.stop();
+      () => {
+        // Entries can arrive late; measure now rather than trust the entry.
+        const r = el.getBoundingClientRect();
+        const vh = window.innerHeight;
+        const shown = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)) / Math.max(1, Math.min(r.height, vh));
+        if (shown < 0.4 && !store.get().overlayOpen) callMachine.stop();
       },
       { threshold: [0, 0.4, 1] },
     );

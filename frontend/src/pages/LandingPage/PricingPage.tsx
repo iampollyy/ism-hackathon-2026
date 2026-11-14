@@ -9,7 +9,7 @@ import { Faq, PricingSection, usePricing } from './components/Day';
 import { Close, Footer } from './components/Close';
 
 export default function PricingPage() {
-  useLandingHead({ title: head.pricingTitle, description: head.description, theme: '#eef3f0' });
+  useLandingHead({ title: head.pricingTitle, description: head.description, theme: '#eef3f0', route: 'landing-day' });
   const rootRef = useRef<HTMLDivElement>(null);
   const data = usePricing();
   useLandingShell(rootRef);
