@@ -14,6 +14,8 @@ export type OpenPractice = {
   at: number;
   /** How it ended, once the back end has the end; null while it runs. */
   endedBy: EndedBy | null;
+  /** A Shield demo call rather than a practice drill (reveal.kind). */
+  shield?: boolean;
 };
 
 /** A reveal whose end was already sent comes back for this long after a reload. */
@@ -35,6 +37,7 @@ export function readOpenPractice(memberId: string): OpenPractice | null {
       voiceKnown: value.voiceKnown === true,
       at: value.at,
       endedBy: ENDED_BY.find((endedBy) => endedBy === value.endedBy) ?? null,
+      shield: value.shield === true,
     };
   } catch {
     return null; // storage blocked (private mode) or a bad value

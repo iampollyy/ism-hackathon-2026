@@ -10,12 +10,14 @@
 // call, the voice call's own audio): the status follows the AudioContext, so
 // the waiting screen brings the button back when a new tap is needed.
 
-export type SoundStatus = 'off' | 'on' | 'mic_blocked';
+import { audioContextClass, type PrimedAudio } from './audioUnlock';
 
-type AudioContextClass = typeof AudioContext;
+export type SoundStatus = 'off' | 'on' | 'mic_blocked';
 
 const RING_EVERY_MS = 3000;
 const VIBRATE_PATTERN = [600, 300, 600];
+/** The Shield's warning: three long pulses, unlike the ring. */
+const WARNING_PATTERN = [500, 150, 500, 150, 900];
 /** iOS keeps resume() pending while the sound is interrupted: wait this long at most. */
 const RESUME_WAIT_MS = 3000;
 /** The microphone question waits for the person, but not for ever. */
@@ -38,13 +40,10 @@ function within<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   });
 }
 
-function audioContextClass(): AudioContextClass | null {
-  const w = window as typeof window & { webkitAudioContext?: AudioContextClass };
-  return w.AudioContext ?? w.webkitAudioContext ?? null;
-}
-
 export class PhoneSound {
   private context: AudioContext | null = null;
+  /** The context unlocked on the Join page, adopted here: never closed. */
+  private shared: AudioContext | null = null;
   private ringTimer: number | null = null;
   private wakeLock: WakeLockSentinel | null = null;
   private wantWakeLock = false;
@@ -103,6 +102,32 @@ export class PhoneSound {
     return this.status;
   }
 
+  /** Take over the sound and microphone a tap on the Join page unlocked
+   * (audioUnlock.ts), so the first ring is heard without a new tap. */
+  async adopt(primed: PrimedAudio): Promise<SoundStatus> {
+    this.switching = true;
+    try {
+      this.unlocked = true;
+      if (primed.context && !this.context) {
+        this.context = primed.context;
+        this.shared = primed.context;
+        this.context.onstatechange = this.report;
+      }
+      this.wantWakeLock = true;
+      void this.requestWakeLock();
+      this.microphoneOk = await within(primed.microphone, MICROPHONE_WAIT_MS, false);
+    } finally {
+      this.switching = false;
+    }
+    return this.status;
+  }
+
+  /** A strong buzz for the Shield's warning, where the phone allows it. */
+  warn(): void {
+    const tapped = this.unlocked || navigator.userActivation?.hasBeenActive === true;
+    if (tapped && 'vibrate' in navigator) navigator.vibrate(WARNING_PATTERN);
+  }
+
   /** The ringtone (every few seconds) and vibration, until stopRinging. */
   startRinging(): void {
     this.stopRinging();
@@ -131,7 +156,8 @@ export class PhoneSound {
     this.wakeLock?.release().catch(() => undefined);
     this.wakeLock = null;
     if (this.context) this.context.onstatechange = null;
-    this.context?.close().catch(() => undefined);
+    // The Join tap's context belongs to the document (audioUnlock.ts).
+    if (this.context !== this.shared) this.context?.close().catch(() => undefined);
     this.context = null;
   }
 

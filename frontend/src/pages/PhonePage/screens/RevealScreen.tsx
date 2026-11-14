@@ -13,10 +13,13 @@ type RevealScreenProps = {
 };
 
 /** Fixed words, never the agent's: the reveal must not depend on the call. */
-export function revealWords(voiceOf: string | null): string {
-  return voiceOf
-    ? `This was a Callback practice call. The voice you heard was artificial, made with ${voiceOf}'s permission.`
-    : 'This was a Callback practice call. The voice you heard was artificial, from a voice library.';
+export function revealWords(voiceOf: string | null, kind: RevealView['kind'] = 'practice'): string {
+  const voice = voiceOf
+    ? `The voice you heard was artificial, made with ${voiceOf}'s permission.`
+    : 'The voice you heard was artificial, from a voice library.';
+  return kind === 'shield'
+    ? `This was a simulated scam call, to show how Callback Shield protects you. ${voice}`
+    : `This was a Callback practice call. ${voice}`;
 }
 
 export const HABIT_LINE = 'Next time, hang up and call back on the family number, or ask for the family word.';
@@ -29,10 +32,10 @@ export function RevealScreen({ view, familyNumber, onCallFamily, onDone }: Revea
     <main className="phone-screen phone-light phone-reveal">
       <span className="phone-reveal__badge">
         <ShieldCheck size={18} aria-hidden="true" />
-        Practice call
+        {view.kind === 'shield' ? 'Shield demo call' : 'Practice call'}
       </span>
 
-      <p className="phone-reveal__words">{revealWords(view.voiceOf)}</p>
+      <p className="phone-reveal__words">{revealWords(view.voiceOf, view.kind)}</p>
       {view.endedBy === 'error' && <p className="phone-reveal__note">The line dropped before the call could finish.</p>}
 
       <Card className="phone-habit">

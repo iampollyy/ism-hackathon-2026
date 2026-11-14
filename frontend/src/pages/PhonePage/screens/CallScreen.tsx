@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { HeartHandshake, PhoneOff, ShieldCheck, UserRound } from 'lucide-react';
 import type { Mode } from '@elevenlabs/client';
+import { ShieldLayer, type ShieldState } from './ShieldWarning';
 
 type CallScreenProps = {
   title: string;
@@ -11,6 +12,11 @@ type CallScreenProps = {
   mode: Mode | null;
   /** End was tapped while the call was still connecting. */
   ending?: boolean;
+  /** Callback Shield, only during a Shield call (null on every drill). */
+  shield?: ShieldState | null;
+  /** The welcome call records the member's own side: say so, plainly. */
+  recording?: boolean;
+  onCallBack?: (hasNumber: boolean) => void;
   onEnd: () => void;
 };
 
@@ -29,8 +35,24 @@ function useSecondsSince(startedAt: number): number {
 }
 
 /** The in-call screen, for a practice, a welcome call or the family line. */
-export function CallScreen({ title, number, variant, startedAt, connected, mode, ending = false, onEnd }: CallScreenProps) {
+export function CallScreen({
+  title,
+  number,
+  variant,
+  startedAt,
+  connected,
+  mode,
+  ending = false,
+  shield = null,
+  recording = false,
+  onCallBack,
+  onEnd,
+}: CallScreenProps) {
   const seconds = useSecondsSince(startedAt);
+  const [shieldFolded, setShieldFolded] = useState(false);
+  // While the full Shield warning covers the screen, nothing under it can be
+  // reached by keyboard or screen reader.
+  const covered = Boolean(shield?.warn) && !shieldFolded;
   const status = ending
     ? 'Ending…'
     : !connected
@@ -43,8 +65,20 @@ export function CallScreen({ title, number, variant, startedAt, connected, mode,
   const Icon = variant === 'family_line' ? HeartHandshake : variant === 'welcome' ? ShieldCheck : UserRound;
 
   return (
-    <main className={`phone-screen phone-dark phone-in-call phone-in-call--${variant}`}>
-      <div className="call-head">
+    <main
+      className={`phone-screen phone-dark phone-in-call phone-in-call--${variant}${shield?.warn ? ' is-warned' : ''}`}
+    >
+      {shield && (
+        <ShieldLayer
+          shield={shield}
+          folded={shieldFolded}
+          onFold={setShieldFolded}
+          onHangUp={onEnd}
+          onCallBack={onCallBack ?? (() => onEnd())}
+        />
+      )}
+
+      <div className="call-head" inert={covered}>
         <span className="call-avatar call-avatar--small" aria-hidden="true">
           <Icon size={36} strokeWidth={1.6} />
         </span>
@@ -64,7 +98,23 @@ export function CallScreen({ title, number, variant, startedAt, connected, mode,
         </p>
       </div>
 
-      <div className="call-buttons call-buttons--single">
+      {variant === 'welcome' && (
+        <section className="call-note" aria-label="About this call" inert={covered}>
+          {recording && (
+            <p className="call-note__recording" role="status">
+              <span className="call-note__dot" aria-hidden="true" />
+              Recording your side of the call
+            </p>
+          )}
+          <p className="call-note__text">
+            {recording
+              ? 'Callback keeps it only if you agreed when you joined and say yes on the call. You can delete it any time.'
+              : 'Just talk as you normally would. There are no wrong answers.'}
+          </p>
+        </section>
+      )}
+
+      <div className="call-buttons call-buttons--single" inert={covered}>
         <div className="call-button">
           <button
             type="button"

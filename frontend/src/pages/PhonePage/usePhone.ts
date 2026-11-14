@@ -6,6 +6,12 @@
 // A page that closes or reloads mid-call (pagehide) still sends its queued
 // events and the end (lastWords.ts), and a practice answered in this tab
 // gets its reveal back after a reload (openPractice.ts).
+//
+// The welcome call also records the member's own side (voiceRecorder.ts) and
+// uploads it when the call ends, for a copy of their voice after a spoken
+// yes, but only when they ticked the voice box at join: nobody else's
+// microphone is recorded or sent. A Shield call shows phone-state.shield's
+// live warning (ShieldWarning).
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Conversation } from '@elevenlabs/client';
@@ -13,13 +19,15 @@ import type { DisconnectionDetails, PartialOptions } from '@elevenlabs/client';
 import { ApiError, api } from '../../api/client';
 import { isOutcome, isTactic } from '../../api/types';
 import type { CallKind, EndedBy, FamilyLineStarted, Session } from '../../api/types';
+import { primedAudio } from './audioUnlock';
 import { EventQueue, isTransient } from './eventQueue';
 import { sendLastWords, type LastWords } from './lastWords';
 import {
   SHOW_ENDED_FOR_MS, clearOpenPractice, readOpenPractice, saveOpenPractice, updateOpenPractice, type OpenPractice,
 } from './openPractice';
 import { PhoneSound, type SoundStatus } from './phoneSound';
-import { initialPhoneState, phoneReducer, type PhoneAction, type PhoneUiState } from './phoneState';
+import { initialPhoneState, phoneReducer, type PhoneAction, type PhoneUiState, type RevealKind } from './phoneState';
+import { FINAL_VOICE_STATES, WelcomeRecorder, uploadProblem, uploadRecording, type Recording } from './voiceRecorder';
 
 const POLL_EVERY_MS = 1000;
 const SCORE_POLL_EVERY_MS = 1500;
@@ -28,6 +36,11 @@ const MAX_TURN_LENGTH = 4000; // the back end's limit for one line
 /** Events still unsent after the end keep trying this long in the background. */
 const LINGER_EVERY_MS = 2000;
 const LINGER_FOR_MS = 10 * 60 * 1000;
+/** The voice copy: ask how it is going this often, for about two minutes. */
+const VOICE_POLL_EVERY_MS = 1500;
+const VOICE_POLL_TRIES = 80;
+/** A spoken yes can still arrive in a late batch: wait this many polls for it. */
+const VOICE_WAIT_FOR_YES_TRIES = 14;
 
 type Overrides = NonNullable<PartialOptions['overrides']>;
 
@@ -35,6 +48,8 @@ type Overrides = NonNullable<PartialOptions['overrides']>;
 type CallRun = {
   callId: string;
   kind: CallKind;
+  /** A practice drill or a Shield demo call (reveal.kind). */
+  revealKind: RevealKind;
   voiceOf: string | null;
   queue: EventQueue;
   conversation: Conversation | null;
@@ -47,15 +62,32 @@ type CallRun = {
   endSent: boolean;
   /** The welcome call's consent answer, if the agent reported one. */
   consent: boolean | null;
+  /** The welcome call's answer about a copy of their voice. */
+  voiceConsent: boolean | null;
+  /** The welcome call: whether they ticked "Callback may make a copy of my
+   * voice" at join, asked while the call is answered. */
+  mayRecord: Promise<boolean> | null;
+  /** The welcome call's recording of their own microphone. */
+  recorder: WelcomeRecorder | null;
+  /** The recording, once stopped at the end of the call. */
+  recording: Promise<Recording | null> | null;
 };
 
 /** An answer on its way: End (or the page closing) can come before the session. */
 type PendingAnswer = { callId: string; cancelledBy: EndedBy | null };
 
-function newRun(callId: string, session: Session): CallRun {
+/** The "Something's wrong?" button. */
+export type AlertState =
+  | { status: 'idle' }
+  | { status: 'sending' }
+  | { status: 'sent'; alerted: number }
+  | { status: 'error'; message: string };
+
+function newRun(callId: string, session: Session, mayRecord: Promise<boolean> | null = null): CallRun {
   return {
     callId,
     kind: session.kind,
+    revealKind: session.reveal?.kind === 'shield' ? 'shield' : 'practice',
     voiceOf: session.reveal?.voice_of ?? null,
     queue: new EventQueue(callId),
     conversation: null,
@@ -64,7 +96,24 @@ function newRun(callId: string, session: Session): CallRun {
     endedBy: null,
     endSent: false,
     consent: null,
+    voiceConsent: null,
+    mayRecord,
+    recorder: null,
+    recording: null,
   };
+}
+
+/** Did they tick the voice box at join (and are still in)? Asked fresh for
+ * each welcome call, since they can change it any time. Anything unclear is
+ * a no: no recording without the tick. */
+async function cloneTicked(memberId: string): Promise<boolean> {
+  try {
+    const join = await api.getJoin(memberId);
+    return join.consents.clone_from_call && !join.opted_out;
+  } catch (error) {
+    console.warn('Callback: could not check the voice choice, so the welcome call is not recorded:', error);
+    return false;
+  }
 }
 
 /** An error as one plain sentence for the screen. Never a stack. */
@@ -95,6 +144,11 @@ function consentGiven(value: unknown): boolean | null {
     if (text === 'false' || text === 'no') return false;
   }
   return null;
+}
+
+/** A copy of their voice needs a clear yes: true only for a real true. */
+function voiceConsentGiven(value: unknown): boolean {
+  return value === true || (typeof value === 'string' && value.trim().toLowerCase() === 'true');
 }
 
 function param(parameters: unknown, name: string): unknown {
@@ -156,12 +210,20 @@ export function usePhone(memberId: string) {
   const stateRef = useRef<PhoneUiState>(initialPhoneState);
   const [sound, setSound] = useState<SoundStatus>('off');
   const [soundBusy, setSoundBusy] = useState(false);
+  const [alert, setAlert] = useState<AlertState>({ status: 'idle' });
+  const [welcomeStart, setWelcomeStart] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
+  /** The welcome call's own recording is running (shown on the call screen). */
+  const [recording, setRecording] = useState(false);
   const soundRef = useRef<PhoneSound | null>(null);
   const runRef = useRef<CallRun | null>(null);
   const pendingRef = useRef<PendingAnswer | null>(null);
   /** Finished calls whose last events are still being retried. */
   const lingeringRef = useRef(new Set<EventQueue>());
   const aliveRef = useRef(false);
+  /** "Call {name}" on the Shield warning with no number: the family line
+   * starts as soon as this call's reveal can call it. */
+  const callBackAfterRef = useRef<string | null>(null);
+  const historyAskedRef = useRef(false);
   // A practice this tab answered before a reload, read once at the start.
   const [found] = useState<OpenPractice | null>(() => readOpenPractice(memberId));
   const recoveryRef = useRef<OpenPractice | null>(found);
@@ -172,10 +234,58 @@ export function usePhone(memberId: string) {
     dispatch(action);
   }, []);
 
+  // ------------------------------------------------------------ the welcome call's recording
+
+  /** Upload their side of the welcome call, then follow the voice copy
+   * until it is ready, failed or not kept. The thank-you screen shows it. */
+  const sendVoice = useCallback(
+    async (run: CallRun) => {
+      const { callId } = run;
+      const recording = run.recording ? await run.recording : null;
+      if (!recording) {
+        if (run.recorder?.problem) console.warn('Callback: nothing recorded on the welcome call:', run.recorder.problem);
+        act({ type: 'voice', progress: { callId, phase: 'no_recording', state: null, reason: null } });
+        return;
+      }
+      act({ type: 'voice', progress: { callId, phase: 'uploading', state: null, reason: null } });
+      try {
+        const accepted = await uploadRecording(callId, recording);
+        act({
+          type: 'voice',
+          progress: { callId, phase: 'checking', state: accepted.cloning ? 'cloning' : null, reason: accepted.reason ?? null },
+        });
+      } catch (error) {
+        console.warn('Callback: the recording could not be uploaded:', error);
+        act({ type: 'voice', progress: { callId, phase: 'upload_failed', state: null, reason: uploadProblem(error) } });
+        return;
+      }
+      let waitingForYes = 0;
+      let last: { state: NonNullable<PhoneUiState['voice']>['state']; reason: string | null } = { state: null, reason: null };
+      for (let tries = 0; tries < VOICE_POLL_TRIES; tries += 1) {
+        await sleep(VOICE_POLL_EVERY_MS);
+        if (!aliveRef.current) return;
+        try {
+          const status = await api.voiceSampleStatus(callId);
+          last = { state: status.state, reason: status.reason ?? null };
+          const final = FINAL_VOICE_STATES.includes(status.state);
+          if (status.state === 'waiting_for_consent') waitingForYes += 1;
+          const done = final || waitingForYes > VOICE_WAIT_FOR_YES_TRIES;
+          act({ type: 'voice', progress: { callId, phase: done ? 'final' : 'checking', ...last } });
+          if (done) return;
+        } catch (error) {
+          console.warn('Callback: could not read the voice status yet:', error);
+        }
+      }
+      act({ type: 'voice', progress: { callId, phase: 'final', ...last } });
+    },
+    [act],
+  );
+
   // ------------------------------------------------------------ ending a call
 
   /** The local part of the end, the same for every way a call ends: stop the
-   * conversation, queue `revealed` for a practice, show the next screen. */
+   * conversation and the recording, queue `revealed` for a practice, show the
+   * next screen. */
   const close = useCallback(
     (run: CallRun, endedBy: EndedBy) => {
       run.finished = true;
@@ -185,7 +295,19 @@ export function usePhone(memberId: string) {
       const conversation = run.conversation;
       run.conversation = null;
       conversation?.endSession().catch(() => undefined); // nothing happens if it already ended
-      act({ type: 'finished', callId: run.callId, kind: run.kind, endedBy, voiceOf: run.voiceOf, consent: run.consent });
+      // The microphone stops with the call.
+      if (run.recorder && !run.recording) run.recording = run.recorder.finish();
+      if (run.recorder) setRecording(false);
+      act({
+        type: 'finished',
+        callId: run.callId,
+        kind: run.kind,
+        endedBy,
+        voiceOf: run.voiceOf,
+        consent: run.consent,
+        voiceConsent: run.voiceConsent,
+        revealKind: run.revealKind,
+      });
     },
     [act],
   );
@@ -199,6 +321,12 @@ export function usePhone(memberId: string) {
         run.endSent = true;
         await endWithRetry(run.callId, endedBy);
       }
+      // After the end, as the back end expects; the screen does not wait for it.
+      if (run.kind === 'welcome' && run.recorder) void sendVoice(run);
+      else if (run.kind === 'welcome' && run.mayRecord && !(await run.mayRecord)) {
+        // Not recorded: they did not tick the voice box when they joined.
+        act({ type: 'voice', progress: { callId: run.callId, phase: 'not_allowed', state: null, reason: null } });
+      }
       if (!drained && run.queue.size > 0) {
         // Never lose events: the end has gone, the rest keep trying (the back
         // end still takes them after the end).
@@ -210,12 +338,12 @@ export function usePhone(memberId: string) {
       if (runRef.current === run) runRef.current = null;
       act({ type: 'end_sent', callId: run.callId });
     },
-    [act, close, memberId],
+    [act, close, memberId, sendVoice],
   );
 
   /** The page is going away (reload, pull-to-refresh, tab closed): the
    * requests above would be cancelled, so the end and the queued events go
-   * as keepalive requests now. */
+   * as keepalive requests now. A recording cannot go that way: it is dropped. */
   const sayLastWords = useCallback(() => {
     const words: LastWords[] = [];
     const pending = pendingRef.current;
@@ -225,6 +353,7 @@ export function usePhone(memberId: string) {
     }
     const run = runRef.current;
     if (run && !run.endSent) {
+      run.recorder?.discard();
       if (!run.finished) {
         run.endingBy = 'error';
         close(run, 'error');
@@ -266,7 +395,35 @@ export function usePhone(memberId: string) {
                 run.consent = given;
                 queue.push({ type: 'consent', given });
               },
+              voice_consent_result: (parameters: unknown) => {
+                if (run.finished) return;
+                const given = voiceConsentGiven(param(parameters, 'given'));
+                run.voiceConsent = given;
+                queue.push({ type: 'voice_consent', given });
+              },
             };
+
+      // The welcome call records their own microphone, opened just before
+      // the call's own (see voiceRecorder.ts for why first), and only when
+      // they ticked the voice box at join.
+      if (session.kind === 'welcome') {
+        const allowed = run.mayRecord ? await run.mayRecord : false;
+        if (run.finished) return; // ended meanwhile: finish() has it
+        if (allowed) {
+          const recorder = new WelcomeRecorder();
+          run.recorder = recorder;
+          await recorder.start();
+          if (run.finished) return; // ended while the microphone opened: finish() has it
+          setRecording(recorder.recording);
+          // A slow microphone prompt can outlast start()'s wait: the notice
+          // still appears the moment recording really begins.
+          if (!recorder.recording) {
+            void recorder.opened.then(() => {
+              if (!run.finished) setRecording(recorder.recording);
+            });
+          }
+        }
+      }
 
       try {
         const conversation = await Conversation.startSession({
@@ -324,6 +481,8 @@ export function usePhone(memberId: string) {
     act({ type: 'answer', call, at });
     const pending: PendingAnswer = { callId: call.call_id, cancelledBy: null };
     pendingRef.current = pending;
+    // Asked alongside the answer, so the welcome call does not wait for it.
+    const mayRecord = call.kind === 'welcome' ? cloneTicked(memberId) : null;
     if (call.kind === 'practice') {
       saveOpenPractice(memberId, { callId: call.call_id, voiceOf: null, voiceKnown: false, at, endedBy: null });
     }
@@ -345,9 +504,13 @@ export function usePhone(memberId: string) {
     }
     if (pendingRef.current === pending) pendingRef.current = null;
     if (call.kind === 'practice') {
-      updateOpenPractice(memberId, call.call_id, { voiceOf: session.reveal?.voice_of ?? null, voiceKnown: true });
+      updateOpenPractice(memberId, call.call_id, {
+        voiceOf: session.reveal?.voice_of ?? null,
+        voiceKnown: true,
+        shield: session.reveal?.kind === 'shield',
+      });
     }
-    const run = newRun(call.call_id, session);
+    const run = newRun(call.call_id, session, mayRecord);
     if (pending.cancelledBy || !aliveRef.current) {
       // End was tapped (or the page went away) while the answer was on its
       // way: end it the normal way, without starting the voice.
@@ -391,6 +554,19 @@ export function usePhone(memberId: string) {
     }
   }, [act, finish]);
 
+  /** "Call {name}" on the Shield's warning. With their number, the tel: link
+   * opens the phone's dialler and this ends the call here; without it, the
+   * family line starts once the call has ended. */
+  const callBackFromShield = useCallback(
+    (hasNumber: boolean) => {
+      const view = stateRef.current.view;
+      if (view.name !== 'in_call') return;
+      if (!hasNumber) callBackAfterRef.current = view.callId;
+      hangUp();
+    },
+    [hangUp],
+  );
+
   const callFamilyNumber = useCallback(async () => {
     const view = stateRef.current.view;
     if (view.name !== 'reveal' || view.startingFamilyLine || !view.endSent) return;
@@ -426,6 +602,43 @@ export function usePhone(memberId: string) {
     [act, memberId],
   );
 
+  /** "Start my welcome call": it rings here on the next poll. The tap also
+   * switches the sound on, if it is not on yet, so the ring is heard. */
+  const startWelcomeCall = useCallback(() => {
+    if (sound !== 'on' && !soundBusy) switchOnSound();
+    setWelcomeStart({ busy: true, error: null });
+    void api.startWelcomeCall(memberId).then(
+      () => {
+        if (!aliveRef.current) return;
+        act({ type: 'welcome_requested' });
+        setWelcomeStart({ busy: false, error: null });
+      },
+      (error: unknown) => {
+        if (!aliveRef.current) return;
+        const message =
+          error instanceof ApiError && error.code === 'busy'
+            ? 'Another call is on its way. Please wait for it to finish, then try again.'
+            : plainError(error, 'The welcome call could not start. Please try again.');
+        setWelcomeStart({ busy: false, error: message });
+      },
+    );
+  }, [act, memberId, sound, soundBusy, switchOnSound]);
+
+  /** "Something's wrong?": every other family member gets a message to call. */
+  const alertFamily = useCallback(() => {
+    setAlert({ status: 'sending' });
+    void api.alertFamily(memberId).then(
+      (sent) => aliveRef.current && setAlert({ status: 'sent', alerted: sent.alerted }),
+      (error: unknown) =>
+        aliveRef.current &&
+        setAlert({
+          status: 'error',
+          message: plainError(error, 'Your family could not be told. Please try again, or ring them yourself.'),
+        }),
+    );
+  }, [memberId]);
+  const resetAlert = useCallback(() => setAlert({ status: 'idle' }), []);
+
   // ------------------------------------------------------------ effects
 
   // Sound lives as long as the page; a call still running when the page goes
@@ -439,6 +652,17 @@ export function usePhone(memberId: string) {
     phoneSound.onStatusChange((status) => {
       if (aliveRef.current) setSound(status);
     });
+    // Arrived from the Join page: its tap already unlocked sound and the
+    // microphone, so the welcome call can ring out loud straight away.
+    const primed = primedAudio();
+    if (primed) {
+      setSoundBusy(true);
+      void phoneSound.adopt(primed).then((status) => {
+        if (!aliveRef.current || soundRef.current !== phoneSound) return;
+        setSound(status);
+        setSoundBusy(false);
+      });
+    }
     return () => {
       aliveRef.current = false;
       phoneSound.dispose();
@@ -466,13 +690,21 @@ export function usePhone(memberId: string) {
     if (!saved || recoveryStartedRef.current) return;
     recoveryStartedRef.current = true;
     const { callId } = saved;
+    const kind: RevealKind = saved.shield ? 'shield' : 'practice';
     if (saved.endedBy && Date.now() - saved.at > SHOW_ENDED_FOR_MS) {
       recoveryRef.current = null;
       clearOpenPractice(memberId, saved.at);
       return;
     }
     if (saved.voiceKnown) {
-      act({ type: 'recovered', callId, voiceOf: saved.voiceOf, endedBy: saved.endedBy ?? 'error', endSent: saved.endedBy !== null });
+      act({
+        type: 'recovered',
+        callId,
+        kind,
+        voiceOf: saved.voiceOf,
+        endedBy: saved.endedBy ?? 'error',
+        endSent: saved.endedBy !== null,
+      });
     } else {
       // Not answered as far as this page knows: it must not ring here while
       // the back end is asked.
@@ -509,7 +741,7 @@ export function usePhone(memberId: string) {
       }
       recoveryRef.current = null;
       if (saved.voiceKnown) act({ type: 'end_sent', callId });
-      else act({ type: 'recovered', callId, voiceOf, endedBy: saved.endedBy ?? 'error', endSent: true });
+      else act({ type: 'recovered', callId, kind, voiceOf, endedBy: saved.endedBy ?? 'error', endSent: true });
     })();
   }, [act, memberId]);
 
@@ -539,6 +771,26 @@ export function usePhone(memberId: string) {
     };
   }, [act, memberId]);
 
+  // Once online: did a welcome call of theirs ever get as far as their
+  // answer? If not (and none is ringing), the home screen offers to start
+  // one, after a reload too, the same as after the call itself.
+  const online = state.link === 'online';
+  useEffect(() => {
+    if (!online || historyAskedRef.current) return;
+    historyAskedRef.current = true;
+    api
+      .memberVoiceSample(memberId)
+      .then(async (status) => {
+        if (status.call_id === null) return false;
+        const call = await api.getCall(status.call_id).catch(() => null);
+        return call ? call.consent_given != null : true;
+      })
+      .then(
+        (answered) => act({ type: 'welcome_history', answered }),
+        () => undefined, // the offer still shows after a missed or failed call here
+      );
+  }, [act, memberId, online]);
+
   // The ringtone and vibration, while it rings. A new call also means the
   // person has left the last reveal: a reload no longer brings it back.
   const ringing = state.view.name === 'ringing';
@@ -549,6 +801,26 @@ export function usePhone(memberId: string) {
     phoneSound?.startRinging();
     return () => phoneSound?.stopRinging();
   }, [ringing, memberId]);
+
+  // The Shield: phone-state.shield belongs to the call on screen. Its
+  // warning buzzes the phone once, when it first appears.
+  const shieldNow = state.phone?.shield ?? null;
+  const inCallId = state.view.name === 'in_call' ? state.view.callId : null;
+  const shield = shieldNow && inCallId && shieldNow.call_id === inCallId ? shieldNow : null;
+  const warningFor = shield?.warn ? shield.call_id : null;
+  useEffect(() => {
+    if (warningFor) soundRef.current?.warn();
+  }, [warningFor]);
+
+  // "Call {name}" from the Shield with no number: the family line, as soon
+  // as the reveal of the call just ended can start it.
+  const revealReadyFor =
+    state.view.name === 'reveal' && state.view.endSent && !state.view.startingFamilyLine ? state.view.callId : null;
+  useEffect(() => {
+    if (!revealReadyFor || callBackAfterRef.current !== revealReadyFor) return;
+    callBackAfterRef.current = null;
+    void callFamilyNumber();
+  }, [callFamilyNumber, revealReadyFor]);
 
   // After a practice: ask for the call until it is scored, then show the lesson.
   const scoringCallId =
@@ -589,14 +861,22 @@ export function usePhone(memberId: string) {
     state,
     sound,
     soundBusy,
+    shield,
+    alert,
+    welcomeStart,
+    recording,
     switchOnSound,
     answer,
     decline,
     hangUp,
+    callBackFromShield,
     callFamilyNumber,
     done,
     dismissNotice,
     dismissMessage,
+    startWelcomeCall,
+    alertFamily,
+    resetAlert,
   };
 }
 
