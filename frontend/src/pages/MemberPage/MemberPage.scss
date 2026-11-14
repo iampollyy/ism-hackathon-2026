@@ -126,7 +126,7 @@
       padding: 11px 0;
     }
 
-    li + li { border-top: 1px solid rgba(17, 34, 49, 0.06); }
+    li + li { border-top: 1px solid rgba(53, 42, 124, 0.06); }
   }
 
   .rv-readiness__label { font-weight: 600; font-size: 0.95rem; }
@@ -150,7 +150,7 @@
     flex: 1;
     height: 12px;
     border-radius: 4px;
-    background: rgba(17, 34, 49, 0.07);
+    background: rgba(53, 42, 124, 0.07);
     animation: rv-seg 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 
     &.is-had { background: var(--rv-had); }
@@ -213,7 +213,7 @@
     div {
       padding: 12px;
       border-radius: 14px;
-      background: rgba(17, 34, 49, 0.04);
+      background: rgba(53, 42, 124, 0.04);
     }
 
     dt { color: var(--muted); font-size: 0.78rem; font-weight: 600; }
@@ -252,7 +252,7 @@
   .rv-record__none { margin-bottom: 14px; }
 
   .rv-weak.is-unknown {
-    background: rgba(17, 34, 49, 0.04);
+    background: rgba(53, 42, 124, 0.04);
     color: var(--muted);
 
     h3 { color: var(--muted); }
@@ -305,7 +305,7 @@
     margin-top: 14px;
     padding: 12px 14px;
     border-radius: 14px;
-    background: rgba(33, 61, 82, 0.07);
+    background: rgba(41, 33, 82, 0.07);
     animation: rv-rise 240ms cubic-bezier(0.16, 1, 0.3, 1);
 
     p { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--ink); }
@@ -352,7 +352,7 @@
       min-height: 46px;
     }
 
-    > div + div { border-top: 1px solid rgba(17, 34, 49, 0.06); }
+    > div + div { border-top: 1px solid rgba(53, 42, 124, 0.06); }
 
     dt {
       display: inline-flex;
@@ -388,7 +388,7 @@
     gap: 6px;
     padding: 4px 10px;
     border-radius: 999px;
-    background: rgba(17, 34, 49, 0.06);
+    background: rgba(53, 42, 124, 0.06);
     color: var(--muted);
     font-size: 0.86rem;
   }
@@ -400,7 +400,7 @@
     margin-top: 10px;
     padding: 12px 14px;
     border-radius: 14px;
-    background: rgba(33, 61, 82, 0.06);
+    background: rgba(41, 33, 82, 0.06);
 
     p { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--ink); }
     strong { font-weight: 650; }

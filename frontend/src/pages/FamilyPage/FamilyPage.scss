@@ -4,9 +4,9 @@
 // Protection is the one dark panel: the product's heart, in the call
 // screens' navy. White panels carry a border and no shadow.
 
-$on-dark: #eef4f3;
-$on-dark-muted: rgba(238, 244, 243, 0.68);
-$on-dark-faint: rgba(238, 244, 243, 0.5);
+$on-dark: #e9ebf9;
+$on-dark-muted: rgba(233, 235, 249, 0.68);
+$on-dark-faint: rgba(233, 235, 249, 0.5);
 $mint: #7fe0b8;
 $accent-text: #a3412c; // --accent darkened for small text on white
 $warn-text: #7a4f08;
@@ -20,7 +20,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   max-width: 1320px;
   color: var(--ink);
 
-  ::selection { background: rgba(231, 109, 82, 0.22); }
+  ::selection { background: rgba(224, 71, 94, 0.22); }
 
   h1, h2, h3 { text-wrap: balance; }
 
@@ -73,7 +73,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   .fh-skeleton {
     display: block;
     border-radius: 10px;
-    background: linear-gradient(90deg, rgba(17, 34, 49, 0.05), rgba(17, 34, 49, 0.1), rgba(17, 34, 49, 0.05));
+    background: linear-gradient(90deg, rgba(53, 42, 124, 0.05), rgba(53, 42, 124, 0.1), rgba(53, 42, 124, 0.05));
     background-size: 200% 100%;
     animation: fh-shimmer 1.4s ease-in-out infinite;
 
@@ -85,7 +85,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     &.dark {
       height: 620px;
       border-radius: var(--radius);
-      background: linear-gradient(90deg, #17293a, #1f3548, #17293a);
+      background: linear-gradient(90deg, #1d173a, #251e49, #1d173a);
       background-size: 200% 100%;
     }
   }
@@ -145,7 +145,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     li.on {
       color: #17694b;
       background: var(--good-soft);
-      border-color: rgba(29, 141, 100, 0.22);
+      border-color: rgba(19, 134, 83, 0.22);
     }
 
     strong { color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -155,7 +155,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     width: 34px;
     height: 6px;
     border-radius: 99px;
-    background: rgba(17, 34, 49, 0.1);
+    background: rgba(53, 42, 124, 0.1);
     overflow: hidden;
 
     span { display: block; height: 100%; border-radius: inherit; background: var(--good); }
@@ -174,7 +174,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     white-space: nowrap;
     transition: transform 0.2s $ease-out, background 0.2s ease;
 
-    &:hover { transform: translateY(-1px); background: #1a3348; }
+    &:hover { transform: translateY(-1px); background: #221a48; }
     &:active { transform: translateY(0); }
   }
 
@@ -200,8 +200,8 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
     &:hover {
       transform: translateY(-2px);
-      border-color: rgba(18, 33, 47, 0.22);
-      box-shadow: 0 10px 24px rgba(17, 34, 49, 0.08);
+      border-color: rgba(53, 42, 124, 0.22);
+      box-shadow: 0 10px 24px rgba(53, 42, 124, 0.08);
     }
 
     &:hover .fh-quicklink-arrow { transform: translate(2px, -2px); color: var(--ink); }
@@ -214,7 +214,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     display: grid;
     place-items: center;
     border-radius: 12px;
-    background: rgba(17, 34, 49, 0.05);
+    background: rgba(53, 42, 124, 0.05);
     color: var(--navy-soft);
   }
 
@@ -305,7 +305,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
       width: 40px;
       height: 24px;
       border-radius: 999px;
-      background: rgba(17, 34, 49, 0.18);
+      background: rgba(53, 42, 124, 0.18);
       transition: background 0.2s ease;
     }
 
@@ -318,7 +318,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
       height: 18px;
       border-radius: 50%;
       background: #fff;
-      box-shadow: 0 1px 3px rgba(17, 34, 49, 0.3);
+      box-shadow: 0 1px 3px rgba(53, 42, 124, 0.3);
       transition: transform 0.22s $ease-out;
     }
 
@@ -338,7 +338,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
     // On, but not "all good": not paused, yet no drill can reach them.
     &.neutral.on { color: var(--muted); }
-    &.neutral.on .fh-switch-track { background: rgba(17, 34, 49, 0.4); }
+    &.neutral.on .fh-switch-track { background: rgba(53, 42, 124, 0.4); }
     &.dark.neutral.on { color: $on-dark-muted; }
     &.dark.neutral.on .fh-switch-track { background: rgba(255, 255, 255, 0.34); }
 
@@ -356,7 +356,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     min-height: 38px;
     padding: 8px 13px;
     border-radius: 11px;
-    border: 1px solid rgba(18, 33, 47, 0.16);
+    border: 1px solid rgba(53, 42, 124, 0.16);
     background: #fff;
     color: var(--ink);
     font: inherit;
@@ -366,7 +366,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     cursor: pointer;
     transition: transform 0.15s $ease-out, border-color 0.15s ease, background 0.15s ease;
 
-    &:hover:not(:disabled) { transform: translateY(-1px); border-color: rgba(18, 33, 47, 0.34); }
+    &:hover:not(:disabled) { transform: translateY(-1px); border-color: rgba(53, 42, 124, 0.34); }
     &:active:not(:disabled) { transform: translateY(0); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -375,7 +375,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
       border-color: var(--navy);
       color: #fff;
 
-      &:hover:not(:disabled) { background: #1a3348; }
+      &:hover:not(:disabled) { background: #221a48; }
     }
 
     &.danger {
@@ -430,13 +430,13 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     display: grid;
     gap: 6px;
 
-    > span { font-size: 0.8rem; font-weight: 600; color: rgba(18, 33, 47, 0.72); }
+    > span { font-size: 0.8rem; font-weight: 600; color: rgba(53, 42, 124, 0.72); }
 
     select,
     input {
       width: 100%;
       appearance: none;
-      border: 1px solid rgba(18, 33, 47, 0.16);
+      border: 1px solid rgba(53, 42, 124, 0.16);
       border-radius: 12px;
       background: #fff;
       padding: 0.7rem 0.9rem;
@@ -447,9 +447,9 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
       &:focus { outline: none; border-color: var(--accent); }
       &:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-      &:disabled { opacity: 0.6; background-color: rgba(17, 34, 49, 0.03); }
-      &::placeholder { color: rgba(18, 33, 47, 0.35); }
-      &[aria-invalid='true'] { border-color: rgba(231, 109, 82, 0.7); }
+      &:disabled { opacity: 0.6; background-color: rgba(53, 42, 124, 0.03); }
+      &::placeholder { color: rgba(53, 42, 124, 0.35); }
+      &[aria-invalid='true'] { border-color: rgba(224, 71, 94, 0.7); }
     }
 
     select { padding-right: 2.2rem; background: $chevron no-repeat right 12px center, #fff; }
@@ -475,7 +475,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     font-size: 0.9rem;
     line-height: 1.5;
 
-    &.on-dark { margin-top: 14px; background: rgba(231, 109, 82, 0.2); color: #ffc9bc; }
+    &.on-dark { margin-top: 14px; background: rgba(224, 71, 94, 0.2); color: #ffc9bc; }
   }
 
   // ---------------------------------------------------------------- protection (navy)
@@ -488,12 +488,12 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     border-radius: var(--radius);
     color: $on-dark;
     background:
-      radial-gradient(110% 70% at 100% 0%, rgba(29, 141, 100, 0.26), transparent 60%),
+      radial-gradient(110% 70% at 100% 0%, rgba(19, 134, 83, 0.26), transparent 60%),
       var(--navy);
-    box-shadow: 0 22px 48px rgba(17, 34, 49, 0.22);
+    box-shadow: 0 22px 48px rgba(53, 42, 124, 0.22);
     transition: background 0.4s ease;
 
-    &.is-off { background: radial-gradient(110% 70% at 100% 0%, rgba(255, 255, 255, 0.05), transparent 60%), #17293a; }
+    &.is-off { background: radial-gradient(110% 70% at 100% 0%, rgba(255, 255, 255, 0.05), transparent 60%), #1d173a; }
     &.is-loading { padding-bottom: 26px; }
 
     h2 {
@@ -728,7 +728,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     top: 0;
     bottom: 0;
     border-radius: 8px 0 0 8px;
-    background: rgba(17, 34, 49, 0.6);
+    background: rgba(53, 42, 124, 0.6);
   }
 
   .fh-wa-now {
@@ -776,7 +776,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     display: grid;
     place-items: center;
     border-radius: 12px;
-    background: rgba(231, 109, 82, 0.2);
+    background: rgba(224, 71, 94, 0.2);
     color: #f6a691;
   }
 
@@ -844,7 +844,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   // ---------------------------------------------------------------- demo
 
-  .fh-demo { border-color: rgba(231, 109, 82, 0.32); }
+  .fh-demo { border-color: rgba(224, 71, 94, 0.32); }
 
   .fh-demo-tag {
     padding: 4px 10px;
@@ -887,9 +887,9 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   .fh-shield-button {
     background: var(--navy);
     color: #fff;
-    box-shadow: 0 10px 22px rgba(17, 34, 49, 0.2);
+    box-shadow: 0 10px 22px rgba(53, 42, 124, 0.2);
 
-    &:hover:not(:disabled) { background: #1a3348; }
+    &:hover:not(:disabled) { background: #221a48; }
   }
 
   .fh-demo-notice {
@@ -951,7 +951,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     p { margin: 0 0 4px; color: var(--ink); font-size: 0.86rem; line-height: 1.45; }
 
     &.is-set {
-      background: rgba(17, 34, 49, 0.03);
+      background: rgba(53, 42, 124, 0.03);
       border-color: var(--line);
 
       > svg { color: var(--good); }
@@ -1050,7 +1050,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
     &.good { background: var(--good-soft); color: #17694b; }
     &.wait { background: rgba(245, 185, 77, 0.2); color: $warn-text; }
-    &.quiet { background: rgba(17, 34, 49, 0.06); color: var(--muted); }
+    &.quiet { background: rgba(53, 42, 124, 0.06); color: var(--muted); }
   }
 
   .fh-phone-dot {
@@ -1067,7 +1067,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: rgba(17, 34, 49, 0.22);
+      background: rgba(53, 42, 124, 0.22);
     }
 
     &.on { color: var(--good); }
@@ -1094,7 +1094,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
       em { font-style: normal; color: var(--ink); }
       small { font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--muted); letter-spacing: 0; }
-      svg { color: rgba(93, 114, 128, 0.7); }
+      svg { color: rgba(99, 93, 128, 0.7); }
     }
   }
 
@@ -1114,7 +1114,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     transition: transform 0.15s $ease-out, border-color 0.15s ease;
 
     svg { transition: transform 0.2s $ease-out; }
-    &:hover { transform: translateY(-1px); border-color: rgba(18, 33, 47, 0.3); }
+    &:hover { transform: translateY(-1px); border-color: rgba(53, 42, 124, 0.3); }
     &:hover svg { transform: translateX(2px); }
   }
 
@@ -1172,7 +1172,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     margin-left: 58px;
     padding: 14px 16px;
     border-radius: 16px;
-    background: rgba(17, 34, 49, 0.035);
+    background: rgba(53, 42, 124, 0.035);
   }
 
   .fh-invite-text {
@@ -1211,7 +1211,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     border-radius: 14px;
     border: 1px solid var(--line);
     background: #fff;
-    box-shadow: 0 16px 36px rgba(17, 34, 49, 0.16);
+    box-shadow: 0 16px 36px rgba(53, 42, 124, 0.16);
 
     a {
       display: flex;
@@ -1222,7 +1222,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
       font-weight: 600;
       font-size: 0.88rem;
 
-      &:hover { background: rgba(17, 34, 49, 0.05); }
+      &:hover { background: rgba(53, 42, 124, 0.05); }
     }
   }
 
@@ -1243,7 +1243,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     gap: 8px;
     padding: 12px;
     border-radius: 12px;
-    border: 1px dashed rgba(17, 34, 49, 0.22);
+    border: 1px dashed rgba(53, 42, 124, 0.22);
     background: #fff;
     color: var(--muted);
     font-size: 0.8rem;
@@ -1261,8 +1261,8 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     margin-left: 58px;
     padding: 12px 14px;
     border-radius: 14px;
-    border: 1px solid rgba(231, 109, 82, 0.35);
-    background: rgba(231, 109, 82, 0.06);
+    border: 1px solid rgba(224, 71, 94, 0.35);
+    background: rgba(224, 71, 94, 0.06);
 
     > span { flex: 1 1 320px; font-size: 0.88rem; line-height: 1.45; }
     > div { display: flex; gap: 8px; }
@@ -1295,7 +1295,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     gap: 4px;
     padding: 4px;
     border-radius: 14px;
-    background: rgba(17, 34, 49, 0.05);
+    background: rgba(53, 42, 124, 0.05);
 
     button {
       appearance: none;
@@ -1314,7 +1314,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
       &:hover { color: var(--ink); }
     }
 
-    button.on { background: #fff; color: var(--ink); box-shadow: 0 2px 8px rgba(17, 34, 49, 0.1); }
+    button.on { background: #fff; color: var(--ink); box-shadow: 0 2px 8px rgba(53, 42, 124, 0.1); }
   }
 
   .fh-plan-grid {
@@ -1376,7 +1376,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   .fh-step-status {
     padding: 3px 9px;
     border-radius: 999px;
-    background: rgba(17, 34, 49, 0.06);
+    background: rgba(53, 42, 124, 0.06);
     color: var(--navy-soft);
     font-size: 0.74rem;
     font-weight: 700;
@@ -1392,7 +1392,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     align-content: start;
     padding: 18px;
     border-radius: 18px;
-    background: rgba(17, 34, 49, 0.03);
+    background: rgba(53, 42, 124, 0.03);
   }
 
   .fh-plan-total {
@@ -1447,7 +1447,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     color: inherit;
     transition: background 0.15s ease;
 
-    &.linked:hover { background: rgba(17, 34, 49, 0.04); }
+    &.linked:hover { background: rgba(53, 42, 124, 0.04); }
     &.linked:hover strong { color: $accent-text; }
   }
 
@@ -1461,12 +1461,12 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     background: var(--accent-soft);
     color: var(--accent);
 
-    &.kind-welcome { background: rgba(33, 61, 82, 0.08); color: var(--navy-soft); }
+    &.kind-welcome { background: rgba(41, 33, 82, 0.08); color: var(--navy-soft); }
     &.kind-family_line { background: var(--good-soft); color: var(--good); }
     &.kind-message,
     &.kind-reminder,
-    &.kind-weekly { background: rgba(17, 34, 49, 0.06); color: var(--navy-soft); }
-    &.kind-alert { background: rgba(231, 109, 82, 0.18); color: $accent-text; }
+    &.kind-weekly { background: rgba(53, 42, 124, 0.06); color: var(--navy-soft); }
+    &.kind-alert { background: rgba(224, 71, 94, 0.18); color: $accent-text; }
   }
 
   .fh-week-text {
@@ -1495,7 +1495,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     border: 0;
     min-width: 0;
 
-    legend { padding: 0; margin-bottom: 6px; color: rgba(18, 33, 47, 0.72); font-size: 0.8rem; font-weight: 600; }
+    legend { padding: 0; margin-bottom: 6px; color: rgba(53, 42, 124, 0.72); font-size: 0.8rem; font-weight: 600; }
   }
 
   .fh-segmented {
@@ -1516,8 +1516,8 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
       cursor: pointer;
       transition: border-color 0.15s ease, background 0.15s ease;
 
-      &:hover { border-color: rgba(18, 33, 47, 0.3); }
-      &.on { border-color: rgba(231, 109, 82, 0.5); background: var(--accent-soft); color: $accent-text; }
+      &:hover { border-color: rgba(53, 42, 124, 0.3); }
+      &.on { border-color: rgba(224, 71, 94, 0.5); background: var(--accent-soft); color: $accent-text; }
       &:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
     }
 
@@ -1535,7 +1535,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     input[type='number'] {
       width: 62px;
       padding: 0.45rem 0.5rem;
-      border: 1px solid rgba(18, 33, 47, 0.16);
+      border: 1px solid rgba(53, 42, 124, 0.16);
       border-radius: 10px;
       font: inherit;
       text-align: center;

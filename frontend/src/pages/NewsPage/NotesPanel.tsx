@@ -5,7 +5,7 @@ import { possessive, shortDate } from '../LearnPage/shared';
 type Note = NewsView['notes'][number];
 
 // Brand colours for the initials, in turn (accent, good, navy-soft, warning ink).
-const AVATAR_COLOURS = ['#e76d52', '#1d8d64', '#213d52', '#9a6a12'];
+const AVATAR_COLOURS = ['#e0475e', '#138653', '#4e38b2', '#9a6a12'];
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);

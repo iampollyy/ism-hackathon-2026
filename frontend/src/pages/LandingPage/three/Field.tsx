@@ -54,7 +54,7 @@ export function Field({ onReady }: { onReady: (h: FieldHandle) => void }) {
   const bodyMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: '#0b1620',
+        color: '#0e0b20',
         metalness: 0.5,
         roughness: 0.55,
         transparent: true,

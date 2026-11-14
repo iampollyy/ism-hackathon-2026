@@ -4,7 +4,7 @@
 .signup-flow,
 .family-live {
   input::placeholder {
-    color: rgba(18, 33, 47, 0.32);
+    color: rgba(53, 42, 124, 0.32);
     font-weight: 500;
   }
 
@@ -25,7 +25,7 @@
 
   .input-stack input[aria-invalid='true'],
   .input-stack select[aria-invalid='true'] {
-    border-color: rgba(231, 109, 82, 0.7);
+    border-color: rgba(224, 71, 94, 0.7);
   }
 
   .form-alert {
@@ -83,7 +83,7 @@
       width: 9px;
       height: 9px;
       border-radius: 50%;
-      background: rgba(17, 34, 49, 0.2);
+      background: rgba(53, 42, 124, 0.2);
     }
 
     &.on { color: var(--good); }
@@ -116,7 +116,7 @@
     gap: 10px;
     padding: 14px;
     border-radius: 12px;
-    border: 1px dashed rgba(17, 34, 49, 0.22);
+    border: 1px dashed rgba(53, 42, 124, 0.22);
     background: rgba(245, 185, 77, 0.08);
     color: var(--muted);
     font-size: 0.84rem;

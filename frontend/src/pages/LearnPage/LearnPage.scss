@@ -4,7 +4,7 @@
 
 .lp-page {
   --lp-good-deep: #17714f;
-  --lp-speech: rgba(231, 109, 82, 0.08);
+  --lp-speech: rgba(224, 71, 94, 0.08);
 }
 
 // ---------------------------------------------------------------- habits
@@ -15,7 +15,7 @@
   padding: 32px 34px 34px;
   border-radius: var(--radius);
   background:
-    radial-gradient(circle at 100% 0%, rgba(231, 109, 82, 0.2), transparent 38%),
+    radial-gradient(circle at 100% 0%, rgba(224, 71, 94, 0.2), transparent 38%),
     var(--navy);
   color: #fff;
   box-shadow: var(--shadow);
@@ -199,7 +199,7 @@
   width: 30px;
   height: 6px;
   border-radius: 999px;
-  background: rgba(17, 34, 49, 0.1);
+  background: rgba(53, 42, 124, 0.1);
   transition: background 0.25s ease;
 
   &.is-current { background: var(--ink); }
@@ -224,9 +224,9 @@
   align-content: space-between;
   padding: 24px 26px 28px;
   border-radius: 22px;
-  background: #132332;
+  background: #181332;
   color: #fff;
-  box-shadow: 0 18px 36px rgba(17, 34, 49, 0.18);
+  box-shadow: 0 18px 36px rgba(53, 42, 124, 0.18);
 }
 
 .lp-call__who {
@@ -245,7 +245,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(231, 109, 82, 0.22);
+  background: rgba(224, 71, 94, 0.22);
   color: #ffb4a3;
 }
 
@@ -282,7 +282,7 @@
   width: 100%;
   min-height: 52px;
   padding: 12px 16px;
-  border: 1.5px solid rgba(17, 34, 49, 0.14);
+  border: 1.5px solid rgba(53, 42, 124, 0.14);
   border-radius: 14px;
   background: #fff;
   color: var(--ink);
@@ -292,7 +292,7 @@
   cursor: pointer;
   transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
 
-  &:hover:not(:disabled) { border-color: rgba(17, 34, 49, 0.34); transform: translateY(-1px); }
+  &:hover:not(:disabled) { border-color: rgba(53, 42, 124, 0.34); transform: translateY(-1px); }
   &:active:not(:disabled) { transform: translateY(0); }
   &:disabled { cursor: default; }
 
@@ -375,7 +375,7 @@
   gap: 8px;
   padding: 22px 24px;
   border-radius: 18px;
-  background: rgba(17, 34, 49, 0.04);
+  background: rgba(53, 42, 124, 0.04);
 
   p { margin: 0; max-width: 64ch; line-height: 1.6; }
   .button { gap: 8px; margin-top: 8px; }
@@ -440,7 +440,7 @@
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
-    text-decoration-color: rgba(17, 34, 49, 0.3);
+    text-decoration-color: rgba(53, 42, 124, 0.3);
 
     &:hover { text-decoration-color: currentColor; }
   }
@@ -478,7 +478,7 @@
   font-weight: 600;
   transition: border-color 0.18s ease, transform 0.18s ease;
 
-  &:hover { border-color: rgba(17, 34, 49, 0.3); transform: translateY(-1px); }
+  &:hover { border-color: rgba(53, 42, 124, 0.3); transform: translateY(-1px); }
 }
 
 .lp-index__dot {
@@ -527,8 +527,8 @@
   transition: border-color 0.35s ease, box-shadow 0.35s ease;
 
   &.is-flash {
-    border-color: rgba(231, 109, 82, 0.6);
-    box-shadow: 0 0 0 4px rgba(231, 109, 82, 0.14), 0 16px 34px rgba(17, 34, 49, 0.1);
+    border-color: rgba(224, 71, 94, 0.6);
+    box-shadow: 0 0 0 4px rgba(224, 71, 94, 0.14), 0 16px 34px rgba(53, 42, 124, 0.1);
   }
 }
 
@@ -643,8 +643,8 @@
   transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
 
   &:hover {
-    border-color: rgba(17, 34, 49, 0.26);
-    background: rgba(17, 34, 49, 0.02);
+    border-color: rgba(53, 42, 124, 0.26);
+    background: rgba(53, 42, 124, 0.02);
     transform: translateY(-1px);
 
     .lp-drill__go { transform: translateX(2px); color: var(--ink); }
@@ -677,7 +677,7 @@
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(17, 34, 49, 0.3);
+  text-decoration-color: rgba(53, 42, 124, 0.3);
 
   &:hover { text-decoration-color: currentColor; }
 }

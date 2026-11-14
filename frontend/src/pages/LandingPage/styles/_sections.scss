@@ -110,8 +110,8 @@
   width: 46px;
   aspect-ratio: 78 / 162;
   border-radius: 9px;
-  border: 1px solid rgba(234, 241, 238, 0.16);
-  background: rgba(234, 241, 238, 0.025);
+  border: 1px solid rgba(241, 238, 255, 0.16);
+  background: rgba(241, 238, 255, 0.025);
   transition:
     opacity 600ms ease,
     border-color 600ms ease;
@@ -136,23 +136,23 @@
   }
 
   &.is-ringing {
-    border-color: rgba(231, 109, 82, 0.4);
+    border-color: rgba(224, 71, 94, 0.4);
   }
 }
 
 @keyframes lp-dot {
   0% {
-    box-shadow: 0 0 0 0 rgba(231, 109, 82, 0.6);
+    box-shadow: 0 0 0 0 rgba(224, 71, 94, 0.6);
   }
   70%,
   100% {
-    box-shadow: 0 0 0 12px rgba(231, 109, 82, 0);
+    box-shadow: 0 0 0 12px rgba(224, 71, 94, 0);
   }
 }
 
 .lp-field.is-dark .lp-field__phone {
   opacity: 0.35;
-  border-color: rgba(234, 241, 238, 0.1);
+  border-color: rgba(241, 238, 255, 0.1);
 }
 
 // The phone that stays lit sits in the middle of the field.
@@ -320,7 +320,7 @@
   pointer-events: none;
   opacity: 0.18;
   transition: background-color 600ms ease, opacity 600ms ease;
-  background: radial-gradient(closest-side, var(--risk, rgba(93, 114, 128, 0.7)), transparent 70%);
+  background: radial-gradient(closest-side, var(--risk, rgba(99, 93, 128, 0.7)), transparent 70%);
 }
 
 .lp-story__phonebox[data-risk='green'] {
@@ -331,7 +331,7 @@
 }
 .lp-story__phonebox[data-risk='red'],
 .lp-story__phonebox[data-risk='scam'] {
-  --risk: rgba(231, 109, 82, 0.9);
+  --risk: rgba(224, 71, 94, 0.9);
 }
 .lp-story__phonebox[data-risk='safe'] {
   --risk: rgba(60, 197, 143, 0.7);
@@ -354,8 +354,8 @@
   height: 34px;
   padding: 0 14px 0 12px;
   border-radius: 999px;
-  background: rgba(7, 17, 26, 0.82);
-  border: 1px solid rgba(231, 109, 82, 0.55);
+  background: rgba(10, 7, 26, 0.82);
+  border: 1px solid rgba(224, 71, 94, 0.55);
   color: var(--lp-text);
   font: 600 15px/1 'Inter', sans-serif;
   white-space: nowrap;
@@ -462,7 +462,7 @@
   translate: -50% -50%;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(closest-side, rgba(231, 109, 82, 0.12), transparent 72%);
+  background: radial-gradient(closest-side, rgba(224, 71, 94, 0.12), transparent 72%);
 }
 
 .lp-shield__second {
@@ -543,7 +543,7 @@
   a {
     color: var(--lp-text);
     text-decoration: underline;
-    text-decoration-color: rgba(234, 241, 238, 0.3);
+    text-decoration-color: rgba(241, 238, 255, 0.3);
     text-underline-offset: 3px;
 
     &:hover {
@@ -611,7 +611,7 @@
     z-index: 40;
     height: 64px;
     padding: 8px 16px max(8px, env(safe-area-inset-bottom));
-    background: rgba(7, 17, 26, 0.96);
+    background: rgba(10, 7, 26, 0.96);
     border-top: 1px solid var(--lp-line-dark);
     transform: translateY(110%);
     transition: transform 240ms var(--lp-ease);
@@ -782,7 +782,7 @@
     top: auto;
     padding: 20px;
     border-radius: 20px;
-    background: rgba(33, 61, 82, 0.94);
+    background: rgba(41, 33, 82, 0.94);
     border: 1px solid var(--lp-line-dark);
     box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
   }

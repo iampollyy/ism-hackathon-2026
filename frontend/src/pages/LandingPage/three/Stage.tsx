@@ -26,11 +26,11 @@ const DEG = Math.PI / 180;
 const HTML_DF = (0.72 * 400) / 390; // 390 design px cover the 0.72-wide screen
 
 const C = {
-  scam: new THREE.Color('#e76d52'),
+  scam: new THREE.Color('#e0475e'),
   safe: new THREE.Color('#3cc58f'),
   doubt: new THREE.Color('#f5b94d'),
-  cool: new THREE.Color('#5d7280'),
-  red: new THREE.Color('#e2563a'),
+  cool: new THREE.Color('#605886'),
+  red: new THREE.Color('#e0475e'),
 };
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -118,7 +118,7 @@ function makeEnvScene() {
   const env = new THREE.Scene();
   const room = new THREE.Mesh(
     new THREE.SphereGeometry(20, 32, 16),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color('#0b1823'), side: THREE.BackSide }),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color('#0f0b23'), side: THREE.BackSide }),
   );
   env.add(room);
   const panel = (w: number, h: number, color: string, k: number, pos: [number, number, number]) => {
@@ -130,9 +130,9 @@ function makeEnvScene() {
   };
   panel(6, 3, '#dce6ee', 2.4, [-6, 5, 6]); // key, high on the left
   panel(10, 1.2, '#ffffff', 1.6, [0, 9, 0]); // top strip for the upper edges
-  panel(5, 5, '#7f97a8', 1.3, [7, -2, 5]); // cool fill
-  panel(4, 6, '#e76d52', 0.9, [8, 1, -6]); // warm rim behind
-  panel(8, 2, '#2b4d66', 1.4, [0, -8, 2]); // floor bounce
+  panel(5, 5, '#867fa8', 1.3, [7, -2, 5]); // cool fill
+  panel(4, 6, '#e0475e', 0.9, [8, 1, -6]); // warm rim behind
+  panel(8, 2, '#342a67', 1.4, [0, -8, 2]); // floor bounce
   return env;
 }
 
@@ -205,8 +205,8 @@ function Scene({
   const lastScroll = useRef(0);
   const perf = useRef({ acc: 0, n: 0, slowFor: 0 });
   const glitchSeed = useRef({ t: 0, x: 0, y: 0, r: 0 });
-  const colorNow = useRef(new THREE.Color('#e76d52'));
-  const ringColorNow = useRef(new THREE.Color('#e76d52'));
+  const colorNow = useRef(new THREE.Color('#e0475e'));
+  const ringColorNow = useRef(new THREE.Color('#e0475e'));
   const force3d = useMemo(() => new URLSearchParams(window.location.search).has('3d'), []);
 
   // Lighting: a procedural room for reflections (no download) plus state-coloured lights.
@@ -221,7 +221,7 @@ function Scene({
     });
     scene.environment = env;
     scene.environmentIntensity = 1;
-    scene.fog = new THREE.Fog('#07111a', 9, 23);
+    scene.fog = new THREE.Fog('#0a071a', 9, 23);
     return () => {
       env.dispose();
       pmrem.dispose();
@@ -498,10 +498,10 @@ function Scene({
 
   return (
     <>
-      <ambientLight intensity={0.25} color="#9fb2bf" />
+      <ambientLight intensity={0.25} color="#b9b2e0" />
       <directionalLight position={[-3, 2, 3]} intensity={0.6} color="#cfdbe6" />
-      <directionalLight ref={rimLight} position={[3, 0.5, -2]} intensity={1.4} color="#e76d52" />
-      <directionalLight position={[0, -3, 1]} intensity={0.35} color="#5d7280" />
+      <directionalLight ref={rimLight} position={[3, 0.5, -2]} intensity={1.4} color="#e0475e" />
+      <directionalLight position={[0, -3, 1]} intensity={0.35} color="#605886" />
       <group ref={ringsRig}>
         <mesh material={ringsMat} renderOrder={-1}>
           <planeGeometry args={[RING_PLANE, RING_PLANE]} />
@@ -513,7 +513,7 @@ function Scene({
       <Field onReady={onField} />
       <group ref={rig} position={[2, 0, 0]} scale={0.001}>
         <PhoneModel />
-        <pointLight ref={keyLight} position={[0, 0, 0.6]} intensity={0.4} distance={3} color="#e76d52" />
+        <pointLight ref={keyLight} position={[0, 0, 0.6]} intensity={0.4} distance={3} color="#e0475e" />
         <Html
           transform
           portal={portal as RefObject<HTMLElement>}

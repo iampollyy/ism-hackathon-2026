@@ -7,13 +7,13 @@
   flex-direction: column;
   padding: 0 0 56px;
   overflow: hidden;
-  color: #f2f6f4;
+  color: #edf0fb;
   font-family: 'Inter', sans-serif;
   font-size: 15px;
   line-height: 1.4;
   background:
-    radial-gradient(120% 60% at 50% 0%, rgba(231, 109, 82, 0.28), transparent 60%),
-    linear-gradient(180deg, #1a2c3b 0%, #0b1620 60%, #070f16 100%);
+    radial-gradient(120% 60% at 50% 0%, rgba(224, 71, 94, 0.28), transparent 60%),
+    linear-gradient(180deg, #1f193c 0%, #0e0b20 60%, #090716 100%);
   text-align: left;
   user-select: none;
 
@@ -30,8 +30,8 @@
 
 .lp-scr--reveal {
   background:
-    radial-gradient(110% 55% at 50% 0%, rgba(93, 114, 128, 0.42), transparent 62%),
-    linear-gradient(180deg, #1c2f3e 0%, #0d1823 70%, #091219 100%);
+    radial-gradient(110% 55% at 50% 0%, rgba(99, 93, 128, 0.42), transparent 62%),
+    linear-gradient(180deg, #201a40 0%, #110d23 70%, #0c0919 100%);
   // The glitch hands over to the reveal: only the screen's content cross-fades.
   animation: lp-fade 260ms ease both;
 
@@ -50,14 +50,14 @@
 .lp-scr--declined,
 .lp-scr--lock {
   background:
-    radial-gradient(140% 70% at 30% 10%, rgba(33, 61, 82, 0.9), transparent 70%),
-    linear-gradient(180deg, #132433 0%, #08121a 100%);
+    radial-gradient(140% 70% at 30% 10%, rgba(41, 33, 82, 0.9), transparent 70%),
+    linear-gradient(180deg, #181333 0%, #0b081a 100%);
 }
 
 .lp-scr--shield {
   background:
-    radial-gradient(120% 55% at 50% 100%, rgba(231, 109, 82, 0.26), transparent 60%),
-    linear-gradient(180deg, #1a2c3b 0%, #0b1620 100%);
+    radial-gradient(120% 55% at 50% 100%, rgba(224, 71, 94, 0.26), transparent 60%),
+    linear-gradient(180deg, #1f193c 0%, #0e0b20 100%);
 }
 
 // Status bar with the island.
@@ -125,13 +125,13 @@
   font-family: 'Space Grotesk', sans-serif;
   font-size: 40px;
   font-weight: 500;
-  color: #e9f0ec;
-  background: linear-gradient(180deg, #5b6f7d, #3c4d5a);
+  color: #e1e5f8;
+  background: linear-gradient(180deg, #615b7d, #362c6a);
   flex: none;
 }
 
 .lp-avatar--safe {
-  background: linear-gradient(180deg, #2fae7f, #1d8d64);
+  background: linear-gradient(180deg, #2fae7f, #138653);
   color: #f4fbf8;
 }
 
@@ -149,13 +149,13 @@
 .lp-scr__sub {
   margin-top: 6px;
   font-size: 18px;
-  color: rgba(242, 246, 244, 0.72);
+  color: rgba(237, 240, 251, 0.72);
 }
 
 .lp-scr__note {
   margin-top: 4px;
   font-size: 15px;
-  color: rgba(242, 246, 244, 0.6);
+  color: rgba(237, 240, 251, 0.6);
 }
 
 .lp-scr__mid {
@@ -209,7 +209,7 @@
     filter 90ms ease;
 
   &--scam {
-    background: #e2563a;
+    background: #e0475e;
   }
   &--safe {
     background: #22a06f;
@@ -251,7 +251,7 @@
 
 .lp-rb__label {
   font-size: 15px;
-  color: rgba(242, 246, 244, 0.85);
+  color: rgba(237, 240, 251, 0.85);
 }
 
 // The live waveform during the call.
@@ -265,7 +265,7 @@
     width: 5px;
     height: 100%;
     border-radius: 3px;
-    background: rgba(242, 246, 244, 0.85);
+    background: rgba(237, 240, 251, 0.85);
     transform: scaleY(0.08);
     transform-origin: 50% 50%;
   }
@@ -332,7 +332,7 @@
 .lp-reveal__sub {
   margin-top: 10px;
   font-size: 19px;
-  color: rgba(242, 246, 244, 0.75);
+  color: rgba(237, 240, 251, 0.75);
 }
 
 .lp-reveal__praise {
@@ -345,8 +345,8 @@
   margin-top: 30px;
   padding: 18px 20px;
   border-radius: 18px;
-  background: rgba(242, 246, 244, 0.07);
-  border: 1px solid rgba(242, 246, 244, 0.1);
+  background: rgba(237, 240, 251, 0.07);
+  border: 1px solid rgba(237, 240, 251, 0.1);
   opacity: 0.25;
   transform: translateY(8px);
   transition:
@@ -369,7 +369,7 @@
   display: block;
   margin-bottom: 6px;
   font-size: 14px;
-  color: rgba(242, 246, 244, 0.65);
+  color: rgba(237, 240, 251, 0.65);
 }
 
 .lp-callbtn {
@@ -405,7 +405,7 @@
   margin: 10px 12px 0;
   padding: 14px 16px;
   border-radius: 22px;
-  background: rgba(242, 246, 244, 0.14);
+  background: rgba(237, 240, 251, 0.14);
   backdrop-filter: blur(20px);
   opacity: 0;
   transform: translateY(-16px);
@@ -432,7 +432,7 @@
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(242, 246, 244, 0.7);
+  color: rgba(237, 240, 251, 0.7);
 }
 
 .lp-bubble__when,
@@ -569,16 +569,16 @@
 // ---------------------------------------------------------------- app screens (the story)
 
 .lp-scr--app {
-  background: linear-gradient(180deg, #13212d 0%, #0b151e 100%);
+  background: linear-gradient(180deg, #17132d 0%, #0e0b1e 100%);
   padding-bottom: 28px;
 }
 
 .lp-scr--paper {
-  background: #eef3f0;
-  color: #12212f;
+  background: #edf0ff;
+  color: #352a7c;
 
   .lp-sb {
-    color: #12212f;
+    color: #352a7c;
   }
 }
 
@@ -600,7 +600,7 @@
 
 .lp-app__label {
   font-size: 15px;
-  color: rgba(242, 246, 244, 0.65);
+  color: rgba(237, 240, 251, 0.65);
   margin-bottom: 8px;
 }
 
@@ -612,8 +612,8 @@
   letter-spacing: -0.01em;
   padding: 18px 20px;
   border-radius: 18px;
-  background: rgba(242, 246, 244, 0.06);
-  border: 1px solid rgba(242, 246, 244, 0.08);
+  background: rgba(237, 240, 251, 0.06);
+  border: 1px solid rgba(237, 240, 251, 0.08);
 }
 
 .lp-rec {
@@ -626,7 +626,7 @@
 
   svg {
     flex: none;
-    color: rgba(242, 246, 244, 0.6);
+    color: rgba(237, 240, 251, 0.6);
   }
 }
 
@@ -638,7 +638,7 @@
 .lp-rec__time {
   margin-left: auto;
   flex: none;
-  color: rgba(242, 246, 244, 0.72);
+  color: rgba(237, 240, 251, 0.72);
 }
 
 .lp-rec__dot {
@@ -646,8 +646,8 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #e76d52;
-  box-shadow: 0 0 0 4px rgba(231, 109, 82, 0.2);
+  background: #e0475e;
+  box-shadow: 0 0 0 4px rgba(224, 71, 94, 0.2);
   animation: lp-blink 1.2s ease-in-out infinite;
 
   &--sm {
@@ -668,11 +668,11 @@
   height: 40px;
 
   rect {
-    fill: rgba(242, 246, 244, 0.22);
+    fill: rgba(237, 240, 251, 0.22);
     transition: fill 150ms ease;
   }
   rect.on {
-    fill: #e76d52;
+    fill: #e0475e;
   }
 }
 
@@ -691,7 +691,7 @@
     align-items: center;
     gap: 14px;
     padding: 12px 0;
-    border-top: 1px solid rgba(242, 246, 244, 0.08);
+    border-top: 1px solid rgba(237, 240, 251, 0.08);
   }
 
   .lp-avatar {
@@ -714,7 +714,7 @@
   em {
     font-style: normal;
     font-size: 14px;
-    color: rgba(242, 246, 244, 0.62);
+    color: rgba(237, 240, 251, 0.62);
   }
 
   .lp-ok,
@@ -734,7 +734,7 @@
   gap: 14px;
   margin: 18px 22px 8px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(242, 246, 244, 0.08);
+  border-bottom: 1px solid rgba(237, 240, 251, 0.08);
 
   .lp-avatar {
     width: 48px;
@@ -751,7 +751,7 @@
 
 .lp-callhead__time {
   font-size: 14px;
-  color: rgba(242, 246, 244, 0.6);
+  color: rgba(237, 240, 251, 0.6);
 }
 
 .lp-transcript {
@@ -777,7 +777,7 @@
   max-width: 86%;
   padding: 11px 14px;
   border-radius: 18px 18px 18px 6px;
-  background: rgba(242, 246, 244, 0.08);
+  background: rgba(237, 240, 251, 0.08);
   animation: lp-tin 280ms var(--lp-ease) both;
 
   &--me {
@@ -788,7 +788,7 @@
 
   &.is-fresh .lp-tline__text {
     text-decoration: underline;
-    text-decoration-color: #e76d52;
+    text-decoration-color: #e0475e;
     text-decoration-thickness: 2px;
     text-underline-offset: 4px;
   }
@@ -804,7 +804,7 @@
 .lp-tline__who {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(242, 246, 244, 0.55);
+  color: rgba(237, 240, 251, 0.55);
   margin-bottom: 2px;
 }
 
@@ -822,12 +822,12 @@
   margin-top: 6px;
   padding: 3px 10px 3px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(231, 109, 82, 0.6);
-  background: rgba(7, 17, 26, 0.6);
+  border: 1px solid rgba(224, 71, 94, 0.6);
+  background: rgba(10, 7, 26, 0.6);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
-  color: #f2f6f4;
+  color: #edf0fb;
   animation: lp-fade 240ms ease both;
 
   &::before {
@@ -835,7 +835,7 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #e76d52;
+    background: #e0475e;
   }
 }
 
@@ -887,7 +887,7 @@
     background: #f5b94d;
   }
   .r {
-    background: #e76d52;
+    background: #e0475e;
   }
 }
 
@@ -902,13 +902,13 @@
   padding: 22px 22px 24px;
   border-radius: 24px;
   background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(242, 246, 244, 0.08);
+  border: 1px solid rgba(237, 240, 251, 0.08);
 }
 
 .lp-risk__title {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(242, 246, 244, 0.62);
+  color: rgba(237, 240, 251, 0.62);
   margin-bottom: 14px;
 }
 
@@ -918,7 +918,7 @@
   gap: 12px;
   padding: 14px;
   border-radius: 999px;
-  background: #050a0f;
+  background: #07050f;
   float: left;
   margin-right: 20px;
 }
@@ -941,8 +941,8 @@
     --glow: rgba(245, 185, 77, 0.65);
   }
   &--red {
-    background: #e76d52;
-    --glow: rgba(231, 109, 82, 0.7);
+    background: #e0475e;
+    --glow: rgba(224, 71, 94, 0.7);
   }
 
   &.is-on {
@@ -975,7 +975,7 @@
   border-color: rgba(245, 185, 77, 0.35);
 }
 .lp-scr--risk-red .lp-risk {
-  border-color: rgba(231, 109, 82, 0.45);
+  border-color: rgba(224, 71, 94, 0.45);
 }
 
 // Notification (reveal and Shield).
@@ -983,7 +983,7 @@
   margin: 18px 14px 0;
   padding: 14px 16px;
   border-radius: 22px;
-  background: rgba(242, 246, 244, 0.14);
+  background: rgba(237, 240, 251, 0.14);
   backdrop-filter: blur(20px);
   opacity: 0;
   transform: translateY(-12px);
@@ -1009,7 +1009,7 @@
 
   li {
     padding: 14px 0;
-    border-top: 1px solid rgba(18, 33, 47, 0.1);
+    border-top: 1px solid rgba(53, 42, 124, 0.1);
   }
 
   .lp-avatar {
@@ -1033,14 +1033,14 @@
 
 .lp-fam__did {
   font-size: 15px;
-  color: #16714f;
+  color: #0f6e44;
   font-weight: 600;
 }
 
 .lp-fam__next {
   margin-top: 2px;
   font-size: 14px;
-  color: #4f6472;
+  color: #605886;
 }
 
 .lp-bar {
@@ -1048,7 +1048,7 @@
   height: 6px;
   margin-top: 10px;
   border-radius: 3px;
-  background: rgba(18, 33, 47, 0.12);
+  background: rgba(53, 42, 124, 0.12);
 }
 
 .lp-bar__fill {
@@ -1056,7 +1056,7 @@
   inset: 0 auto 0 0;
   width: calc(var(--now) * 100%);
   border-radius: 3px;
-  background: #1d8d64;
+  background: #138653;
 }
 
 .lp-bar__tick {
@@ -1065,7 +1065,7 @@
   bottom: -4px;
   left: calc(var(--before) * 100%);
   width: 2px;
-  background: #12212f;
+  background: #352a7c;
   opacity: 0.55;
 }
 
@@ -1074,7 +1074,7 @@
   padding: 16px 18px;
   border-radius: 18px;
   background: #fff;
-  border: 1px solid rgba(18, 33, 47, 0.1);
+  border: 1px solid rgba(53, 42, 124, 0.1);
 
   p {
     font-size: 15px;
@@ -1117,8 +1117,8 @@
   height: 14px;
   margin-top: 14px;
   border-radius: 50%;
-  background: #e76d52;
-  box-shadow: 0 0 18px rgba(231, 109, 82, 0.9);
+  background: #e0475e;
+  box-shadow: 0 0 18px rgba(224, 71, 94, 0.9);
 }
 
 .lp-pillbtn {
@@ -1132,12 +1132,12 @@
   font-weight: 600;
 
   &--scam {
-    background: #e2563a;
+    background: #e0475e;
     color: #fff;
   }
   &--outline {
-    border: 1.5px solid rgba(242, 246, 244, 0.5);
-    color: #f2f6f4;
+    border: 1.5px solid rgba(237, 240, 251, 0.5);
+    color: #edf0fb;
   }
 }
 
@@ -1150,7 +1150,7 @@
 .lp-lock__date {
   font-size: 19px;
   font-weight: 500;
-  color: rgba(242, 246, 244, 0.85);
+  color: rgba(237, 240, 251, 0.85);
 }
 
 .lp-lock__time {

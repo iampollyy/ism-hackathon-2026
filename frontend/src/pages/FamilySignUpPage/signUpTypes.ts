@@ -14,7 +14,7 @@ export type SignUpMember = {
   voiceAllowed: boolean;
 };
 
-const AVATAR_COLORS = ['#e76d52', '#1d8d64', '#213d52', '#b77a15', '#6b5ca5', '#2f7ea8'];
+const AVATAR_COLORS = ['#e0475e', '#138653', '#4e38b2', '#b77a15', '#6b5ca5', '#432fa8'];
 
 /** Colours by position in the family (the API has no colour per person). */
 export function avatarColor(index: number): string {

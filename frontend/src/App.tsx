@@ -34,7 +34,7 @@ const LiveCallPage = page(() => import('./pages/LiveCallPage/LiveCallPage'), 'Li
 // The marketing landing and pricing load on their own, so app routes never download three.js.
 const LandingPage = lazy(() => import('./pages/LandingPage/LandingPage'));
 const PricingPage = lazy(() => import('./pages/LandingPage/PricingPage'));
-const landingFallback = <div style={{ minHeight: '100vh', background: '#07111a' }} />;
+const landingFallback = <div style={{ minHeight: '100vh', background: '#0a071a' }} />;
 
 export default function App() {
   return (

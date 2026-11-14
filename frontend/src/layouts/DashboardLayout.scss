@@ -7,7 +7,7 @@
   grid-template-columns: 264px minmax(0, 1fr);
   color: var(--ink);
 
-  ::selection { background: rgba(231, 109, 82, 0.22); }
+  ::selection { background: rgba(224, 71, 94, 0.22); }
 }
 
 .app-skip {
@@ -29,10 +29,10 @@
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  background: rgba(247, 250, 249, 0.92);
-  border-right: 1px solid rgba(17, 34, 49, 0.08);
+  background: rgba(245, 246, 252, 0.92);
+  border-right: 1px solid rgba(53, 42, 124, 0.08);
   scrollbar-width: thin;
-  scrollbar-color: rgba(17, 34, 49, 0.18) transparent;
+  scrollbar-color: rgba(53, 42, 124, 0.18) transparent;
 }
 
 .app-main {
@@ -82,8 +82,8 @@
     min-height: 60px;
     padding: 10px 16px;
     padding-top: max(10px, env(safe-area-inset-top));
-    background: rgba(247, 250, 249, 0.94);
-    border-bottom: 1px solid rgba(17, 34, 49, 0.08);
+    background: rgba(245, 246, 252, 0.94);
+    border-bottom: 1px solid rgba(53, 42, 124, 0.08);
     backdrop-filter: saturate(1.4) blur(10px);
   }
 
@@ -127,7 +127,7 @@
     gap: 8px;
     height: 40px;
     padding: 0 14px;
-    border: 1px solid rgba(17, 34, 49, 0.12);
+    border: 1px solid rgba(53, 42, 124, 0.12);
     border-radius: 12px;
     background: #fff;
     color: var(--ink);
@@ -152,7 +152,7 @@
 .app-drawer-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(17, 34, 49, 0.42);
+  background: rgba(53, 42, 124, 0.42);
   animation: app-fade 0.2s ease-out;
 }
 
@@ -163,8 +163,8 @@
   left: 0;
   width: min(320px, 88vw);
   overflow-y: auto;
-  background: #f7faf9;
-  box-shadow: 16px 0 40px rgba(17, 34, 49, 0.18);
+  background: #f5f6fc;
+  box-shadow: 16px 0 40px rgba(53, 42, 124, 0.18);
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   animation: app-slide 0.24s cubic-bezier(0.16, 1, 0.3, 1);

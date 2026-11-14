@@ -17,7 +17,7 @@
 }
 
 .lp-nav {
-  --nav-bg: rgba(7, 17, 26, 0);
+  --nav-bg: rgba(10, 7, 26, 0);
   --nav-fg: var(--lp-text);
   --nav-muted: var(--lp-text-muted);
   position: fixed;
@@ -33,7 +33,7 @@
     color 200ms ease;
 
   &.is-scrolled {
-    --nav-bg: rgba(7, 17, 26, 0.92);
+    --nav-bg: rgba(10, 7, 26, 0.92);
     border-bottom-color: var(--lp-line-dark);
     backdrop-filter: saturate(1.2) blur(10px);
   }
@@ -43,7 +43,7 @@
     --nav-muted: var(--lp-muted);
 
     &.is-scrolled {
-      --nav-bg: rgba(238, 243, 240, 0.94);
+      --nav-bg: rgba(232, 235, 249, 0.94);
       border-bottom-color: var(--lp-line-light);
     }
 

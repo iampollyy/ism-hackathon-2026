@@ -18,9 +18,9 @@
   background: linear-gradient(
     180deg,
     var(--lp-navy-soft) 0%,
-    #284559 12%,
-    #4b687a 36%,
-    #8fa7b3 66%,
+    #2e255c 12%,
+    #534b7a 36%,
+    #958fb3 66%,
     #c9d6d4 86%,
     var(--lp-paper) 100%
   );
@@ -347,7 +347,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid rgba(234, 241, 238, 0.28);
+  border: 1px solid rgba(241, 238, 255, 0.28);
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   font-size: 16px;
@@ -396,7 +396,7 @@
   scroll-margin-top: calc(var(--nav-h) + 16px);
   padding: 28px 32px;
   border-radius: 16px;
-  background: rgba(234, 241, 238, 0.04);
+  background: rgba(241, 238, 255, 0.04);
   border: 1px solid var(--lp-line-dark);
 }
 
@@ -514,7 +514,7 @@
     min-height: 48px;
     padding: 12px 14px;
     border-radius: 12px;
-    border: 1px solid rgba(18, 33, 47, 0.28);
+    border: 1px solid rgba(53, 42, 124, 0.28);
     background: #fff;
     color: var(--lp-ink);
     font: 400 16px/1.4 'Inter', sans-serif;
@@ -522,7 +522,7 @@
     transition: border-color 150ms ease;
 
     &:hover {
-      border-color: rgba(18, 33, 47, 0.45);
+      border-color: rgba(53, 42, 124, 0.45);
     }
 
     &:focus-visible {
@@ -589,13 +589,13 @@
     }
 
     input {
-      background: rgba(234, 241, 238, 0.06);
-      border-color: rgba(234, 241, 238, 0.28);
+      background: rgba(241, 238, 255, 0.06);
+      border-color: rgba(241, 238, 255, 0.28);
       color: var(--lp-text);
       caret-color: var(--lp-safe);
 
       &:hover {
-        border-color: rgba(234, 241, 238, 0.45);
+        border-color: rgba(241, 238, 255, 0.45);
       }
       &:focus-visible {
         outline-color: var(--lp-focus-dark);

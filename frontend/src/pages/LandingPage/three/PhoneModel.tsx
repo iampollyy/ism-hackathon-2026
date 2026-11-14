@@ -41,7 +41,7 @@ export function phoneBodyGeometry(segments = 6) {
   return g;
 }
 
-export const PhoneModel = forwardRef<THREE.Group, { bodyColor?: string }>(function PhoneModel({ bodyColor = '#22394c' }, ref) {
+export const PhoneModel = forwardRef<THREE.Group, { bodyColor?: string }>(function PhoneModel({ bodyColor = '#28204e' }, ref) {
   const body = useMemo(() => phoneBodyGeometry(6), []);
   const glass = useMemo(() => new THREE.ShapeGeometry(roundedRect(0.742, 1.582, 0.098), 24), []);
   const plateau = useMemo(() => {
@@ -70,7 +70,7 @@ export const PhoneModel = forwardRef<THREE.Group, { bodyColor?: string }>(functi
         envMapIntensity: 0.45,
       }),
       glass: new THREE.MeshPhysicalMaterial({
-        color: '#04080c',
+        color: '#05040c',
         metalness: 0,
         roughness: 0.06,
         clearcoat: 1,
@@ -78,14 +78,14 @@ export const PhoneModel = forwardRef<THREE.Group, { bodyColor?: string }>(functi
         envMapIntensity: 0.9,
       }),
       back: new THREE.MeshPhysicalMaterial({
-        color: '#1f364a',
+        color: '#261e4b',
         metalness: 0.35,
         roughness: 0.55,
         clearcoat: 0.3,
         envMapIntensity: 0.8,
       }),
-      lens: new THREE.MeshPhysicalMaterial({ color: '#05090d', metalness: 0.2, roughness: 0.08, clearcoat: 1 }),
-      ring: new THREE.MeshStandardMaterial({ color: '#2a3d4d', metalness: 0.9, roughness: 0.25 }),
+      lens: new THREE.MeshPhysicalMaterial({ color: '#06050d', metalness: 0.2, roughness: 0.08, clearcoat: 1 }),
+      ring: new THREE.MeshStandardMaterial({ color: '#2b2354', metalness: 0.9, roughness: 0.25 }),
     }),
     [bodyColor],
   );

@@ -2,8 +2,8 @@
 // index.scss; the ringing and in-call screens are dark, like the phone's own
 // call screen. Mobile first; class names are prefixed so nothing leaks.
 
-$call-bg-top: #16293b;
-$call-bg-bottom: #08131d;
+$call-bg-top: #1c163b;
+$call-bg-bottom: #0b081d;
 $call-red: #e5484d;
 $call-green: #22b16b;
 
@@ -38,7 +38,7 @@ body:has(.phone-page) {
 }
 
 .phone-page button:focus-visible {
-  outline: 3px solid rgba(29, 141, 100, 0.55);
+  outline: 3px solid rgba(19, 134, 83, 0.55);
   outline-offset: 3px;
 }
 
@@ -84,7 +84,7 @@ body:has(.phone-page) {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: rgba(17, 34, 49, 0.18);
+  background: rgba(53, 42, 124, 0.18);
 
   &.is-on {
     background: var(--good);
@@ -148,7 +148,7 @@ body:has(.phone-page) {
 .phone-big-button--green {
   background: linear-gradient(135deg, #24a678 0%, var(--good) 100%);
   color: #fff;
-  box-shadow: 0 14px 28px rgba(29, 141, 100, 0.28);
+  box-shadow: 0 14px 28px rgba(19, 134, 83, 0.28);
 }
 
 .phone-sound {
@@ -165,7 +165,7 @@ body:has(.phone-page) {
 }
 
 .phone-sound--on {
-  border: 1px solid rgba(29, 141, 100, 0.25);
+  border: 1px solid rgba(19, 134, 83, 0.25);
   background: var(--good-soft);
   color: var(--good);
 }
@@ -216,13 +216,13 @@ body:has(.phone-page) {
 }
 
 .phone-notice--good {
-  border-color: rgba(29, 141, 100, 0.25);
+  border-color: rgba(19, 134, 83, 0.25);
   background: #eaf6f0;
   > svg { color: var(--good); }
 }
 
 .phone-notice--error {
-  border-color: rgba(231, 109, 82, 0.3);
+  border-color: rgba(224, 71, 94, 0.3);
   background: #fcefeb;
   > svg { color: #c4553d; }
 }
@@ -285,7 +285,7 @@ body:has(.phone-page) {
   padding: 0 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(17, 34, 49, 0.03);
+  background: rgba(53, 42, 124, 0.03);
   color: var(--ink);
   font-weight: 700;
   cursor: pointer;
@@ -360,7 +360,7 @@ body:has(.phone-page) {
   gap: 6px;
   padding: 18px 20px;
   border-radius: 20px;
-  border-color: rgba(29, 141, 100, 0.22);
+  border-color: rgba(19, 134, 83, 0.22);
   background: #ecf6f1;
   box-shadow: none;
 
@@ -403,7 +403,7 @@ body:has(.phone-page) {
 }
 
 .phone-page .phone-result--safe {
-  border-color: rgba(29, 141, 100, 0.35);
+  border-color: rgba(19, 134, 83, 0.35);
   animation: phone-turn-green 0.9s ease-out both;
 }
 
@@ -519,7 +519,7 @@ body:has(.phone-page) {
   text-align: center;
   color: #fff;
   background:
-    radial-gradient(circle at 50% 38%, rgba(231, 109, 82, 0.16), transparent 55%),
+    radial-gradient(circle at 50% 38%, rgba(224, 71, 94, 0.16), transparent 55%),
     linear-gradient(180deg, $call-bg-top 0%, $call-bg-bottom 100%);
 }
 
@@ -620,8 +620,8 @@ body:has(.phone-page) {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid rgba(231, 109, 82, 0.55);
-  background: rgba(231, 109, 82, 0.08);
+  border: 2px solid rgba(224, 71, 94, 0.55);
+  background: rgba(224, 71, 94, 0.08);
   opacity: 0;
   animation: phone-ring-wave 2.4s ease-out infinite;
 
@@ -636,7 +636,7 @@ body:has(.phone-page) {
   width: 124px;
   height: 124px;
   border-radius: 50%;
-  background: linear-gradient(160deg, #2c4b64 0%, #172b3c 100%);
+  background: linear-gradient(160deg, #342a66 0%, #1d173c 100%);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.86);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
@@ -1013,7 +1013,7 @@ $shield-amber: #f5b94d;
   padding: 6px 12px max(8px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: var(--surface);
-  box-shadow: 0 -8px 24px rgba(17, 34, 49, 0.06);
+  box-shadow: 0 -8px 24px rgba(53, 42, 124, 0.06);
 }
 
 .phone-tabs__list {
@@ -1068,7 +1068,7 @@ $shield-amber: #f5b94d;
   gap: 12px;
   padding: 20px;
   border-radius: 20px;
-  box-shadow: 0 10px 28px rgba(17, 34, 49, 0.07);
+  box-shadow: 0 10px 28px rgba(53, 42, 124, 0.07);
 }
 
 .phone-card__title {
@@ -1092,7 +1092,7 @@ $shield-amber: #f5b94d;
 }
 
 .phone-page .phone-offer {
-  border-color: rgba(29, 141, 100, 0.3);
+  border-color: rgba(19, 134, 83, 0.3);
   background: #f2faf6;
 }
 
@@ -1160,7 +1160,7 @@ $shield-amber: #f5b94d;
     box-sizing: content-box;
     padding: 9px;
     border-radius: 12px;
-    background: rgba(17, 34, 49, 0.05);
+    background: rgba(53, 42, 124, 0.05);
     color: var(--navy);
   }
 }
@@ -1174,7 +1174,7 @@ $shield-amber: #f5b94d;
   gap: 10px;
   width: 100%;
   min-height: 56px;
-  border: 1.5px solid rgba(17, 34, 49, 0.22);
+  border: 1.5px solid rgba(53, 42, 124, 0.22);
   border-radius: 16px;
   background: #fff;
   color: var(--navy);
@@ -1190,7 +1190,7 @@ $shield-amber: #f5b94d;
   gap: 12px;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(17, 34, 49, 0.04);
+  background: rgba(53, 42, 124, 0.04);
   animation: phone-pop-in 0.2s ease-out;
 
   p {
@@ -1231,7 +1231,7 @@ $shield-amber: #f5b94d;
 }
 
 .phone-page .phone-alert--sent {
-  border-color: rgba(29, 141, 100, 0.3);
+  border-color: rgba(19, 134, 83, 0.3);
   background: #f2faf6;
 }
 
@@ -1341,7 +1341,7 @@ $shield-amber: #f5b94d;
   display: block;
   height: 18px;
   border-radius: 8px;
-  background: linear-gradient(90deg, rgba(17, 34, 49, 0.06), rgba(17, 34, 49, 0.12), rgba(17, 34, 49, 0.06));
+  background: linear-gradient(90deg, rgba(53, 42, 124, 0.06), rgba(53, 42, 124, 0.12), rgba(53, 42, 124, 0.06));
   background-size: 200% 100%;
   animation: phone-shimmer 1.4s ease-in-out infinite;
 }
@@ -1364,9 +1364,9 @@ $shield-amber: #f5b94d;
 }
 
 .phone-page .phone-message--alert {
-  border: 1.5px solid rgba(196, 64, 46, 0.45);
+  border: 1.5px solid rgba(176, 40, 63, 0.45);
   background: #fff3ef;
-  box-shadow: 0 14px 32px rgba(196, 64, 46, 0.14);
+  box-shadow: 0 14px 32px rgba(176, 40, 63, 0.14);
 
   .phone-message__text {
     font-size: 1.12rem;
@@ -1527,7 +1527,7 @@ $shield-amber: #f5b94d;
   margin: 0;
   padding: 12px 14px;
   border-radius: 14px;
-  background: rgba(231, 109, 82, 0.08);
+  background: rgba(224, 71, 94, 0.08);
   font-size: 1.02rem;
   font-style: italic;
   line-height: 1.5;
@@ -1570,7 +1570,7 @@ $shield-amber: #f5b94d;
   padding: 18px 20px;
   border-radius: 20px;
   background: #ecf6f1;
-  border: 1px solid rgba(29, 141, 100, 0.22);
+  border: 1px solid rgba(19, 134, 83, 0.22);
 
   p {
     margin: 0;
@@ -1626,7 +1626,7 @@ $shield-amber: #f5b94d;
 .phone-welcome-done__mark--good {
   background: var(--good);
   color: #fff;
-  box-shadow: 0 16px 32px rgba(29, 141, 100, 0.3);
+  box-shadow: 0 16px 32px rgba(19, 134, 83, 0.3);
 }
 
 .phone-welcome-done__mark--calm {
@@ -1675,7 +1675,7 @@ $shield-amber: #f5b94d;
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: rgba(17, 34, 49, 0.06);
+  background: rgba(53, 42, 124, 0.06);
   color: var(--navy);
 }
 
@@ -1693,7 +1693,7 @@ $shield-amber: #f5b94d;
 }
 
 .phone-voice--good {
-  border-color: rgba(29, 141, 100, 0.3);
+  border-color: rgba(19, 134, 83, 0.3);
   background: #eef8f3;
 
   .phone-voice__icon {
@@ -1716,7 +1716,7 @@ $shield-amber: #f5b94d;
   border: 1px solid var(--line);
   background: #fff;
   color: var(--navy);
-  box-shadow: 0 8px 20px rgba(17, 34, 49, 0.06);
+  box-shadow: 0 8px 20px rgba(53, 42, 124, 0.06);
 }
 
 // ---------------------------------------------------------------- motion
@@ -1739,9 +1739,9 @@ $shield-amber: #f5b94d;
 }
 
 @keyframes phone-on-glow {
-  0% { box-shadow: 0 0 0 0 rgba(29, 141, 100, 0.45); }
-  70% { box-shadow: 0 0 0 12px rgba(29, 141, 100, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(29, 141, 100, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(19, 134, 83, 0.45); }
+  70% { box-shadow: 0 0 0 12px rgba(19, 134, 83, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(19, 134, 83, 0); }
 }
 
 @keyframes phone-pop-in {
@@ -1795,7 +1795,7 @@ $shield-amber: #f5b94d;
 }
 
 .phone-status-off {
-  background: rgba(17, 34, 49, 0.07);
+  background: rgba(53, 42, 124, 0.07);
   color: var(--muted);
 }
 

@@ -4,7 +4,7 @@
 
 .np-page {
   --np-chip-ink: #a8442f;
-  --np-bubble: #edf3f0;
+  --np-bubble: #e7eaf9;
 }
 
 // ---------------------------------------------------------------- refresh
@@ -60,7 +60,7 @@
   animation: np-rise 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 
   &--good { background: var(--good-soft); color: var(--rd-good-ink); }
-  &--calm { background: rgba(17, 34, 49, 0.055); color: var(--navy-soft); }
+  &--calm { background: rgba(53, 42, 124, 0.055); color: var(--navy-soft); }
   &--warn { background: rgba(245, 185, 77, 0.16); color: var(--rd-warn-ink); }
 }
 
@@ -93,14 +93,14 @@
   border-radius: var(--radius);
   background: var(--rd-surface);
   border: 1px solid var(--line);
-  box-shadow: 0 18px 45px rgba(17, 34, 49, 0.06);
+  box-shadow: 0 18px 45px rgba(53, 42, 124, 0.06);
 }
 
 .np-fallback {
   margin: 26px 0 4px;
   padding: 12px 16px;
   border-radius: 14px;
-  background: rgba(17, 34, 49, 0.045);
+  background: rgba(53, 42, 124, 0.045);
   color: var(--navy-soft);
   line-height: 1.55;
 }
@@ -163,13 +163,13 @@
   font-weight: 700;
   transition: background 0.18s ease, transform 0.18s ease;
 
-  &:hover { background: rgba(231, 109, 82, 0.24); transform: translateY(-1px); }
+  &:hover { background: rgba(224, 71, 94, 0.24); transform: translateY(-1px); }
 }
 
 .np-pattern__foot {
   margin-top: 2px;
   padding-top: 12px;
-  border-top: 1px dashed rgba(17, 34, 49, 0.14);
+  border-top: 1px dashed rgba(53, 42, 124, 0.14);
 }
 
 // Where the family stands on this kind of call: who already practised it, and
@@ -214,7 +214,7 @@
   transition: border-color 0.18s ease, transform 0.18s ease;
 
   &:hover {
-    border-color: rgba(17, 34, 49, 0.28);
+    border-color: rgba(53, 42, 124, 0.28);
     transform: translateY(-1px);
 
     .np-family__go { transform: translateX(2px); color: var(--ink); }
@@ -246,7 +246,7 @@
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(17, 34, 49, 0.3);
+  text-decoration-color: rgba(53, 42, 124, 0.3);
 
   &:hover { text-decoration-color: currentColor; }
 }
@@ -289,7 +289,7 @@
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(17, 34, 49, 0.3);
+  text-decoration-color: rgba(53, 42, 124, 0.3);
   transition: text-decoration-color 0.18s ease;
 
   &:hover { text-decoration-color: currentColor; }
@@ -329,7 +329,7 @@
   svg { transition: transform 0.18s ease; }
 
   &:hover {
-    border-color: rgba(17, 34, 49, 0.28);
+    border-color: rgba(53, 42, 124, 0.28);
     transform: translateY(-1px);
 
     svg { transform: translateX(2px); }
@@ -435,7 +435,7 @@
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 4px;
-  text-decoration-color: rgba(17, 34, 49, 0.3);
+  text-decoration-color: rgba(53, 42, 124, 0.3);
 
   &:hover { text-decoration-color: currentColor; }
 }

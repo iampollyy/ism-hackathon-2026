@@ -17,12 +17,12 @@
   border-radius: 6.8cqh;
   background: linear-gradient(
     152deg,
-    #56718a 0%,
-    #22384a 9%,
-    #142533 30%,
-    #0d1a25 55%,
-    #182b3b 80%,
-    #4b6680 100%
+    #5f568a 0%,
+    #271f4d 9%,
+    #191433 30%,
+    #110d25 55%,
+    #1e183b 80%,
+    #544b80 100%
   );
   box-shadow:
     0 3cqh 7cqh -1.5cqh rgba(0, 0, 0, 0.6),
@@ -37,7 +37,7 @@
     position: absolute;
     inset: 0.55cqh;
     border-radius: 6.3cqh;
-    background: #03070b;
+    background: #04030b;
     box-shadow: inset 0 0 0 0.1cqh rgba(255, 255, 255, 0.05);
   }
 }
@@ -46,7 +46,7 @@
   position: absolute;
   width: 0.5cqh;
   border-radius: 0.3cqh;
-  background: linear-gradient(90deg, #2a4256, #4c6780);
+  background: linear-gradient(90deg, #2e255b, #554c80);
 
   &--power {
     right: -0.4cqh;
@@ -72,7 +72,7 @@
   inset: 1.85cqh;
   border-radius: 5cqh;
   overflow: hidden;
-  background: #04080c;
+  background: #05040c;
   isolation: isolate;
 }
 

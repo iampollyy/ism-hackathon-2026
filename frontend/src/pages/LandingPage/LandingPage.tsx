@@ -35,7 +35,7 @@ class StageBoundary extends Component<{ onFail: () => void; children: ReactNode 
 }
 
 export default function LandingPage() {
-  useLandingHead({ title: head.title, description: head.description, theme: '#07111a' });
+  useLandingHead({ title: head.title, description: head.description, theme: '#0a071a' });
   const rootRef = useRef<HTMLDivElement>(null);
   const stageUiRef = useRef<HTMLDivElement>(null);
   const mode = useLp((s) => s.mode);

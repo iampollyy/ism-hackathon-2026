@@ -16,7 +16,7 @@ import { PRACTICE_LINE_NOTE, RevealScreen } from './screens/RevealScreen';
 import { WelcomeDoneScreen } from './screens/WelcomeDoneScreen';
 import './PhonePage.scss';
 
-const DARK_BAR = '#0a1824';
+const DARK_BAR = '#0e0a24';
 const WARNING_BAR = '#8f1820';
 
 /** Paint the browser bar to match the dark call screens. */

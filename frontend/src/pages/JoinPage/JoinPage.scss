@@ -2,7 +2,7 @@
 // the form side by side on a laptop. Polina's tokens from index.scss; green
 // is the safe action (joining, the ticks), never the accent orange.
 
-$focus: rgba(29, 141, 100, 0.55);
+$focus: rgba(19, 134, 83, 0.55);
 
 .join-page {
   min-height: 100vh;
@@ -12,7 +12,7 @@ $focus: rgba(29, 141, 100, 0.55);
   -webkit-tap-highlight-color: transparent;
 
   ::selection {
-    background: rgba(29, 141, 100, 0.22);
+    background: rgba(19, 134, 83, 0.22);
   }
 
   button,
@@ -104,7 +104,7 @@ $focus: rgba(29, 141, 100, 0.55);
   border-radius: 20px;
   background: var(--good);
   color: #fff;
-  box-shadow: 0 16px 32px rgba(29, 141, 100, 0.28);
+  box-shadow: 0 16px 32px rgba(19, 134, 83, 0.28);
 }
 
 // How it works: now, later, always. A thin line joins the three icons.
@@ -130,7 +130,7 @@ $focus: rgba(29, 141, 100, 0.55);
       left: 23px;
       width: 2px;
       border-radius: 2px;
-      background: linear-gradient(180deg, rgba(17, 34, 49, 0.16), rgba(17, 34, 49, 0.04));
+      background: linear-gradient(180deg, rgba(53, 42, 124, 0.16), rgba(53, 42, 124, 0.04));
     }
 
     &:last-child {
@@ -164,7 +164,7 @@ $focus: rgba(29, 141, 100, 0.55);
   background: #fff;
   border: 1px solid var(--line);
   color: var(--navy);
-  box-shadow: 0 8px 18px rgba(17, 34, 49, 0.06);
+  box-shadow: 0 8px 18px rgba(53, 42, 124, 0.06);
 }
 
 .join-how li:first-child .join-how__icon {
@@ -181,7 +181,7 @@ $focus: rgba(29, 141, 100, 0.55);
   padding: 16px 18px;
   border-radius: 18px;
   background: #ecf6f1;
-  border: 1px solid rgba(29, 141, 100, 0.2);
+  border: 1px solid rgba(19, 134, 83, 0.2);
   line-height: 1.5;
   color: var(--navy);
 
@@ -263,7 +263,7 @@ $focus: rgba(29, 141, 100, 0.55);
   }
 
   &.is-on {
-    border-color: rgba(29, 141, 100, 0.55);
+    border-color: rgba(19, 134, 83, 0.55);
     background: #f2faf6;
   }
 }
@@ -275,7 +275,7 @@ $focus: rgba(29, 141, 100, 0.55);
   width: 28px;
   height: 28px;
   margin-top: 1px;
-  border: 2px solid rgba(17, 34, 49, 0.35);
+  border: 2px solid rgba(53, 42, 124, 0.35);
   border-radius: 9px;
   background: #fff;
   color: #fff;
@@ -325,7 +325,7 @@ $focus: rgba(29, 141, 100, 0.55);
     width: 100%;
     min-height: 56px;
     padding: 0 16px;
-    border: 1.5px solid rgba(17, 34, 49, 0.18);
+    border: 1.5px solid rgba(53, 42, 124, 0.18);
     border-radius: 14px;
     background: #fff;
     color: var(--ink);
@@ -334,7 +334,7 @@ $focus: rgba(29, 141, 100, 0.55);
     letter-spacing: 0.02em;
 
     &::placeholder {
-      color: rgba(93, 114, 128, 0.75);
+      color: rgba(99, 93, 128, 0.75);
     }
 
     &:focus {
@@ -474,7 +474,7 @@ $focus: rgba(29, 141, 100, 0.55);
 .join-button--go {
   background: linear-gradient(135deg, #24a678 0%, var(--good) 100%);
   color: #fff;
-  box-shadow: 0 14px 28px rgba(29, 141, 100, 0.28);
+  box-shadow: 0 14px 28px rgba(19, 134, 83, 0.28);
 }
 
 .join-button--save {
@@ -512,7 +512,7 @@ $focus: rgba(29, 141, 100, 0.55);
   font-size: 0.96rem;
   font-weight: 600;
   text-decoration: underline;
-  text-decoration-color: rgba(93, 114, 128, 0.4);
+  text-decoration-color: rgba(99, 93, 128, 0.4);
   text-underline-offset: 4px;
   cursor: pointer;
 
@@ -598,7 +598,7 @@ $focus: rgba(29, 141, 100, 0.55);
   display: block;
   height: 20px;
   border-radius: 10px;
-  background: linear-gradient(90deg, rgba(17, 34, 49, 0.06), rgba(17, 34, 49, 0.12), rgba(17, 34, 49, 0.06));
+  background: linear-gradient(90deg, rgba(53, 42, 124, 0.06), rgba(53, 42, 124, 0.12), rgba(53, 42, 124, 0.06));
   background-size: 200% 100%;
   animation: join-shimmer 1.4s ease-in-out infinite;
 }

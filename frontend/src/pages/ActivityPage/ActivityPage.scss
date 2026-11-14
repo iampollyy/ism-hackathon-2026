@@ -70,7 +70,7 @@
       top: 0;
       bottom: 0;
       width: 2px;
-      background: rgba(17, 34, 49, 0.08);
+      background: rgba(53, 42, 124, 0.08);
     }
 
     &:first-child::before { top: 20px; }
@@ -128,7 +128,7 @@
   }
 
   .rv-event.is-alert {
-    background: rgba(231, 109, 82, 0.07);
+    background: rgba(224, 71, 94, 0.07);
 
     .rv-event__body p { font-weight: 600; }
     .rv-event__meta { color: #b0503d; }
@@ -148,7 +148,7 @@
     white-space: nowrap;
     transition: background 0.18s ease, color 0.18s ease;
 
-    &:hover { background: rgba(17, 34, 49, 0.06); color: var(--ink); }
+    &:hover { background: rgba(53, 42, 124, 0.06); color: var(--ink); }
     svg { transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
     &:hover svg { transform: translateX(2px); }
   }

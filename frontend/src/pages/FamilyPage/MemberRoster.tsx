@@ -42,7 +42,7 @@ export function MemberRoster({ family, protection, samples, people, onChanged }:
           <MemberRow
             key={member.id}
             member={member}
-            color={people[member.id]?.color ?? '#213d52'}
+            color={people[member.id]?.color ?? '#4e38b2'}
             initials={people[member.id]?.initials ?? '?'}
             familyId={family.id}
             familyName={family.name}

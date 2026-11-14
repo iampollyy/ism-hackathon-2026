@@ -118,7 +118,7 @@ export function MemberPlan({ members, selected, week, scenarios, onSelect }: Pro
                     {item.before} → {item.now} <small>/ {item.max}</small>
                   </span>
                 </div>
-                <ProgressBar value={item.now} max={item.max} color={item.now > item.before ? '#1d8d64' : '#213d52'} />
+                <ProgressBar value={item.now} max={item.max} color={item.now > item.before ? '#138653' : '#4e38b2'} />
               </li>
             ))}
           </ul>

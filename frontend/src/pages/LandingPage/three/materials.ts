@@ -16,7 +16,7 @@ export function ringsMaterial() {
       uIntensity: { value: 0 },
       uGlitch: { value: 0 },
       uSeed: { value: 0 },
-      uColor: { value: new THREE.Color('#e76d52') },
+      uColor: { value: new THREE.Color('#e0475e') },
       uSize: { value: RING_PLANE },
     },
     vertexShader: /* glsl */ `
@@ -76,7 +76,7 @@ export function glowMaterial() {
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     uniforms: {
-      uColor: { value: new THREE.Color('#e76d52') },
+      uColor: { value: new THREE.Color('#e0475e') },
       uOpacity: { value: 0.1 },
     },
     vertexShader: /* glsl */ `

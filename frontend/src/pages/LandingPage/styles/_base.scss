@@ -7,11 +7,11 @@
 }
 
 :root[data-route='landing'] body {
-  background: #07111a;
+  background: #0a071a;
 }
 
 :root[data-route='landing-day'] body {
-  background: #eef3f0;
+  background: #edf0ff;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -22,26 +22,26 @@
 }
 
 .lp {
-  --lp-night-0: #07111a;
-  --lp-night-1: #0c1a26;
-  --lp-navy: #112231;
-  --lp-navy-soft: #213d52;
-  --lp-paper: #eef3f0;
-  --lp-surface: #f9fbfa;
-  --lp-ink: #12212f;
-  --lp-muted: #4f6472;
-  --lp-text: #eaf1ee;
-  --lp-text-muted: #9fb2bf;
-  --lp-line-dark: rgba(234, 241, 238, 0.12);
-  --lp-line-light: rgba(18, 33, 47, 0.12);
-  --lp-scam: #e76d52;
-  --lp-scam-ink: #b4442c;
+  --lp-night-0: #0a071a;
+  --lp-night-1: #100c26;
+  --lp-navy: #352a7c;
+  --lp-navy-soft: #4e38b2;
+  --lp-paper: #edf0ff;
+  --lp-surface: #fcfcfc;
+  --lp-ink: #352a7c;
+  --lp-muted: #605886;
+  --lp-text: #f1eeff;
+  --lp-text-muted: #b9b2e0;
+  --lp-line-dark: rgba(241, 238, 255, 0.12);
+  --lp-line-light: rgba(53, 42, 124, 0.12);
+  --lp-scam: #e0475e;
+  --lp-scam-ink: #b0283f;
   --lp-doubt: #f5b94d;
   --lp-safe: #3cc58f;
-  --lp-safe-brand: #1d8d64;
-  --lp-safe-ink: #16714f;
-  --lp-focus-dark: #eaf1ee;
-  --lp-focus-light: #112231;
+  --lp-safe-brand: #138653;
+  --lp-safe-ink: #0f6e44;
+  --lp-focus-dark: #f1eeff;
+  --lp-focus-light: #352a7c;
   --lp-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --gutter: clamp(16px, 5vw, 64px);
   --nav-h: 72px;
@@ -57,7 +57,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  scrollbar-color: #2c4659 var(--lp-night-0);
+  scrollbar-color: #30275e var(--lp-night-0);
   accent-color: var(--lp-safe-brand);
 
   *,
@@ -83,7 +83,7 @@
 
   [data-theme='light'] ::selection,
   .lp-form--paper ::selection {
-    background: rgba(17, 34, 49, 0.15);
+    background: rgba(53, 42, 124, 0.15);
   }
 
   main:focus {
@@ -231,7 +231,7 @@
     text-align: center;
     color: var(--lp-text-muted);
     text-decoration: underline;
-    text-decoration-color: rgba(159, 178, 191, 0.4);
+    text-decoration-color: rgba(164, 159, 191, 0.4);
     text-underline-offset: 3px;
 
     &:hover {
@@ -301,12 +301,12 @@
 .lp-btn--ghost {
   --btn-bg: transparent;
   --btn-fg: var(--lp-text);
-  --btn-line: rgba(234, 241, 238, 0.32);
+  --btn-line: rgba(241, 238, 255, 0.32);
 
   @media (hover: hover) and (pointer: fine) {
     &:hover:not(:disabled) {
-      background: rgba(234, 241, 238, 0.08);
-      border-color: rgba(234, 241, 238, 0.5);
+      background: rgba(241, 238, 255, 0.08);
+      border-color: rgba(241, 238, 255, 0.5);
     }
   }
 }
