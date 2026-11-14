@@ -9,13 +9,13 @@ import { BODY, C, HEAD } from "./timing";
 
 export const COPY = {
   title: "Callback",
-  tagline: "A voice agent that guards your family's phone.",
+  tagline: "An app that guards your family's phone calls.",
   howTitle: "How Callback guards a call",
   steps: [
     { title: "The caller speaks", text: "A real call, through Callback" },
     { title: "Every sentence turned into text", text: "Live, with ElevenLabs" },
     { title: "A risk check on each sentence", text: "Money today, secrecy, a new number" },
-    { title: "A warning on the phone", text: "In about 2 seconds" },
+    { title: "A warning on the phone", text: "Within seconds, during the call" },
     { title: "The family is alerted", text: "Everyone on the family plan" },
   ],
   consent: "Consent at every step",
@@ -30,8 +30,8 @@ export const COPY = {
     },
   ],
   pricing: "Families €4.99 a month · Banks pay to protect their customers",
-  endLine: "Set a family word tonight.",
-  url: "callback.denishoti.dev",
+  endLine: "Callback guards your family's phone calls.",
+  url: "Try it free at callback.denishoti.dev",
 };
 
 /** Layout helpers: portrait or landscape, and a unit that scales with the frame. */
