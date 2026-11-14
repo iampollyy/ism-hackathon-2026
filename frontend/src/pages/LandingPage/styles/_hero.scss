@@ -138,11 +138,11 @@
 }
 
 // The stage under the h1: the sub-line and button, then captions, then the outcome.
-// Fixed height on desktop so nothing below it moves.
+// Fixed height on desktop so nothing below it moves (tall enough for the reveal and its buttons).
 .lp-stage {
   position: relative;
   display: grid;
-  min-height: 280px;
+  min-height: 296px;
 }
 
 .lp-stage__panel {
@@ -190,6 +190,13 @@
   margin-bottom: 12px;
 }
 
+// The next step during the reveal and the call back: it rises once "That voice wasn't
+// real." has landed, and stays put (same element) until the done panel takes over.
+.lp-callcta {
+  margin-top: 24px;
+  animation: lp-rise 600ms var(--lp-ease) 700ms both;
+}
+
 .lp-stage__panel--declined .lp-lead,
 .lp-stage__panel--stopped .lp-lead {
   margin-bottom: 24px;
@@ -223,6 +230,13 @@
 // Captions: large, word by word, always on screen while sound plays.
 .lp-capstage {
   min-height: 200px;
+
+  // From the reveal on, the buttons follow the captions directly.
+  &[data-call='reveal'],
+  &[data-call='calling-back'],
+  &[data-call='connected'] {
+    min-height: 0;
+  }
 }
 
 .lp-status {

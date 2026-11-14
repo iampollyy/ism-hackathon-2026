@@ -2,16 +2,21 @@
 // One clock drives everything: the audio context's clock when sound runs (so captions
 // follow the voice exactly), performance.now otherwise (sound off or refused).
 import { callAudio } from './audio';
-import { LESSON_AT, REVEAL_DURATION, SCAM_DURATION, SCAM_LINES } from './captions';
+import { REVEAL_DURATION, REVEAL_LINES, SCAM_DURATION, SCAM_LINES } from './captions';
 import { hero } from './copy';
 import { live, store, type CallState } from './store';
 
 const GLITCH_AT = 11.85;
 const GLITCH_LEN = 0.9;
 const REVEAL_CLIP_DELAY = 0.25; // after the display line resolves
-const AUTO_CALLBACK_AFTER = 2.5;
+const AUTO_CALLBACK_AFTER = 1.0;
 const RING_BACK = 2.4;
 const CONNECTED_TO_DONE = 1.0;
+// The call back ends a few seconds after it connects: its timer stops there and so does the clock.
+const BACK_CALL_LENGTH = 3;
+// The Remember card comes up as soon as "That wasn't your son." has been said, not with the
+// spoken lesson at the end of the clip, so the visitor can read it while the reveal plays.
+const LESSON_CARD_AT = REVEAL_LINES[0].end;
 const HANG_UP_HOLD = 1.4;
 
 type Clock = 'audio' | 'perf';
@@ -71,6 +76,8 @@ class CallMachine {
   private waitFrom = -1;
   private backFrom = -1;
   private connectedFrom = -1;
+  /** The call back has ended: the clock stops in 'done'. */
+  private finished = false;
   private timers: number[] = [];
   private runId = 0;
   private hungUpAt = -1;
@@ -158,6 +165,7 @@ class CallMachine {
     this.waitFrom = -1;
     this.backFrom = -1;
     this.connectedFrom = -1;
+    this.finished = false;
     this.hungUpAt = -1;
     if (clock === 'audio') {
       const at = callAudio.play('scam');
@@ -177,7 +185,8 @@ class CallMachine {
     const tick = () => {
       this.step();
       const s = store.get().call;
-      if (s === 'ringing' || s === 'declined' || s === 'stopped' || s === 'connecting') {
+      const still = s === 'ringing' || s === 'declined' || s === 'stopped' || s === 'connecting';
+      if (still || (s === 'done' && this.finished)) {
         live.audioLevel = 0;
         return;
       }
@@ -200,7 +209,8 @@ class CallMachine {
 
     if (st.call === 'in-call') {
       const scamT = audio ? (callAudio.clipTime('scam') ?? T) : T;
-      store.set({ scamT: Math.round(Math.min(scamT, SCAM_DURATION) * 50) / 50, timer: Math.floor(T) });
+      // The clip starts a few ms after the tap: never show a negative timer ("-1:00").
+      store.set({ scamT: Math.round(Math.min(scamT, SCAM_DURATION) * 50) / 50, timer: Math.max(0, Math.floor(T)) });
       if (audio) callAudio.level();
       else live.audioLevel = this.fakeLevel(scamT);
       if (T >= this.glitchAt) this.enterGlitch();
@@ -230,7 +240,7 @@ class CallMachine {
       if (audio) callAudio.level();
       else live.audioLevel = 0.12;
       const patch: Parameters<typeof store.set>[0] = { revealT: Math.round(Math.min(rt, REVEAL_DURATION) * 50) / 50 };
-      if (rt >= LESSON_AT) patch.lesson = true;
+      if (rt >= LESSON_CARD_AT) patch.lesson = true;
       store.set(patch);
       if (rt >= REVEAL_DURATION && this.waitFrom < 0) {
         this.waitFrom = T;
@@ -250,12 +260,14 @@ class CallMachine {
     }
     if (st.call === 'connected' || st.call === 'done') {
       live.audioLevel = 0;
-      store.set({ backTimer: Math.floor(T - this.connectedFrom) });
-      if (st.call === 'connected' && T - this.connectedFrom >= CONNECTED_TO_DONE) {
+      const held = T - this.connectedFrom;
+      store.set({ backTimer: Math.floor(Math.min(held, BACK_CALL_LENGTH)) });
+      if (st.call === 'connected' && held >= CONNECTED_TO_DONE) {
         this.set('done');
         announce(hero.announce.done);
         focusMark('replay');
       }
+      if (held >= BACK_CALL_LENGTH) this.finished = true;
     }
   }
 
