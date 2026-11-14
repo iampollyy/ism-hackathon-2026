@@ -32,17 +32,18 @@ export function LiveCallScreen({ callId, title, number, startedAt, shield, onEnd
   const micRef = useRef<MediaStream | null>(null);
   const doneRef = useRef(false);
   const statusRef = useRef('ringing');
+  // The page passes a new onEnded on every render; the call must not restart
+  // because of that, so it is read through a ref.
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
 
-  const finish = useCallback(
-    (message: string | null) => {
-      if (doneRef.current) return;
-      doneRef.current = true;
-      peerRef.current?.close();
-      micRef.current?.getTracks().forEach((track) => track.stop());
-      onEnded(message);
-    },
-    [onEnded],
-  );
+  const finish = useCallback((message: string | null) => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    peerRef.current?.close();
+    micRef.current?.getTracks().forEach((track) => track.stop());
+    onEndedRef.current(message);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
