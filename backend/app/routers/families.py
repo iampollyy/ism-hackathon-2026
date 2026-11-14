@@ -67,6 +67,14 @@ async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db
         if ticked:
             db.add(Consent(member_id=member.id, kind="practice", source="manual",
                            evidence="sign-up tick", created_at=now))
+        if account is not None and item.is_organiser:
+            # The organiser agrees at sign-up, so this is their join: their welcome call
+            # starts when they open their phone link, and their voice may be copied from
+            # it after a spoken yes, exactly like a relative who joined by invite.
+            if item.consent_clone_from_call:
+                db.add(Consent(member_id=member.id, kind="clone_from_call", source="manual",
+                               evidence="sign-up tick (organiser)", created_at=now))
+            db.add(MemberJoin(member_id=member.id, joined_at=now, phone_number=None))
         links.append(schemas.MemberLink(id=member.id, name=member.name, phone_link=phone_link(member.id)))
     if account is not None:
         accounts.claim_family(db, account, family.id)

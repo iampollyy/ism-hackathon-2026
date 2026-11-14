@@ -130,6 +130,8 @@ class MemberCreate(BaseModel):
     relationship: str = Field(min_length=1, max_length=40)  # mother, son, friend
     is_organiser: bool = False
     consent_practice: bool = False  # "I agree to receive practice calls without knowing when."
+    # The organiser's own tick "Callback may copy my voice from my welcome call" (only theirs counts).
+    consent_clone_from_call: bool = False
 
 
 class FamilyCreate(BaseModel):

@@ -17,11 +17,11 @@ const RELATIONSHIPS = [
   'sister', 'brother', 'partner', 'aunt', 'uncle', 'granddaughter', 'grandson', 'friend',
 ];
 
-type Row = { key: number; name: string; relationship: string; consent: boolean };
+type Row = { key: number; name: string; relationship: string; consent: boolean; voice: boolean };
 type Errors = Record<string, string>;
 
 let nextKey = 0;
-const newRow = (name = ''): Row => ({ key: nextKey++, name, relationship: '', consent: false });
+const newRow = (name = ''): Row => ({ key: nextKey++, name, relationship: '', consent: false, voice: false });
 
 type Props = {
   /** The organiser's own name, from their account, to start the first row. */
@@ -95,6 +95,8 @@ export function FamilyStep({ organiserName = '', onCreated }: Props) {
         is_organiser: row.key === organiser,
         // Nobody agrees for someone else.
         consent_practice: row.key === organiser && row.consent,
+        // The organiser's own voice may be copied from their welcome call (their own tick).
+        consent_clone_from_call: row.key === organiser && row.voice,
       })),
     };
     setSending(true);
@@ -226,6 +228,16 @@ export function FamilyStep({ organiserName = '', onCreated }: Props) {
                       onChange={(event) => update(row.key, { consent: event.target.checked })}
                     />
                     <span>I agree to receive practice calls without knowing when</span>
+                  </label>
+                ) : null}
+                {organiser === row.key ? (
+                  <label className="onb-choice">
+                    <input
+                      type="checkbox"
+                      checked={row.voice}
+                      onChange={(event) => update(row.key, { voice: event.target.checked })}
+                    />
+                    <span>Callback may copy my voice from my welcome call, for practice calls to my family only</span>
                   </label>
                 ) : (
                   <span className="onb-choice-note">They agree on their own phone when they join.</span>
