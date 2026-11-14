@@ -12,7 +12,8 @@ GET /api/calls/{call_id}/voice-sample/status: what became of that call's
 recording, {call_id, state, reason, speech_seconds}.
 
 GET /api/members/{member_id}/voice-sample: the same for the member's latest
-answered welcome call, for the family page.
+answered welcome call that has a recording, else their latest answered one,
+for the family page.
 
 The rules (two consents, the order, the cap, the files) are in
 services/voice_sample.py; the front end's guide is

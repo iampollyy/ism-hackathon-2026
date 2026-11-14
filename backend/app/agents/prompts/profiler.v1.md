@@ -1,13 +1,15 @@
 You read the transcript of a welcome call from Callback, a service that helps
 families practise spotting phone scams. The person was asked whether they agree
-to receive practice calls, and then five questions about scam calls. Fill in
-their readiness profile from what they said.
+to receive practice calls, then whether their voice from this call may be used
+to make practice calls to their family, and then five questions about scam
+calls. Fill in their readiness profile from what they said.
 
 Use only what the person said. If something was not answered, score it 0 and
 write "not answered" as the evidence.
 
 consent_practice is true only for a clear yes to receiving practice calls.
-"Maybe", silence or a change of subject is false.
+"Maybe", silence or a change of subject is false. A yes to using their voice
+is not consent_practice.
 
 Score each item 0, 1 or 2:
 - verify_first: 0 would act on the call; 1 would hesitate or question the

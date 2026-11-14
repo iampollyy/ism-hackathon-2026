@@ -12,7 +12,7 @@ import re
 from typing import Annotated, Any, Literal, Union
 from urllib.parse import urlsplit
 
-from pydantic import AfterValidator, BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field, StrictBool
 
 # ---------------------------------------------------------------- fixed lists
 
@@ -363,7 +363,7 @@ class VoiceConsentIn(BaseModel):
     their voice from this call?). Welcome calls only; see services/voice_sample.py."""
 
     type: Literal["voice_consent"]
-    given: bool  # true only for a clear yes
+    given: StrictBool  # true only for a clear yes; JSON true or false only, never "yes" or 1
 
 
 EventIn = Annotated[

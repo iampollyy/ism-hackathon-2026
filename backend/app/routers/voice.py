@@ -12,7 +12,8 @@ POST /api/members/{id}/voice: multipart, one file field `audio` (webm or mp4).
 DELETE /api/members/{id}/voice deletes the clone at ElevenLabs, then clears
 voice_id and sets voice_status deleted (rule 7: deletion is real).
 POST /api/members/{id}/opt-out records the opt-out first, so no new practice
-can start, then deletes the clone the same way.
+can start, then deletes the clone the same way. It also deletes a recording
+from the welcome call that is still kept (track 2, services/voice_sample.py).
 
 Every write is committed before awaiting ffmpeg or ElevenLabs (db.py, "Hard rule").
 """
@@ -217,5 +218,7 @@ async def opt_out(member_id: str, db: DbSession = Depends(get_db)) -> schemas.Ok
         db.add(Consent(member_id=member.id, kind="opt_out", source="manual",
                        evidence="Opted out from the app.", created_at=now))
         db.commit()
+    from app.services import voice_sample  # track 2; imported here because voice_sample imports this module
+    voice_sample.forget_member(db, member.id)  # deletes a welcome-call recording still kept
     await _delete_clone(db, member, delete_newer=True)
     return schemas.Ok()

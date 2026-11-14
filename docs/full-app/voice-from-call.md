@@ -84,7 +84,7 @@ All paths are under `/api`. Errors have the usual shape: `{ "error": { "code": "
 
 Answer: `{ "ok": true }`, as for every batch.
 
-- `given` is required and must be a boolean; anything else is `422 invalid_request`.
+- `given` is required and must be a JSON boolean, `true` or `false`; anything else (`"true"`, `"yes"`, `1`) is `422 invalid_request` and the whole batch is refused, so normalise it on the page as shown above.
 - **Welcome calls:** stored and published on the call's stream like every event. A `true` from a member who ticked "my voice may be cloned from my welcome call" at join also writes a consent row (`kind: clone`, `source: welcome_call`, `call_id`, evidence "Said yes on the welcome call (voice_consent_result)"); the same yes twice writes one row. Without the tick, or after an opt-out, only the event is stored. A `false` is kept as the event; a recording waiting for this answer is deleted.
 - **The latest answer in the call counts.** A no after a yes, before the clone is made, stops it. A yes after a no gives consent again, but a recording the no already let go of is not brought back.
 - **Other kinds of call:** stored, changes nothing (like `consent`).
@@ -120,7 +120,7 @@ The reasons a `200` can carry when `cloning` is `false`:
 | The latest spoken answer is not a clear yes | Does not keep it | "Sara did not say a clear yes to using their voice from this call, so the recording is not kept." |
 | A voice was already made from this call | Ignores the new upload | "A voice was already made from this call." |
 
-A second upload for the same call, while the first still waits, replaces it. While a clone is running, another upload answers `cloning: true` and is ignored. After a failure, a new upload is a new attempt, checked against the daily cap again.
+A second upload for the same call, while the first still waits, replaces it. While a clone is running, another upload answers `cloning: true` and is ignored. After a failure, a new upload is a new attempt: it is checked against the daily cap again and counts toward it (it writes a `clone` consent row of its own, evidence "A new attempt with a new recording from the welcome call (the spoken yes stands)").
 
 | Status | Code | When |
 |---|---|---|
@@ -165,7 +165,7 @@ For a practice or family-line call: `200` with `state: none` and "Only a welcome
 
 ### `GET /api/members/{member_id}/voice-sample`
 
-The same object for the member's latest welcome call that was answered, so the family page can show it without knowing the call id. Before any welcome call:
+The same object for the member's latest answered welcome call (`in_progress`, `ended` or `scored`; not one that `failed` as it started) that has a recording, or else for their latest answered welcome call, so the family page can show it without knowing the call id. So a voice made on an earlier welcome call still shows as `ready` while a re-run has not uploaded yet. Before any welcome call:
 
 ```json
 { "call_id": null, "state": "none", "reason": "No welcome call yet.", "speech_seconds": null }
@@ -175,7 +175,7 @@ Unknown member: `404 not_found`.
 
 ## The family page
 
-`GET /api/families/{id}` is unchanged. A voice made from the call shows as `voice_status: "ready"`, `voice_ready: true` and `consent.clone: true`. A failed attempt with no earlier voice shows `voice_status: "failed"`.
+`GET /api/families/{id}` is unchanged. A voice made from the call shows as `voice_status: "ready"`, `voice_ready: true` and `consent.clone: true`. A failed attempt with no earlier voice (too little voice, unreadable audio, ElevenLabs, or the daily limit) shows `voice_status: "failed"`.
 
 For the moments in between, and for the reason, use `GET /api/members/{id}/voice-sample`. A suggestion for each state:
 
@@ -190,8 +190,8 @@ For the moments in between, and for the reason, use `GET /api/members/{id}/voice
 ## Rules the back end keeps
 
 - **Never without both consents.** They are checked when the clone starts and again before it is stored; if a no or an opt-out came in meanwhile, the new clone is deleted at ElevenLabs.
-- **The daily clone cap** (`DAILY_CLONE_LIMIT`, `services/limits.py`) counts consent rows of kind `clone`. The spoken yes's row is checked against the cap just before it is written, as an upload's is. Over the cap, the row is still written (it is what they said), and the call's sample is `failed` with the cap's message.
-- **Files.** The upload is kept under `media/samples/` only while it may still be used, and deleted once the clone is made or has failed, or as soon as it may not be used. The cleaned copy of a clone that was made replaces `media/voices/{member_id}.mp3`, the same file an upload keeps, so deleting the voice deletes it.
+- **The daily clone cap** (`DAILY_CLONE_LIMIT`, `services/limits.py`) counts consent rows of kind `clone`. The spoken yes's row is checked against the cap just before it is written, as an upload's is. Over the cap, the row is still written (it is what they said), the call's sample is `failed` with the cap's message, and `voice_status` becomes `failed` unless an earlier voice is ready. Each new attempt after a failure is checked again and writes a row of its own, so it counts like an upload.
+- **Files.** The upload is kept under `media/samples/` only while it may still be used, and deleted once the clone is made or has failed, or as soon as it may not be used. `POST /api/members/{id}/opt-out` deletes a recording that is still waiting at once. The cleaned copy of a clone that was made replaces `media/voices/{member_id}.mp3`, the same file an upload keeps, so deleting the voice deletes it.
 - **Replacing a voice.** A new clone replaces the member's older one, which is deleted at ElevenLabs, as with an upload.
 - **Restarts.** A clone cut short by a server restart starts again on the next upload or status request for that call.
 

@@ -17,6 +17,8 @@ from sqlalchemy import select
 
 from app.config import get_settings
 from app.db import new_session, now_iso
+from app import events
+from app.agents import llm, profiler
 from app.models import Call, CallEvent, Consent, Member, VoiceSample
 from app.routers import voice as voice_router
 from app.services import audio, elevenlabs, pipeline, voice_sample
@@ -334,6 +336,8 @@ def test_an_opt_out_while_waiting_lets_go_of_the_recording(client, sara_joined, 
     call_id = welcome_call(client, sara)
     upload(client, call_id)
     assert client.post(f"/api/members/{sara}/opt-out").status_code == 200
+    assert stored_files() == [], "the opt-out deletes the waiting recording at once"
+    assert sample_row(call_id).state == "none" and "has left Callback" in sample_row(call_id).reason
     say(client, call_id, True)
     assert clone_rows(sara) == [], "an opted-out member's yes is not recorded"
     assert sample_row(call_id).state == "none" and "has left Callback" in sample_row(call_id).reason
@@ -376,9 +380,12 @@ def test_the_event_takes_only_a_boolean(client, sara_joined, fakes) -> None:
     call_id = welcome_call(client, sara)
     response = client.post(f"/api/calls/{call_id}/events", json={"events": [{"type": "voice_consent"}]})
     assert response.status_code == 422
-    response = client.post(f"/api/calls/{call_id}/events",
-                           json={"events": [{"type": "voice_consent", "given": "maybe"}]})
-    assert response.status_code == 422
+    for loose in ("maybe", "true", "yes", "on", "t", 1, 0, None):  # only JSON true or false
+        response = client.post(f"/api/calls/{call_id}/events",
+                               json={"events": [{"type": "voice_consent", "given": loose}]})
+        assert response.status_code == 422, loose
+        assert response.json()["error"]["code"] == "invalid_request"
+    assert clone_rows(sara) == []
 
 
 # ---------------------------------------------------------------- too little voice, failures
@@ -463,6 +470,9 @@ def test_a_new_upload_after_a_failure_tries_again(client, sara_joined, fakes, sh
     assert upload(client, call_id).json()["cloning"] is True
     assert wait_until_done(call_id).state == "ready"
     assert member(sara).voice_status == "ready"
+    rows = clone_rows(sara)
+    assert sorted(row.evidence for row in rows) == sorted([voice_sample.EVIDENCE, voice_sample.RETRY_EVIDENCE]), \
+        "the new attempt is counted with a row of its own"
 
 
 def test_unreadable_audio_fails_with_the_real_cleaner(client, sara_joined, fakes, monkeypatch) -> None:
@@ -582,6 +592,9 @@ def test_over_the_cap_the_yes_is_recorded_but_nothing_is_cloned(client, sara_joi
     assert row.state == "failed" and "daily limit" in row.reason
     assert len(clone_rows(sara)) == 1, "what they said is still recorded"
     assert stored_files() == [] and fakes.clones == []
+    assert member(sara).voice_status == "failed", "like every failed attempt"
+    view = next(m for m in client.get(f"/api/families/{family['family_id']}").json()["members"] if m["id"] == sara)
+    assert view["voice_status"] == "failed" and view["voice_ready"] is False
 
     response = upload(client, call_id)  # a new attempt today
     assert response.status_code == 429 and response.json()["error"]["code"] == "daily_limit"
@@ -598,6 +611,86 @@ def test_over_the_cap_before_the_upload(client, sara_joined, fakes, monkeypatch)
     assert status(client, call_id)["state"] == "failed"
     assert upload(client, call_id).status_code == 429
     assert fakes.clones == [] and stored_files() == []
+
+
+def test_over_the_cap_keeps_an_earlier_voice(client, sara_joined, fakes, monkeypatch) -> None:
+    monkeypatch.setenv("DAILY_CLONE_LIMIT", "1")
+    get_settings.cache_clear()
+    family, sara = sara_joined
+    set_voice(sara, "voice_old")
+    use_clones_today(family["members"][1]["id"], 1)
+    call_id = welcome_call(client, sara)
+    say(client, call_id, True)
+    row = sample_row(call_id)
+    assert row.state == "failed" and row.reason.endswith("Sara's earlier voice is still used.")
+    assert (member(sara).voice_id, member(sara).voice_status) == ("voice_old", "ready")
+
+
+def test_each_new_attempt_counts_toward_the_cap(client, sara_joined, fakes, monkeypatch) -> None:
+    monkeypatch.setenv("DAILY_CLONE_LIMIT", "3")
+    get_settings.cache_clear()
+    _, sara = sara_joined
+    fakes.clone_error = elevenlabs.ElevenLabsError("ElevenLabs answered 500", upstream_status=500)
+    call_id = welcome_call(client, sara)
+    say(client, call_id, True)  # the first clone row of the day
+    upload(client, call_id)
+    assert wait_until_done(call_id).state == "failed"
+    for _ in range(2):  # the second and third rows: each new upload is a new attempt
+        assert upload(client, call_id).json()["cloning"] is True
+        assert wait_until_done(call_id).state == "failed"
+    response = upload(client, call_id)
+    assert response.status_code == 429 and response.json()["error"]["code"] == "daily_limit"
+    assert len(fakes.clones) == 3, "never more attempts at ElevenLabs than the cap allows"
+    rows = clone_rows(sara)
+    assert len(rows) == 3 and all((row.source, row.call_id) == ("welcome_call", call_id) for row in rows)
+    assert [row.evidence for row in rows].count(voice_sample.EVIDENCE) == 1
+    assert stored_files() == []
+
+
+def test_an_over_cap_yes_during_the_upload_stops_it(client, sara_joined, fakes, monkeypatch) -> None:
+    """The events batch with the yes lands while the upload's file is being
+    written: the upload must not reset the failed sample and clone anyway."""
+    monkeypatch.setenv("DAILY_CLONE_LIMIT", "1")
+    get_settings.cache_clear()
+    family, sara = sara_joined
+    use_clones_today(family["members"][1]["id"], 1)
+    call_id = welcome_call(client, sara)
+    real_write = voice_router._write_file
+
+    def write_then_yes(path: Path, content: bytes) -> None:
+        real_write(path, content)
+        with new_session() as db:  # what POST /events does for the yes
+            voice_sample.record_voice_consent(db, db.get(Call, call_id), True)
+            events.publish(call_id, "voice_consent", {"given": True}, db=db)
+
+    monkeypatch.setattr(voice_router, "_write_file", write_then_yes)
+    response = upload(client, call_id)
+    assert response.status_code == 429 and response.json()["error"]["code"] == "daily_limit"
+    time.sleep(0.1)
+    assert fakes.cleans == [] and fakes.clones == []
+    assert stored_files() == [], "the new file is deleted"
+    assert sample_row(call_id).state == "failed" and member(sara).voice_status == "failed"
+
+
+def test_a_no_during_the_upload_is_not_counted_as_an_attempt(client, sara_joined, fakes, short_mp3,
+                                                             monkeypatch) -> None:
+    _, sara = sara_joined
+    fakes.cleaned = short_mp3
+    call_id = welcome_call(client, sara)
+    say(client, call_id, True)
+    upload(client, call_id)
+    assert wait_until_done(call_id).state == "failed"
+    real_write = voice_router._write_file
+
+    def write_then_no(path: Path, content: bytes) -> None:
+        real_write(path, content)
+        events.publish(call_id, "voice_consent", {"given": False})
+
+    monkeypatch.setattr(voice_router, "_write_file", write_then_no)
+    response = upload(client, call_id).json()
+    assert response["cloning"] is False and "did not say a clear yes" in response["reason"]
+    assert len(clone_rows(sara)) == 1, "no attempt row after a no"
+    assert stored_files() == [] and len(fakes.cleans) == 1
 
 
 # ---------------------------------------------------------------- status
@@ -633,6 +726,57 @@ def test_a_clone_cut_short_by_a_restart_starts_again(client, sara_joined, fakes,
     assert status(client, call_id)["state"] in ("cloning", "ready")
     assert wait_until_done(call_id).state == "ready"
     assert len(fakes.clones) == 1
+
+
+def finished_welcome_call(client, member_id: str) -> str:
+    """A welcome call that made a voice, and ended."""
+    call_id = welcome_call(client, member_id)
+    say(client, call_id, True)
+    upload(client, call_id)
+    assert wait_until_done(call_id).state == "ready"
+    assert client.post(f"/api/calls/{call_id}/end", json={"ended_by": "agent"}).status_code == 200
+    return call_id
+
+
+def test_member_status_skips_a_welcome_call_that_failed_to_start(client, sara_joined, fakes) -> None:
+    _, sara = sara_joined
+    first = finished_welcome_call(client, sara)
+    rerun = welcome_call(client, sara)
+    with new_session() as db:  # answered, then the session could not be built (answer_call marks it failed)
+        db.get(Call, rerun).status = "failed"
+        db.commit()
+    body = client.get(f"/api/members/{sara}/voice-sample").json()
+    assert (body["call_id"], body["state"]) == (first, "ready")
+
+
+def test_member_status_keeps_an_earlier_voice_until_a_rerun_has_a_recording(client, sara_joined, fakes) -> None:
+    _, sara = sara_joined
+    first = finished_welcome_call(client, sara)
+    rerun = welcome_call(client, sara)
+    body = client.get(f"/api/members/{sara}/voice-sample").json()
+    assert (body["call_id"], body["state"]) == (first, "ready")
+    upload(client, rerun)
+    body = client.get(f"/api/members/{sara}/voice-sample").json()
+    assert (body["call_id"], body["state"]) == (rerun, "waiting_for_consent")
+
+
+def test_an_opt_out_lets_go_of_a_clone_cut_short(client, sara_joined, fakes) -> None:
+    _, sara = sara_joined
+    call_id = welcome_call(client, sara)
+    say(client, call_id, True)
+    path = samples_dir() / f"{call_id}.abcd1234.webm"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"left over from before the restart")
+    with new_session() as db:
+        db.add(VoiceSample(call_id=call_id, member_id=sara, state="cloning", path=str(path),
+                           created_at=now_iso(), updated_at=now_iso()))
+        db.commit()
+    assert client.post(f"/api/members/{sara}/opt-out").status_code == 200
+    assert not path.exists()
+    row = sample_row(call_id)
+    assert row.state == "none" and row.path is None and "has left Callback" in row.reason
+    assert status(client, call_id)["state"] == "none"
+    assert fakes.clones == []
 
 
 # ---------------------------------------------------------------- measuring
@@ -681,3 +825,25 @@ def test_the_welcome_prompt_asks_about_the_voice() -> None:
     assert "voice_consent_result" in prompt
     assert "can delete it any time" in prompt or "deleted any time" in prompt
     assert prompt.index("consent_result with their answer") < prompt.index("voice_consent_result")
+
+
+def test_the_profiler_knows_a_voice_yes_is_not_practice_consent() -> None:
+    prompt = llm.load_prompt("profiler")
+    assert "whether their voice from this call may be used" in prompt
+    assert "A yes to using their voice\nis not consent_practice." in prompt
+    ai_md = (Path(__file__).resolve().parents[2] / "docs" / "ai.md").read_text()
+    assert prompt in ai_md, "docs/ai.md shows the prompt in use"
+
+
+async def test_the_profiler_sends_that_prompt(monkeypatch) -> None:
+    seen = {}
+
+    async def fake_run_job(job, system, user, schema, prompt_version, max_tokens=8000):
+        seen.update(job=job, system=system)
+        return None
+
+    monkeypatch.setattr(llm, "run_job", fake_run_job)
+    profile = await profiler.build_profile("Agent: May Callback use your voice?\nMember: Yes.", None)
+    assert seen == {"job": "profiler", "system": llm.load_prompt("profiler")}
+    assert "is not consent_practice" in seen["system"]
+    assert profile["consent_practice"] is False

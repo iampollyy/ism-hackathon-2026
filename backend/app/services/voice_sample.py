@@ -19,7 +19,8 @@ Rules:
 - The latest spoken answer in the call counts. A no, a missing join tick or
   an opt-out means the recording is not kept: it is deleted and the
   sample's state is `none`, with the reason. A no never touches a clone
-  the member already has.
+  the member already has. An opt-out (POST /api/members/{id}/opt-out)
+  lets go of the member's kept recordings at once (forget_member).
 - Whichever of the recording and the spoken yes arrives second starts the
   clone, in the background (settle(), services.run_in_background), so the
   upload is answered at once. One clone per call: the sample moves from
@@ -35,9 +36,12 @@ Rules:
 - The daily clone cap (services/limits.py) counts `clone` consent rows, so
   limits.check runs just before the spoken yes's row is written, as the
   voice upload checks before writing its own. Over the cap the row is still
-  written (it is what they said) and the sample fails with the cap's
-  message. A new upload after a failure is a new attempt and is checked
-  again (429 daily_limit).
+  written (it is what they said), the sample fails with the cap's message
+  and voice_status becomes failed unless an earlier clone is ready, as for
+  any failure. A new upload after a failure is a new attempt: it is checked
+  again (429 daily_limit) once its file is written, so a failure that came
+  in during the write is caught too, and it is counted with a `clone` row
+  of its own (RETRY_EVIDENCE), as each voice upload is.
 - Files: an upload is kept at media/samples/{call_id}.{token}.{ext} only
   while it may still be used, and deleted once the clone is made or has
   failed. A clone's cleaned copy replaces media/voices/{member_id}.mp3, the
@@ -72,6 +76,7 @@ JOIN_TICK = "clone_from_call"  # consents.kind of the tick at join (track 1)
 CLONE = "clone"
 SOURCE = "welcome_call"
 EVIDENCE = "Said yes on the welcome call (voice_consent_result)"
+RETRY_EVIDENCE = "A new attempt with a new recording from the welcome call (the spoken yes stands)"
 EVENT = "voice_consent"
 
 NONE, WAITING, CLONING, READY, FAILED = "none", "waiting_for_consent", "cloning", "ready", "failed"
@@ -160,10 +165,12 @@ def spoken_answer(db: DbSession, call_id: str) -> bool | None:
 
 
 def spoken_yes_recorded(db: DbSession, call_id: str) -> bool:
-    """This call has the consents row of a spoken yes (kind clone, source welcome_call)."""
+    """This call has the consents row of a spoken yes (kind clone, source
+    welcome_call, EVIDENCE). A retry's row (RETRY_EVIDENCE) is not one."""
     found = db.scalar(
         select(Consent.id)
-        .where(Consent.call_id == call_id, Consent.kind == CLONE, Consent.source == SOURCE)
+        .where(Consent.call_id == call_id, Consent.kind == CLONE, Consent.source == SOURCE,
+               Consent.evidence == EVIDENCE)
         .limit(1)
     )
     return found is not None
@@ -256,9 +263,11 @@ def record_voice_consent(db: DbSession, call: Call, given: bool) -> None:
     """The welcome agent's voice_consent_result, before its event is stored
     (calls.post_events; events.publish commits). A yes with the join tick
     writes this call's `clone` row once, after the daily cap check; over the
-    cap the sample fails. A no writes nothing: the stored event is the
-    record, and settle() lets go of a waiting recording. Other kinds of
-    call, an opted-out member or no join tick: nothing. Not committed here."""
+    cap the sample fails and voice_status becomes failed unless an earlier
+    clone is ready (as in _finish_failed). A no writes nothing: the stored
+    event is the record, and settle() lets go of a waiting recording. Other
+    kinds of call, an opted-out member or no join tick: nothing. Not
+    committed here."""
     if call.kind != "welcome" or not given:
         return
     member = db.get(Member, call.target_member_id)
@@ -275,7 +284,12 @@ def record_voice_consent(db: DbSession, call: Call, given: bool) -> None:
             sample = VoiceSample(call_id=call.id, member_id=member.id, state=FAILED, created_at=now, updated_at=now)
             db.add(sample)
         _drop_files(sample)
-        _set(sample, FAILED, error.message)
+        reason = error.message
+        if member.voice_status == "ready" and member.voice_id:
+            reason += f" {member.name}'s earlier voice is still used."
+        if member.voice_status != "ready":
+            member.voice_status = "failed"
+        _set(sample, FAILED, reason)
     db.add(Consent(member_id=member.id, kind=CLONE, source=SOURCE, evidence=EVIDENCE,
                    call_id=call.id, created_at=now_iso()))
 
@@ -321,6 +335,14 @@ def settle(call_id: str) -> bool:
 # ---------------------------------------------------------------- the upload
 
 
+def _refuse(db: DbSession, sample: VoiceSample | None, why: str) -> schemas.VoiceSampleAccepted:
+    """The upload may not be used: let go of the kept one, if any. Commits."""
+    if sample is not None:
+        _let_go(sample, why)
+        db.commit()
+    return schemas.VoiceSampleAccepted(cloning=False, reason=why)
+
+
 async def receive(db: DbSession, call: Call, member: Member, content: bytes,
                   extension: str) -> schemas.VoiceSampleAccepted:
     """Keep the upload if it may be used, then settle(). The caller has run
@@ -333,12 +355,9 @@ async def receive(db: DbSession, call: Call, member: Member, content: bytes,
         return schemas.VoiceSampleAccepted(cloning=True)
     why = refusal(db, call, member)
     if why is not None:
-        if sample is not None:
-            _let_go(sample, why)
-            db.commit()
-        return schemas.VoiceSampleAccepted(cloning=False, reason=why)
+        return _refuse(db, sample, why)
     if sample is not None and sample.state == FAILED:
-        limits.check(db, "clone")  # a new attempt
+        limits.check(db, "clone")  # a new attempt: refused before its file is written
 
     path = sample_path(call.id, extension)
     await asyncio.to_thread(voice_router._write_file, path, content)
@@ -350,6 +369,20 @@ async def receive(db: DbSession, call: Call, member: Member, content: bytes,
         return schemas.VoiceSampleAccepted(cloning=sample.state == CLONING,
                                            reason=None if sample.state == CLONING else
                                            "A voice was already made from this call.")
+    why = refusal(db, call, member)  # a no or an opt-out may have come in during the write
+    if why is not None:
+        _unlink(path)
+        return _refuse(db, sample, why)
+    if sample is not None and sample.state == FAILED:
+        # A new attempt after a failure, or a failure that came in during the
+        # write (an over-cap yes): checked against the cap now, and counted.
+        try:
+            limits.check(db, "clone")
+        except schemas.ApiError:
+            _unlink(path)
+            raise
+        db.add(Consent(member_id=member.id, kind=CLONE, source=SOURCE, evidence=RETRY_EVIDENCE,
+                       call_id=call.id, created_at=now_iso()))
     if sample is None:
         now = now_iso()
         sample = VoiceSample(call_id=call.id, member_id=member.id, state=WAITING, created_at=now, updated_at=now)
@@ -365,6 +398,27 @@ async def receive(db: DbSession, call: Call, member: Member, content: bytes,
         return schemas.VoiceSampleAccepted(cloning=True)
     db.refresh(sample)
     return schemas.VoiceSampleAccepted(cloning=False, reason=sample.reason or _waiting(member.name))
+
+
+def forget_member(db: DbSession, member_id: str) -> None:
+    """The member opted out: let go of every recording of theirs that is
+    still kept (waiting for the spoken yes, or a clone a restart cut short).
+    A clone running now is not touched: _store checks the opt-out and
+    deletes the new voice. Called by POST /api/members/{id}/opt-out after
+    the opt-out is committed. Commits. Never raises."""
+    try:
+        member = db.get(Member, member_id)
+        name = member.name if member is not None else "This member"
+        kept = db.scalars(
+            select(VoiceSample).where(VoiceSample.member_id == member_id, VoiceSample.state.in_((WAITING, CLONING)))
+        ).all()
+        for sample in kept:
+            if not (sample.state == CLONING and is_running(sample.call_id)):
+                _let_go(sample, _left(name))
+        db.commit()
+    except Exception:
+        db.rollback()
+        log.exception("could not let go of the recordings of %s after the opt-out", member_id)
 
 
 # ---------------------------------------------------------------- the clone, in the background
@@ -496,13 +550,17 @@ def status(db: DbSession, call: Call) -> schemas.VoiceSampleStatus:
 
 
 def member_status(db: DbSession, member: Member) -> schemas.VoiceSampleStatus:
-    """status() of the member's latest answered welcome call."""
-    call = db.scalar(
+    """status() of the member's latest answered welcome call (in_progress,
+    ended or scored; not one that failed as it started) that has a
+    recording row, or else of their latest answered welcome call."""
+    answered = (
         select(Call)
-        .where(Call.target_member_id == member.id, Call.kind == "welcome", Call.answered_at.is_not(None))
+        .where(Call.target_member_id == member.id, Call.kind == "welcome", Call.status.in_(ANSWERED_STATUSES))
         .order_by(Call.created_at.desc(), Call.answered_at.desc())
         .limit(1)
     )
+    call = (db.scalar(answered.where(select(VoiceSample.call_id).where(VoiceSample.call_id == Call.id).exists()))
+            or db.scalar(answered))
     if call is None:
         return schemas.VoiceSampleStatus(call_id=None, state=NONE, reason=NO_WELCOME_CALL)
     return status(db, call)
