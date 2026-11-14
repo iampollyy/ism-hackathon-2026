@@ -59,7 +59,7 @@ export function LiveCallPage() {
             <span>Back</span>
           </button>
           <div className="header-center">
-            <span className="live-kicker">Practice call</span>
+            <span className="live-kicker">Call</span>
             <h1>{error ? 'Call not found' : 'Loading the call…'}</h1>
           </div>
         </header>

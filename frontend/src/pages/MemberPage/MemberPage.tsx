@@ -5,7 +5,7 @@
 // can be changed here. On GET /api/members/{id}/progress, the family's drills
 // for this member, the family and the protection settings.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronRight, Flame, Lightbulb, Mic, Phone, PhoneIncoming, ShieldCheck, Target } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
@@ -269,8 +269,14 @@ function ConsentPanel({ member, protection, memberId, name, onChanged }: Consent
   const [consentOverride, setConsentOverride] = useState<boolean | null>(null);
   const [pauseOverride, setPauseOverride] = useState<boolean | null>(null);
   const entry = protection?.members.find((one) => one.member_id === memberId) ?? null;
-  const consent = consentOverride ?? member?.consent.practice ?? null;
-  const paused = pauseOverride ?? entry?.paused ?? null;
+  const serverConsent = member?.consent.practice;
+  const serverPaused = entry?.paused;
+  // Once the server's answer changes (the refresh after a save, or a change
+  // made elsewhere), it wins again.
+  useEffect(() => setConsentOverride(null), [serverConsent]);
+  useEffect(() => setPauseOverride(null), [serverPaused]);
+  const consent = consentOverride ?? serverConsent ?? null;
+  const paused = pauseOverride ?? serverPaused ?? null;
 
   const run = async (kind: 'consent' | 'pause', action: () => Promise<unknown>, after: () => void) => {
     setBusy(kind);
