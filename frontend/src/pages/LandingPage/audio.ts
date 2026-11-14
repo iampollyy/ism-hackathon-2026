@@ -49,6 +49,16 @@ class CallAudio {
   /** Must run synchronously inside a tap handler. Returns false when Web Audio is missing. */
   unlock(): boolean {
     try {
+      // iPhone and iPad: by default the ring/silent switch mutes Web Audio. "playback"
+      // makes the call play like a video does, even in silent mode (Safari 16.4+).
+      const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+      if (session && session.type !== 'playback') {
+        try {
+          session.type = 'playback';
+        } catch {
+          /* older Safari: nothing to do */
+        }
+      }
       if (!this.ctx) {
         const Ctx: Ctor | undefined =
           window.AudioContext ?? (window as unknown as { webkitAudioContext?: Ctor }).webkitAudioContext;

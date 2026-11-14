@@ -34,9 +34,34 @@ export interface paths {
         /**
          * Create Family
          * @description Works without a log-in; with one, the family also belongs to the
-         *     account (family_owners, track 1).
+         *     account (family_owners, track 1), and only the organiser's own practice
+         *     tick counts: everyone else agrees on their invite page or the welcome
+         *     call.
          */
         post: operations["create_family_api_families_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/families/{family_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Member
+         * @description Add a person to an existing family (the organiser only: services/access.py
+         *     guards every path under /api/families/{id}). They start with no consent at
+         *     all; they agree on their own phone through their invite link, and their
+         *     welcome call starts when they join, exactly like the people added at sign-up.
+         */
+        post: operations["add_member_api_families__family_id__members_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -54,10 +79,15 @@ export interface paths {
         put?: never;
         /**
          * Set Practice Consent
-         * @description The member's own practice tick after sign-up. True gives consent
-         *     (again, for example after a no on the welcome call); false withdraws it.
-         *     A change writes a consents row with source manual; the same answer
-         *     twice writes nothing more.
+         * @description The practice switch after sign-up. True gives consent (again, for
+         *     example after a no on the welcome call); false withdraws it. A change
+         *     writes a consents row; the same answer twice writes nothing more.
+         *
+         *     In a family with an owner the switch is the organiser's, so for anyone
+         *     but the organiser's own row it only switches off (source `organiser`,
+         *     the evidence names the organiser); a yes is 403 member_must_agree,
+         *     because only the person can agree, from their own link. Without an
+         *     owner it works both ways with source manual.
          */
         post: operations["set_practice_consent_api_members__member_id__consent_post"];
         delete?: never;
@@ -75,8 +105,10 @@ export interface paths {
         };
         /**
          * Get Family
-         * @description Readable by id without a log-in. For a family with an owner, only
-         *     the owner's session sees invite links and phone numbers (track 1).
+         * @description A family with an owner is only the owner's to read
+         *     (services/access.py answers anyone else before this runs); one without
+         *     an owner is readable by id. can_see_invites still keeps invite links
+         *     and phone numbers to the owner's session.
          */
         get: operations["get_family_api_families__family_id__get"];
         put?: never;
@@ -1351,6 +1383,26 @@ export interface components {
             /** Families */
             families: components["schemas"]["FamilyRef"][];
         };
+        /** MemberAdd */
+        MemberAdd: {
+            /** Name */
+            name: string;
+            /** Relationship */
+            relationship: string;
+        };
+        /** MemberAdded */
+        MemberAdded: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Relationship */
+            relationship: string;
+            /** Invite Link */
+            invite_link: string;
+            /** Phone Link */
+            phone_link: string;
+        };
         /** MemberCreate */
         MemberCreate: {
             /** Name */
@@ -2218,6 +2270,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FamilyCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_member_api_families__family_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                family_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberAdd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberAdded"];
                 };
             };
             /** @description Validation Error */

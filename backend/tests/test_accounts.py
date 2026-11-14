@@ -328,11 +328,12 @@ def test_a_family_made_while_logged_in_belongs_to_the_account(client):
     [summary] = listed.json()["families"]
     assert summary["id"] == family["family_id"] and summary["name"] == "The Kovacs"
     assert summary["safe_word_set"] is True and summary["created_at"]
-    assert (summary["member_count"], summary["joined_count"]) == (2, 0)
+    # the organiser joins at sign-up
+    assert (summary["member_count"], summary["joined_count"]) == (2, 1)
 
     sara = family["members"][0]["id"]
     client.post(f"/api/join/{sara}", json={"consent_practice": True, "consent_clone_from_call": False})
-    assert client.get("/api/families").json()["families"][0]["joined_count"] == 1
+    assert client.get("/api/families").json()["families"][0]["joined_count"] == 2  # the organiser and Sara
 
 
 def test_families_are_listed_oldest_first_and_only_the_accounts_own(client):

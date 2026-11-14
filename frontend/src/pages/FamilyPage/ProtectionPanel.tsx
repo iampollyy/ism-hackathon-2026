@@ -3,9 +3,11 @@
 // not, why someone cannot get one, their next drill, how many this week).
 // GET on open and every few seconds; a PUT on each change, then the answer.
 // The organiser gets drills too, so their own next drill is never shown.
+// On a phone (compact) the week timetable becomes one line of summary and the
+// settings sit behind "Change"; every switch stays.
 
-import { useRef, useState } from 'react';
-import { EyeOff, PhoneCall, Radio, ShieldCheck } from 'lucide-react';
+import { useId, useRef, useState } from 'react';
+import { ChevronDown, EyeOff, PhoneCall, Radio, ShieldCheck } from 'lucide-react';
 import { api } from '../../api/client';
 import type { ProtectionMemberView, ProtectionUpdate, ProtectionView } from '../../api/types';
 import type { Person } from './people';
@@ -20,6 +22,8 @@ type Props = {
   people: Record<string, Person>;
   /** The page already says the server can't be reached. */
   pageStale: boolean;
+  /** A short summary in place of the week's timetable, for phones. */
+  compact?: boolean;
 };
 
 const PER_WEEK = [1, 2, 3, 4, 5, 6, 7];
@@ -55,7 +59,9 @@ function drillLine(
   return { text: 'Choosing a moment for the next drill…', tone: 'quiet' };
 }
 
-export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
+export function ProtectionPanel({ familyId, poll, people, pageStale, compact = false }: Props) {
+  const settingsId = useId();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [pausing, setPausing] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -126,6 +132,8 @@ export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
   };
 
   const eligible = data.members.filter((member) => member.eligible).length;
+  const until = data.window_end_hour === 24 ? 'midnight' : hourLabel(data.window_end_hour);
+  const summary = `Every day, ${hourLabel(data.window_start_hour)}–${until}, up to ${data.drills_per_week} a week each`;
 
   return (
     <section id="protection" className={`fh-protection ${on ? 'is-on' : 'is-off'}`} aria-labelledby="protection-title">
@@ -153,6 +161,28 @@ export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
         />
       </div>
 
+      {compact ? (
+        <div className="fh-prot-summary">
+          <p>
+            <strong>{summary}</strong>
+            <span>
+              {zoneCity(zone)} time. Nobody is told when; each call ends by saying it was practice.
+            </span>
+          </p>
+          <button
+            type="button"
+            className="fh-prot-change"
+            aria-expanded={settingsOpen}
+            aria-controls={settingsOpen ? settingsId : undefined}
+            onClick={() => setSettingsOpen((open) => !open)}
+          >
+            {settingsOpen ? 'Done' : 'Change'}
+            <ChevronDown size={16} aria-hidden="true" className={settingsOpen ? 'up' : undefined} />
+          </button>
+        </div>
+      ) : null}
+
+      {compact ? null : (
       <ul className="fh-prot-means" aria-label={on ? 'What protection does now' : 'What switching protection on does'}>
         <li>
           <PhoneCall size={18} aria-hidden="true" />
@@ -184,8 +214,10 @@ export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
           </div>
         </li>
       </ul>
+      )}
 
-      <div className="fh-prot-settings">
+      {compact && !settingsOpen ? null : (
+      <div className="fh-prot-settings" id={compact ? settingsId : undefined}>
         <fieldset className="fh-setting">
           <legend>Drills a week, per person</legend>
           <div className="fh-steps">
@@ -240,8 +272,9 @@ export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
           ) : null}
         </fieldset>
       </div>
+      )}
 
-      <WeekAhead protection={data} people={people} />
+      {compact ? null : <WeekAhead protection={data} people={people} />}
 
       <div className="fh-shield-row">
         <span className="fh-shield-icon" aria-hidden="true">

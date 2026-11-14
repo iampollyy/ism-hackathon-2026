@@ -241,7 +241,8 @@ def member_items(db: DbSession, members: dict[str, Member], organiser: str | Non
             added = f"{member.name} was added to the family plan"
         yield schemas.ActivityItem(when=member.created_at, member=ref, kind="joined", text=added)
         joined = joins.get(member.id)
-        if joined is not None:
+        # The organiser joins at sign-up: "started the family plan" already says it.
+        if joined is not None and not member.is_organiser:
             yield schemas.ActivityItem(when=joined.joined_at, member=ref, kind="joined",
                                        text=f"{member.name} joined the family plan")
         # consent_clone_at is set when a clone is made; a later deletion keeps it.

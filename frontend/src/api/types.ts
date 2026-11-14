@@ -82,6 +82,8 @@ export type FamilyPlanView = S['FamilyPlanView'];
 export type PlanChoice = S['PlanChoice'];
 export type WaitlistIn = S['WaitlistIn'];
 export type WaitlistCount = S['WaitlistCount'];
+export type MemberAdd = S['MemberAdd'];
+export type MemberAdded = S['MemberAdded'];
 
 // ---------------------------------------------------------------- fixed lists
 

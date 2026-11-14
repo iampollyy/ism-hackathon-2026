@@ -327,7 +327,7 @@ def test_owned_family_refuses_once_the_voice_tick_is_taken_back(client, webm) ->
 def test_owned_family_lets_the_organiser_record_their_own_voice(client, webm) -> None:
     jon = owned_family(client)["members"][1]["id"]
     with new_session() as s:
-        assert s.get(MemberJoin, jon) is None  # never joined: the organiser made the family
+        assert s.get(MemberJoin, jon) is not None  # the organiser joins at sign-up
     response = upload(client, jon, webm)
     assert response.status_code == 200, response.text
     assert member(jon).voice_status == "ready"

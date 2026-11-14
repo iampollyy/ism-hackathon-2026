@@ -13,7 +13,7 @@ import json
 from typing import Any
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import and_, not_, select
+from sqlalchemy import and_, func, not_, select
 from sqlalchemy.orm import Session
 
 from app import schemas
@@ -67,11 +67,52 @@ async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db
         if ticked:
             db.add(Consent(member_id=member.id, kind="practice", source="manual",
                            evidence="sign-up tick", created_at=now))
+        if account is not None and item.is_organiser:
+            # The organiser agrees at sign-up, so this is their join: their welcome call
+            # starts when they open their phone link, and their voice may be copied from
+            # it after a spoken yes, exactly like a relative who joined by invite.
+            if item.consent_clone_from_call:
+                db.add(Consent(member_id=member.id, kind="clone_from_call", source="manual",
+                               evidence="sign-up tick (organiser)", created_at=now))
+            db.add(MemberJoin(member_id=member.id, joined_at=now, phone_number=None))
         links.append(schemas.MemberLink(id=member.id, name=member.name, phone_link=phone_link(member.id)))
     if account is not None:
         accounts.claim_family(db, account, family.id)
     db.commit()
     return schemas.FamilyCreated(family_id=family.id, members=links)
+
+
+@router.post("/families/{family_id}/members", status_code=201, response_model=schemas.MemberAdded)
+async def add_member(family_id: str, body: schemas.MemberAdd,
+                     db: Session = Depends(get_db)) -> schemas.MemberAdded:
+    """Add a person to an existing family (the organiser only: services/access.py
+    guards every path under /api/families/{id}). They start with no consent at
+    all; they agree on their own phone through their invite link, and their
+    welcome call starts when they join, exactly like the people added at sign-up."""
+    family = db.get(Family, family_id)
+    if family is None:
+        raise schemas.ApiError(404, "not_found", "No family with this id.")
+    active = db.scalar(
+        select(func.count()).select_from(Member)
+        .where(Member.family_id == family.id, Member.opted_out_at.is_(None))
+    ) or 0
+    if active >= schemas.MAX_FAMILY_MEMBERS:
+        raise schemas.ApiError(409, "family_full",
+                               f"A family plan has room for {schemas.MAX_FAMILY_MEMBERS} people.")
+    member = Member(
+        id=new_member_id(),
+        family_id=family.id,
+        name=body.name.strip(),
+        relationship=body.relationship.strip(),
+        is_organiser=False,
+        consent_practice_at=None,
+        voice_status="none",
+        created_at=now_iso(),
+    )
+    db.add(member)
+    db.commit()
+    return schemas.MemberAdded(id=member.id, name=member.name, relationship=member.relationship,
+                               invite_link=f"/join/{member.id}", phone_link=phone_link(member.id))
 
 
 @router.post("/members/{member_id}/consent", response_model=schemas.Ok)

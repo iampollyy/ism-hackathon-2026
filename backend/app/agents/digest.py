@@ -19,7 +19,7 @@ JOB = "digest"
 PROMPT_VERSION = "digest.v1"
 NOTE_JOB = "weekly_note"
 NOTE_PROMPT_VERSION = "weekly_note.v2"
-MAX_PATTERNS = 3
+MAX_PATTERNS = 5
 # Scraped pages can be very long; the warnings are near the top.
 PAGE_CHARS = 15000
 NOTE_WORDS = 40
@@ -39,7 +39,7 @@ def _user_message(pages: list[dict[str, Any]]) -> str:
 
 
 def clean_digest(digest: Digest, pages: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """At most three patterns with a title and a summary, tactics without
+    """At most five patterns with a title and a summary, tactics without
     repeats. A source that matches a page is written as that page's address;
     an empty one becomes the first page's. None if no pattern is left."""
     sources = {_norm_url(page.get("url", "")): page.get("url", "") for page in pages}

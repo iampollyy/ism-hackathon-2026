@@ -103,6 +103,8 @@ class Settings(BaseSettings):
     # builds (POST /api/families/{id}/news/refresh), for all families
     # together, since the digest is shared.
     news_refresh_seconds: int = 600
+    # The news digest rebuilds itself when older than this (0: never by itself).
+    news_auto_refresh_seconds: int = 3600
 
     @property
     def push_enabled(self) -> bool:

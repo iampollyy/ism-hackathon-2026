@@ -17,3 +17,9 @@ archive/
 # Back end: database file and voice recordings, never published
 backend/data/
 backend/media/
+
+# Raw video footage for the reels and the submission video: kept in the shared folder, never in the repo
+media/
+
+# TypeScript build cache
+*.tsbuildinfo

@@ -305,9 +305,9 @@ async def test_digest_needs_pages_and_cleans_patterns(fake_jobs: FakeRunJob) -> 
     assert fake_jobs.calls == []
     pattern = {"title": "Fake bank", "summary": "A caller poses as a bank.", "tactics": ["authority", "authority"],
                "closest_scenario": "bank_security", "source_url": "https://a.example/"}
-    fake_jobs.outputs["digest"] = {"patterns": [pattern] * 4 + [{**pattern, "title": " "}]}
+    fake_jobs.outputs["digest"] = {"patterns": [pattern] * 6 + [{**pattern, "title": " "}]}
     built = await digest.build_digest([{"url": "https://a.example", "title": "A", "text": "warning text"}])
-    assert len(built["patterns"]) == 3
+    assert len(built["patterns"]) == 5
     assert built["patterns"][0]["tactics"] == ["authority"]
     assert built["patterns"][0]["source_url"] == "https://a.example"
 

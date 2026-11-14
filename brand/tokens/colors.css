@@ -1,0 +1,39 @@
+/* Callback colours, from frontend/src/styles/index.scss.
+   Red means a scam signal and green means the safe action: nothing else uses them. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  --ink: #352a7c;                  /* Text, headings, the logo on light backgrounds. */
+  --navy-soft: #4e38b2;            /* Secondary indigo, e.g. chip text. */
+  --accent: #735ac8;               /* Links, focus rings, active states. */
+  --accent-fill: #917ae5;          /* Fills, progress bars, highlights. */
+  --lavender: #d8ceff;             /* Soft backgrounds and tags. */
+  --pink: #f2a9fa;                 /* The dot in the logo. Use sparingly, as the one bright accent. */
+  --cyan: #cbfbf9;                 /* Calm highlight (radar rings, quiet backgrounds). */
+  --bg: #edf0ff;                   /* Page background (top of the page gradient). */
+  --panel: #e3f0ff;                /* Panels; bottom of the page gradient. */
+  --surface: #fcfcfc;              /* Cards on the page. */
+  --surface-strong: #ffffff;       /* Inputs and raised cards. */
+  --muted: #586986;                /* Secondary text. */
+  --good: #138653;                 /* The safe action only: hung up, asked for the family word. */
+  --good-ink: #0f6e44;             /* Safe green as text on light backgrounds (AA contrast). */
+  --warning: #f5b94d;              /* Caution: the yellow traffic light. */
+  --danger: #e0475e;               /* Scam signals only: the red light, the Shield warning. */
+  --danger-ink: #b0283f;           /* Danger as text on light backgrounds (AA contrast). */
+  --deep: #1d1647;                 /* Call screens and dark sections; bottom of the icon gradient. */
+  --deep-2: #2a2163;               /* Raised surfaces on deep. */
+  --on-deep: #f1eeff;              /* Text on deep. */
+  --on-deep-muted: #b9b2e0;        /* Secondary text on deep. */
+  --line: rgba(53, 42, 124, 0.12); /* Hairlines and card borders on light. */
+  --accent-soft: rgba(145, 122, 229, 0.16); /* Soft accent fill (chips). */
+  --good-soft: rgba(26, 214, 112, 0.14); /* Soft green fill (the Live pill). */
+  --danger-soft: rgba(224, 71, 94, 0.12); /* Soft red fill behind scam signals. */
+  --deep-line: rgba(241, 238, 255, 0.12); /* Hairlines on deep. */
+
+  --gradient-app-icon: linear-gradient(180deg, #352a7c 0%, #1d1647 100%);
+  --gradient-page: linear-gradient(180deg, #edf0ff 0%, #e3f0ff 100%);
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;  /* headings, wordmark: 700 */
+  --font-body: 'Inter', system-ui, sans-serif;
+  --radius: 24px;
+  --shadow: 0 18px 45px rgba(53, 42, 124, 0.12);
+}

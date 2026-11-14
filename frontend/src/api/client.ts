@@ -11,8 +11,9 @@ import type {
   JoinView, LearnTactics, LoginIn, Me, NewsRefreshed, NewsView, Ok, PhoneEvent, PhoneState, PlanChoice,
   PracticeCallCreate, Pricing, ProgressView, ProtectionMemberView, ProtectionUpdate, ProtectionView, RegisterIn,
   ScenarioView, Session, ShieldCallCreated, ShieldCallRequest, SurpriseDrillCreated, SurpriseDrillRequest,
-  VoiceReady, VoiceSampleAccepted, VoiceSampleStatus, WaitlistCount, WaitlistIn,
+  VoiceReady, VoiceSampleAccepted, VoiceSampleStatus, WaitlistCount, WaitlistIn, MemberAdd, MemberAdded,
 } from './types';
+import type { PushPublicKey } from './types';
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) {
@@ -43,6 +44,8 @@ export const api = {
   // families and members
   createFamily: (body: FamilyCreate) => request<FamilyCreated>('/families', json(body)),
   getFamily: (familyId: string) => request<FamilyView>(`/families/${familyId}`),
+  /** Add a person later (organiser only); they join through the returned invite_link. */
+  addMember: (familyId: string, body: MemberAdd) => request<MemberAdded>(`/families/${familyId}/members`, json(body)),
   setConsent: (memberId: string, body: ConsentUpdate) => request<Ok>(`/members/${memberId}/consent`, json(body)),
   uploadVoice: (memberId: string, audio: Blob, filename: string) => {
     const form = new FormData();
@@ -117,6 +120,14 @@ export const api = {
   cancelPlan: (familyId: string) => request<FamilyPlanView>(`/families/${familyId}/plan/cancel`, { method: 'POST' }),
   joinWaitlist: (body: WaitlistIn) => request<Ok>('/waitlist', json(body)),
   waitlistCount: () => request<WaitlistCount>('/waitlist/count'),
+
+  // Web Push: wakes a phone whose page is closed (docs/backend.md, "Waking the phone")
+  pushPublicKey: () => request<PushPublicKey>('/push/public-key'),
+  /** The browser's PushSubscription.toJSON(), as it is. */
+  subscribePush: (memberId: string, subscription: PushSubscriptionJSON) =>
+    request<Ok>(`/members/${memberId}/push-subscription`, json(subscription)),
+  unsubscribePush: (memberId: string, endpoint: string) =>
+    request<Ok>(`/members/${memberId}/push-subscription`, { method: 'DELETE', body: JSON.stringify({ endpoint }) }),
 };
 
 /** The live stream of a call, for the laptop (see StreamEventMap in types.ts). */

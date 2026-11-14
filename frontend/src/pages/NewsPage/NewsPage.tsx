@@ -10,7 +10,9 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowRight, BookOpen, LoaderCircle, Newspaper, RefreshCw, RotateCcw } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
 import type { NewsRefreshed, NewsView } from '../../api/types';
-import { dayAndTime, timeOrDay, useFamilyDrills, useFamilyName, type Drill } from '../LearnPage/shared';
+import { timeOrDay, useFamilyDrills, useFamilyName, type Drill } from '../LearnPage/shared';
+import { LiveStamp } from '../../components/molecules/LiveStamp';
+import { useNow } from '../../hooks/useLiveNews';
 import { NotesPanel } from './NotesPanel';
 import { PatternItem } from './PatternItem';
 import '../LearnPage/readingShared.scss';
@@ -18,6 +20,10 @@ import './NewsPage.scss';
 
 /** After "too soon", look again once a build someone else started may be done. */
 const RECHECK_MS = 60_000;
+/** While the page is open, look for the server's hourly briefing this often
+ * (more often while there is none yet: the first one is on its way). */
+const POLL_MS = 120_000;
+const POLL_EMPTY_MS = 20_000;
 
 type Kind = 'none' | 'this-week' | 'earlier' | 'examples';
 const TITLES: Record<Kind, string> = {
@@ -189,6 +195,31 @@ export function NewsPage() {
     void load();
   }, [load]);
 
+  // The server rebuilds the briefing every hour by itself; keep the page in
+  // step while it is open, and say so when a new one lands.
+  const clock = useNow();
+  const shownAt = useRef<string | null | undefined>(undefined);
+  const empty = news !== null && news.patterns.length === 0;
+  useEffect(() => {
+    const look = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const before = shownAt.current;
+      const next = await load();
+      if (next && live.current && before && next.updated_at && next.updated_at !== before && next.patterns.length > 0) {
+        setNotice({ tone: 'good', text: 'A new briefing just came in.' });
+      }
+    };
+    const timer = window.setInterval(() => void look(), empty ? POLL_EMPTY_MS : POLL_MS);
+    document.addEventListener('visibilitychange', look);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', look);
+    };
+  }, [empty, load]);
+  useEffect(() => {
+    shownAt.current = news?.updated_at;
+  }, [news?.updated_at]);
+
   // The closest practice story's title, for the "practise this" link.
   const wantsScenarios = Boolean(news?.patterns.some((pattern) => pattern.closest_scenario));
   useEffect(() => {
@@ -306,7 +337,7 @@ export function NewsPage() {
                   <span className="rd-tag">{earlierWeek ? `From ${earlierWeek}` : 'Earlier'}</span>
                 ) : null}
                 {kind === 'examples' ? <span className="rd-tag">Examples</span> : null}
-                {news.updated_at ? <span>Updated {dayAndTime(news.updated_at)}</span> : null}
+                <LiveStamp updatedAt={news.updated_at} now={clock} stale={news.fallback} />
               </p>
             ) : null}
             <p className="rd-lede">
@@ -345,10 +376,10 @@ export function NewsPage() {
             {kind === 'none' ? (
               <section className="rd-empty np-empty" aria-labelledby="np-empty-title">
                 <Newspaper size={28} aria-hidden />
-                <h2 id="np-empty-title">No briefing yet</h2>
+                <h2 id="np-empty-title">The first briefing is on its way</h2>
                 <p>
-                  Each week, Callback reads public scam warnings and turns them into a short briefing for the family.
-                  There isn't one yet. Get it now: it can take up to a minute.
+                  Every hour, Callback reads public scam warnings and turns them into a short briefing for the family.
+                  The first one shows here by itself in a few minutes, or get it now: it can take up to a minute.
                 </p>
                 <button
                   type="button"
@@ -398,7 +429,7 @@ export function NewsPage() {
             <section className="np-panel np-about" aria-labelledby="np-about-title">
               <h2 id="np-about-title">Where this comes from</h2>
               <p>
-                Each week, Callback reads public scam-warning pages and sums up the patterns in plain words. Each one
+                Every hour, Callback reads public scam-warning pages and sums up the patterns in plain words. Each one
                 links to where we read it. The briefing is the same for every family on Callback.
               </p>
               <Link to={`/family/${familyId}/learn`} className="np-about__link">

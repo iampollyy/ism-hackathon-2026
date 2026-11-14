@@ -3,22 +3,20 @@ import { callAudio } from '../audio';
 import { nav } from '../copy';
 import { store, useLp } from '../store';
 
+// Every visit starts with sound on. Remembering "off" across visits made the call
+// silent for anyone who had once tapped the speaker, which looked like a broken call.
 export function readSound(): boolean {
   try {
-    return window.localStorage.getItem('lp-sound') !== 'off';
+    window.localStorage.removeItem('lp-sound'); // forget the setting older versions stored
   } catch {
-    return true;
+    /* private mode */
   }
+  return true;
 }
 
 export function setSound(on: boolean) {
   store.set({ soundOn: on });
-  callAudio.setMuted(!on);
-  try {
-    window.localStorage.setItem('lp-sound', on ? 'on' : 'off');
-  } catch {
-    /* private mode: the toggle still works for this visit */
-  }
+  callAudio.setMuted(!on); // for this visit only
 }
 
 /** Never starts audio by itself; it only mutes or unmutes what plays. */
