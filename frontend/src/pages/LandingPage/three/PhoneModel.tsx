@@ -78,7 +78,7 @@ export const PhoneModel = forwardRef<THREE.Group, { bodyColor?: string }>(functi
         envMapIntensity: 0.9,
       }),
       back: new THREE.MeshPhysicalMaterial({
-        color: '#172838',
+        color: '#1f364a',
         metalness: 0.35,
         roughness: 0.55,
         clearcoat: 0.3,

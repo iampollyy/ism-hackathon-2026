@@ -26,7 +26,7 @@ function Chips({ chapter, p, reduced }: { chapter: number; p: number; reduced: b
   }, []);
   const t = chapter === 1 ? p * TRANSCRIPT_SECONDS : chapter > 1 ? 99 : -1;
   // In the reveal chapter they leave to the right during the turn.
-  const out = chapter === 3 ? clamp01(p / 0.3) : chapter > 3 ? 1 : 0;
+  const out = chapter === 3 ? clamp01(p / 0.14) : chapter > 3 ? 1 : 0;
   const dim = chapter === 2;
   return (
     <div className="lp-chips" ref={ref} aria-hidden="true">
