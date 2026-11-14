@@ -599,6 +599,8 @@ export function TranscriptScreen({ t, risk }: { t: number; risk?: RiskLevel | nu
             <li key={l.text} className={`lp-tline lp-tline--${l.who === 'Rasa' ? 'me' : 'them'}${fresh ? ' is-fresh' : ''}`}>
               <span className="lp-tline__who">{l.who}</span>
               <span className="lp-tline__text">{l.text}</span>
+              {/* Where the chips beside the phone are not shown (phones, reduced motion), the tactic sits under its line. */}
+              {l.chip && t >= l.chipAt ? <span className="lp-tline__tag">{l.chip}</span> : null}
             </li>
           );
         })}

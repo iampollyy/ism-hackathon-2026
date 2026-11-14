@@ -787,6 +787,58 @@
   line-height: 1.38;
 }
 
+// The tactic under its line, for layouts without the flying chips.
+.lp-tline__tag {
+  display: none;
+  align-self: flex-start;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 109, 82, 0.6);
+  background: rgba(7, 17, 26, 0.6);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #f2f6f4;
+  animation: lp-fade 240ms ease both;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #e76d52;
+  }
+}
+
+// With the tags inside, the bubbles tighten so Rasa's question still fits on the screen.
+@mixin lp-tags-on {
+  .lp-tline__tag {
+    display: inline-flex;
+  }
+  .lp-transcript {
+    gap: 7px;
+  }
+  .lp-tline {
+    padding: 8px 12px;
+  }
+  .lp-tline__who {
+    margin-bottom: 0;
+  }
+}
+
+.lp[data-reduced] {
+  @include lp-tags-on;
+}
+
+@media (max-width: 859px) {
+  .lp {
+    @include lp-tags-on;
+  }
+}
+
 // Risk light.
 .lp-riskpill {
   margin-left: auto;
