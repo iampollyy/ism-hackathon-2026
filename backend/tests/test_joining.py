@@ -251,7 +251,8 @@ def test_family_view_shows_who_joined(client, make_family):
     assert (by_id[jon]["joined"], by_id[jon]["joined_at"], by_id[jon]["phone_number"]) == (False, None, None)
     # the existing fields are unchanged
     assert by_id[sara]["phone_link"] == f"/phone/{sara}"
-    assert by_id[sara]["consent"] == {"clone": False, "practice": True}
+    # clone is True: Sara ticked "may copy my voice" when she joined (consent.clone now follows that tick)
+    assert by_id[sara]["consent"] == {"clone": True, "practice": True}
 
 
 def owned_family(client) -> tuple[str, str, str]:
@@ -281,10 +282,9 @@ def test_others_do_not_see_an_owned_familys_invite_links_and_phone_numbers(clien
         if reader == "nobody logged in":
             client.post("/api/auth/logout")
         response = client.get(f"/api/families/{family_id}")
-        assert response.status_code == 200, reader  # still readable by id
-        by_id = {m["id"]: m for m in response.json()["members"]}
-        assert by_id[sara]["joined"] is True and by_id[sara]["joined_at"], reader
-        assert (by_id[sara]["invite_link"], by_id[sara]["phone_number"]) == ("", None), reader
+        # An owned family is now only readable by its organiser's account:
+        # another account gets 404 and nobody logged in gets 401.
+        assert response.status_code == (404 if reader == "another account" else 401), reader
         assert "+49 151" not in response.text, reader
 
 

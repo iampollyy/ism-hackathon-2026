@@ -75,7 +75,7 @@ export function OutcomeTiles({ target, status, outcome, result, callback, callba
     lineText = `${target} didn’t call the family number this time`;
   } else {
     lineText = 'Not yet';
-    lineDetail = `After the reveal, ${target} can tap “Call the family number”.`;
+    lineDetail = `After the reveal, ${target} can tap “Practise calling back”.`;
   }
 
   return (

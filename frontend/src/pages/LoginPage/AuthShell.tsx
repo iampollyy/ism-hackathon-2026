@@ -31,7 +31,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
             <strong>That was Callback, not a real call.</strong>
             <p>A new number and a hurry are the two signs. Hang up and ring back on the number you know.</p>
             <span className="auth-reveal-action">
-              <PhoneCall size={16} aria-hidden="true" /> Call the family number
+              <PhoneCall size={16} aria-hidden="true" /> Call back on a number you know
             </span>
           </figure>
         </div>
