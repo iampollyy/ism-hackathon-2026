@@ -167,14 +167,94 @@
 }
 
 .np-pattern__foot {
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(17, 34, 49, 0.14);
+}
+
+// Where the family stands on this kind of call: who already practised it, and
+// the way to practise it. A quiet tinted band, so the briefing stays calm.
+.np-family {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 2px;
+  padding: 14px 14px 14px 18px;
+  border-radius: 16px;
+  background: var(--np-bubble);
+}
+
+.np-family__body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.np-family__list {
   display: flex;
   flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.np-family__drill {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px 24px;
-  margin-top: 4px;
-  padding-top: 14px;
-  border-top: 1px dashed rgba(17, 34, 49, 0.14);
+  gap: 10px;
+  min-height: 40px;
+  padding: 5px 10px 5px 12px;
+  border-radius: 12px;
+  background: var(--rd-surface);
+  border: 1px solid var(--line);
+  transition: border-color 0.18s ease, transform 0.18s ease;
+
+  &:hover {
+    border-color: rgba(17, 34, 49, 0.28);
+    transform: translateY(-1px);
+
+    .np-family__go { transform: translateX(2px); color: var(--ink); }
+  }
+}
+
+.np-family__who {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 0.92rem;
+
+  time {
+    color: var(--muted);
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+.np-family__go {
+  color: var(--muted);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.np-family__more {
+  width: fit-content;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(17, 34, 49, 0.3);
+
+  &:hover { text-decoration-color: currentColor; }
+}
+
+.np-family__none {
+  margin: 0;
+  max-width: 40ch;
+  color: var(--navy-soft);
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .np-sources {
@@ -223,8 +303,10 @@
   display: inline-flex;
   align-items: center;
   gap: 14px;
+  margin-left: auto;
   padding: 9px 14px;
   border-radius: 14px;
+  background: var(--rd-surface);
   border: 1px solid var(--line);
   transition: border-color 0.18s ease, transform 0.18s ease;
 
@@ -387,7 +469,21 @@
   .np-paper { padding: 0 20px 4px; }
   .np-pattern { padding: 24px 0; }
   .np-pattern__summary { font-size: 1.02rem; }
-  .np-pattern__foot { align-items: stretch; flex-direction: column; }
-  .np-practise { justify-content: space-between; }
+  .np-family { grid-template-columns: minmax(0, 1fr); align-items: stretch; padding: 14px; }
+  .np-family__list li { flex: 1 1 100%; }
+
+  // Name and day on the first line, what they did under it, the arrow on the right.
+  .np-family__drill {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 10px;
+    width: 100%;
+    padding: 8px 12px;
+
+    .rd-outcome { grid-column: 1; grid-row: 2; justify-self: start; }
+  }
+
+  .np-family__go { grid-column: 2; grid-row: 1 / span 2; }
+  .np-practise { justify-content: space-between; margin-left: 0; }
   .np-aside { grid-template-columns: 1fr; }
 }

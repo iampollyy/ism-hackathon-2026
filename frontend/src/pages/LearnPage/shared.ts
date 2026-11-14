@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../api/client';
 import type { DrillList, Habits, LearnTactics } from '../../api/types';
+import { saveFamilyId } from '../FamilySignUpPage/familyStorage';
 
 export type Habit = Habits['habits'][number];
 export type LearnTactic = LearnTactics['tactics'][number];
@@ -37,16 +38,45 @@ export function errorText(error: unknown, fallback: string): string {
 
 export type FamilyName = { name: string | null; notFound: boolean };
 
-/** The family's name for the header; quietly empty if it cannot be loaded. */
+/** The family's name for the header; quietly empty if it cannot be loaded.
+ * Like the family page, it remembers the family for the sidebar. */
 export function useFamilyName(familyId: string): FamilyName {
   const [state, setState] = useState<FamilyName>({ name: null, notFound: false });
   useEffect(() => {
     let live = true;
     setState({ name: null, notFound: false });
     api.getFamily(familyId).then(
-      (family) => live && setState({ name: family.name, notFound: false }),
+      (family) => {
+        if (!live) return;
+        setState({ name: family.name, notFound: false });
+        saveFamilyId(family.id);
+      },
       (error: unknown) =>
         live && setState({ name: null, notFound: error instanceof ApiError && error.status === 404 }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [familyId]);
+  return state;
+}
+
+/** Drills that have happened (being scored or scored); never the ones still to come. */
+const PAST_STATUSES = new Set(['ended', 'scored']);
+
+export type FamilyDrills = { drills: Drill[] | null; notFound: boolean };
+
+/** The family's past practice calls, newest first; an empty list if they cannot be loaded
+ * (the pages read the same without them). */
+export function useFamilyDrills(familyId: string): FamilyDrills {
+  const [state, setState] = useState<FamilyDrills>({ drills: null, notFound: false });
+  useEffect(() => {
+    let live = true;
+    setState({ drills: null, notFound: false });
+    api.drills(familyId, undefined, 100).then(
+      (list) => live && setState({ drills: list.drills.filter((drill) => PAST_STATUSES.has(drill.status)), notFound: false }),
+      (error: unknown) =>
+        live && setState({ drills: [], notFound: error instanceof ApiError && error.status === 404 }),
     );
     return () => {
       live = false;

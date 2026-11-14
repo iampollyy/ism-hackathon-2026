@@ -459,6 +459,9 @@
 }
 
 .lp-index__item {
+  // Holds its own hidden screen-reader words: without this they are placed
+  // outside the phone's scrolling strip and widen the whole page.
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -654,21 +657,6 @@
 
   strong { font-weight: 700; }
   span { color: var(--muted); }
-}
-
-.lp-drill__outcome {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: rgba(17, 34, 49, 0.06);
-  color: var(--navy-soft);
-  font-size: 0.78rem;
-  font-weight: 700;
-  white-space: nowrap;
-
-  &.is-safe { background: var(--good-soft); color: var(--rd-good-ink); }
 }
 
 .lp-drill__go {

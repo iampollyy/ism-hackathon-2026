@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CircleCheck, ShieldCheck } from 'lucide-react';
+import { ArrowRight, ShieldCheck } from 'lucide-react';
+import { DrillOutcome } from './DrillOutcome';
 import { possessive, shortDate, type Drill, type LearnTactic } from './shared';
 
 const SHOWN_DRILLS = 3;
@@ -74,7 +75,7 @@ export function TacticCard({ tactic, drills, familyId, flash }: TacticCardProps)
                       {drill.ended_at || drill.created_at ? ` · ${shortDate(drill.ended_at ?? drill.created_at)}` : ''}
                     </span>
                   </span>
-                  <DrillOutcome drill={drill} />
+                  <DrillOutcome drill={drill} className="lp-drill__outcome" />
                   <ArrowRight size={15} className="lp-drill__go" aria-hidden />
                 </Link>
               </li>
@@ -89,17 +90,4 @@ export function TacticCard({ tactic, drills, familyId, flash }: TacticCardProps)
       ) : null}
     </article>
   );
-}
-
-/** What the person did, said kindly: a safe outcome by name, otherwise "a tip for next time". */
-function DrillOutcome({ drill }: { drill: Drill }) {
-  if (drill.safe && drill.outcome_label) {
-    return (
-      <span className="lp-drill__outcome is-safe">
-        <CircleCheck size={14} aria-hidden /> {drill.outcome_label}
-      </span>
-    );
-  }
-  if (drill.outcome) return <span className="lp-drill__outcome">A tip for next time</span>;
-  return <span className="lp-drill__outcome">Review on its way</span>;
 }

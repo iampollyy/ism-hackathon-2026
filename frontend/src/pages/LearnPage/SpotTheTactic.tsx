@@ -11,13 +11,32 @@ const CHOICES = 3;
 
 type Question = { line: string; answer: LearnTactic; options: LearnTactic[] };
 
+// Pairs whose example lines a fair reader could file under either (a "send it
+// to my friend's account" is also asking for money). They never stand side by
+// side in one question, so a sensible pick is never marked "not quite".
+const CLOSE_PAIRS: readonly [string, string][] = [
+  ['money_request', 'unusual_payment'],
+  ['money_request', 'urgency'],
+  ['secrecy', 'isolation'],
+  ['asks_for_code', 'small_ask_first'],
+  ['asks_for_code', 'unusual_payment'],
+  ['urgency', 'refuses_callback'],
+  ['emotional_appeal', 'refuses_callback'],
+];
+
+function areClose(a: string, b: string): boolean {
+  return CLOSE_PAIRS.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+}
+
 function makeRound(tactics: LearnTactic[]): Question[] {
   const usable = tactics.filter((tactic) => tactic.what_it_sounds_like.length > 0);
   return shuffle(usable)
     .slice(0, ROUND_LENGTH)
     .map((answer) => {
       const lines = answer.what_it_sounds_like;
-      const others = shuffle(tactics.filter((tactic) => tactic.key !== answer.key)).slice(0, CHOICES - 1);
+      const fair = tactics.filter((tactic) => tactic.key !== answer.key && !areClose(tactic.key, answer.key));
+      const pool = fair.length >= CHOICES - 1 ? fair : tactics.filter((tactic) => tactic.key !== answer.key);
+      const others = shuffle(pool).slice(0, CHOICES - 1);
       return {
         line: lines[Math.floor(Math.random() * lines.length)],
         answer,

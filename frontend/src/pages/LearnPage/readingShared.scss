@@ -11,6 +11,10 @@
   --rd-red-ink: #a8301f;
 
   display: grid;
+  // One column that may shrink below its content: the phone's sideways tactic
+  // strip scrolls inside itself instead of widening the whole page.
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: 28px;
   max-width: 1180px;
   padding-bottom: 36px;
@@ -134,6 +138,23 @@
   color: var(--rd-warn-ink);
   font-weight: 600;
   line-height: 1.5;
+}
+
+// What someone did on a practice call (DrillOutcome.tsx): green for the safe
+// habit, a calm grey for a tip for next time. Never red.
+.rd-outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(17, 34, 49, 0.06);
+  color: var(--navy-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &.is-safe { background: var(--good-soft); color: var(--rd-good-ink); }
 }
 
 // ---------------------------------------------------------------- empty and error states

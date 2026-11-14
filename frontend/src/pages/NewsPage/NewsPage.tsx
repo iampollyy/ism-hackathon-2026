@@ -5,12 +5,12 @@
 // together, so the button waits for next_refresh_at and every answer that did
 // not build is explained politely. Old or built-in news is labelled as such.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowRight, BookOpen, LoaderCircle, Newspaper, RefreshCw, RotateCcw } from 'lucide-react';
 import { api, ApiError } from '../../api/client';
 import type { NewsRefreshed, NewsView } from '../../api/types';
-import { dayAndTime, timeOrDay, useFamilyName } from '../LearnPage/shared';
+import { dayAndTime, timeOrDay, useFamilyDrills, useFamilyName, type Drill } from '../LearnPage/shared';
 import { NotesPanel } from './NotesPanel';
 import { PatternItem } from './PatternItem';
 import '../LearnPage/readingShared.scss';
@@ -44,6 +44,16 @@ function weekWords(week: string | null): string | null {
 /** What to say after a refresh; null when the briefing's own note already says it. */
 function noticeFor(answer: NewsRefreshed): Notice | null {
   if (answer.refreshed) return { tone: 'good', text: "Updated just now from this week's warnings." };
+  // Nothing to show at all: never point at "the latest briefing".
+  if (kindOf(answer) === 'none') {
+    if (answer.reason === 'too_soon') {
+      return { tone: 'calm', text: "A briefing is already being written. We'll look again in a minute." };
+    }
+    return {
+      tone: answer.reason === 'failed' ? 'warn' : 'calm',
+      text: "Callback couldn't write the briefing just now. Please try again in a few minutes.",
+    };
+  }
   switch (answer.reason) {
     case 'too_soon':
       return {
@@ -79,6 +89,20 @@ export function NewsPage() {
   const [now, setNow] = useState(() => Date.now());
   const recheck = useRef<number | undefined>(undefined);
   const live = useRef(true);
+  const { drills } = useFamilyDrills(familyId);
+
+  // Who in the family already had each kind of call: each person's latest
+  // practice of that scenario, newest first (the list comes newest first).
+  const practisedByScenario = useMemo(() => {
+    const map = new Map<string, Drill[]>();
+    for (const drill of drills ?? []) {
+      if (!drill.scenario) continue;
+      const list = map.get(drill.scenario) ?? [];
+      if (!list.some((item) => item.member.id === drill.member.id)) list.push(drill);
+      map.set(drill.scenario, list);
+    }
+    return map;
+  }, [drills]);
 
   useEffect(() => {
     live.current = true;
@@ -299,6 +323,11 @@ export function NewsPage() {
                     pattern={pattern}
                     familyId={familyId}
                     scenarioTitle={pattern.closest_scenario ? (scenarioTitles[pattern.closest_scenario] ?? null) : null}
+                    practised={
+                      drills === null || !pattern.closest_scenario
+                        ? null
+                        : (practisedByScenario.get(pattern.closest_scenario) ?? [])
+                    }
                   />
                 ))}
               </section>

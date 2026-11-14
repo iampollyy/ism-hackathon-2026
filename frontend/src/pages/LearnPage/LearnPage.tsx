@@ -7,18 +7,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ArrowRight, BookOpen, Newspaper, RotateCcw } from 'lucide-react';
-import { api, ApiError } from '../../api/client';
 import { HabitsBand } from './HabitsBand';
 import { SpotTheTactic } from './SpotTheTactic';
 import { TacticCard } from './TacticCard';
 import {
-  errorText, loadLearnContent, numberWord, useFamilyName,
+  errorText, loadLearnContent, numberWord, useFamilyDrills, useFamilyName,
   type Drill, type LearnContent, type LearnTactic,
 } from './shared';
 import './readingShared.scss';
 import './LearnPage.scss';
-
-const PAST_STATUSES = new Set(['ended', 'scored']);
 
 export function LearnPage() {
   const { familyId = '' } = useParams();
@@ -28,8 +25,9 @@ export function LearnPage() {
   const [content, setContent] = useState<LearnContent | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [drills, setDrills] = useState<Drill[] | null>(null);
-  const [drillsNotFound, setDrillsNotFound] = useState(false);
+  // The family's past practice calls, to link each tactic to where it came up.
+  // Not essential: the page reads the same without them.
+  const { drills, notFound: drillsNotFound } = useFamilyDrills(familyId);
   const [flashKey, setFlashKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,25 +41,6 @@ export function LearnPage() {
       live = false;
     };
   }, [attempt]);
-
-  // The family's past practice calls, to link each tactic to where it came up.
-  // Not essential: the page reads the same without them.
-  useEffect(() => {
-    let live = true;
-    setDrills(null);
-    setDrillsNotFound(false);
-    api.drills(familyId, undefined, 100).then(
-      (list) => live && setDrills(list.drills.filter((drill) => PAST_STATUSES.has(drill.status))),
-      (error: unknown) => {
-        if (!live) return;
-        setDrills([]);
-        setDrillsNotFound(error instanceof ApiError && error.status === 404);
-      },
-    );
-    return () => {
-      live = false;
-    };
-  }, [familyId]);
 
   const drillsByTactic = useMemo(() => {
     const map = new Map<string, Drill[]>();
