@@ -81,6 +81,13 @@ class Settings(BaseSettings):
     vapid_private_key: str = Field(default="", repr=False)
     vapid_subject: str = DEFAULT_VAPID_SUBJECT  # a contact the push services can reach
 
+    # Track 1: organiser accounts, invites and joining (docs/full-app/track1.md)
+    session_days: int = 30  # how long a log-in (the cb_session cookie) lasts
+    login_max_failures: int = 5  # wrong log-ins for one email within the window, then 429
+    login_window_minutes: int = 15
+    # True: a joined member's first phone-state poll starts their welcome call
+    auto_welcome_call: bool = True
+
     @property
     def push_enabled(self) -> bool:
         return bool(self.vapid_public_key and self.vapid_private_key)

@@ -12,7 +12,7 @@ import re
 from typing import Annotated, Any, Literal, Union
 from urllib.parse import urlsplit
 
-from pydantic import AfterValidator, BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 # ---------------------------------------------------------------- fixed lists
 
@@ -195,6 +195,13 @@ class MemberView(BaseModel):
     weak_spot: str | None = None
     said: str | None = None  # their quote from the welcome call
     plan: PlanView | None = None
+    # Track 1: the invite (docs/full-app/track1.md). invite_link and
+    # phone_number are "" and None unless the reader may see them
+    # (services/accounts.can_see_invites); phone_number is None once they opted out.
+    invite_link: str = ""  # /join/{member_id}
+    joined: bool = False  # they opened the invite link and joined
+    joined_at: str | None = None
+    phone_number: str | None = None  # as given on the invite page
 
 
 class FamilyReadinessView(BaseModel):
@@ -569,3 +576,117 @@ class WaitlistIn(BaseModel):
 class WaitlistCount(BaseModel):
     families: int
     banks: int
+
+
+# ---------------------------------------------------------------- track 1: organiser accounts, invites and joining
+# docs/full-app/track1.md. The password is checked in the router (8 to 200
+# characters) so a short one answers 422 password_too_short.
+
+PASSWORD_MAX_CHARS = 200
+
+
+def _email(value: str) -> str:
+    value = value.strip().lower()
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value):
+        raise ValueError("must be an email address")
+    return value
+
+
+def _phone_number(value: str | None) -> str | None:
+    """Loose: an optional leading +, then digits and spaces, 6 to 20
+    characters in all. Empty means none."""
+    if value is None:
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    if not (6 <= len(value) <= 20 and re.fullmatch(r"\+?[0-9][0-9 ]*", value)):
+        raise ValueError("must be 6 to 20 digits and spaces, with an optional leading +")
+    return value
+
+
+Email = Annotated[str, Field(max_length=254), AfterValidator(_email)]
+
+
+class RegisterIn(BaseModel):
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]  # trimmed first
+    email: Email
+    password: str = Field(max_length=PASSWORD_MAX_CHARS)
+
+
+class LoginIn(BaseModel):
+    email: str = Field(max_length=254)  # not validated: a wrong one is only a wrong log-in
+    password: str = Field(max_length=PASSWORD_MAX_CHARS)
+
+
+class AccountView(BaseModel):
+    id: str
+    name: str
+    email: str
+
+
+class FamilyRef(BaseModel):
+    id: str
+    name: str
+
+
+class Me(BaseModel):
+    account: AccountView
+    families: list[FamilyRef]  # oldest first
+
+
+class FamilySummary(BaseModel):
+    id: str
+    name: str
+    safe_word_set: bool
+    created_at: str
+    member_count: int
+    joined_count: int  # members who joined by their invite link
+
+
+class FamilyList(BaseModel):
+    families: list[FamilySummary]  # oldest first
+
+
+class JoinFamily(BaseModel):
+    # No id: the family id opens the family page, which lists every member's
+    # id (the only key to their invite and phone pages).
+    name: str
+    safe_word_set: bool
+
+
+class JoinOrganiser(BaseModel):
+    name: str
+
+
+class JoinMember(BaseModel):
+    id: str
+    name: str
+    relationship: str
+
+
+class JoinConsents(BaseModel):
+    practice: bool  # practice calls without knowing when
+    clone_from_call: bool  # their voice may be cloned from their welcome call
+
+
+class JoinView(BaseModel):
+    family: JoinFamily
+    organiser: JoinOrganiser | None
+    member: JoinMember
+    joined: bool
+    joined_at: str | None = None
+    phone_number: str | None = None
+    opted_out: bool = False  # they left Callback; joining is refused (409)
+    consents: JoinConsents
+    phone_link: str  # /phone/{member_id}
+
+
+class JoinIn(BaseModel):
+    consent_practice: bool
+    consent_clone_from_call: bool
+    phone_number: Annotated[str | None, Field(max_length=40), AfterValidator(_phone_number)] = None
+
+
+class Joined(BaseModel):
+    phone_link: str

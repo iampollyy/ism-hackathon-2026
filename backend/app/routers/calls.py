@@ -246,17 +246,23 @@ async def create_practice_call(body: schemas.PracticeCallCreate,
     return schemas.CallCreated(call_id=call.id, status=call.status)
 
 
-@router.post("/members/{member_id}/welcome-call", status_code=201, response_model=schemas.CallCreated)
-async def create_welcome_call(member_id: str, db: DbSession = Depends(get_db)) -> schemas.CallCreated:
-    """Ring the member's phone page with the welcome agent. No consent is
-    needed: the welcome call is where consent is asked."""
-    member = get_member(db, member_id)
+def start_welcome_call(db: DbSession, member: Member, check_phone_online: bool = True) -> Call:
+    """Create one welcome call, ringing now; the only code that makes one
+    (POST /api/members/{id}/welcome-call, and a joined member's phone-state
+    poll through services/joining.auto_welcome_call, with
+    check_phone_online=False since the poll itself proves the page is
+    open; track 1). No consent is needed:
+    the welcome call is where consent is asked. Checks, each raising
+    schemas.ApiError: not opted out (409 consent_missing), the daily call
+    cap (429 daily_limit), not busy (409 busy), and if check_phone_online
+    the page seen within ten seconds (409 phone_offline). Commits and
+    publishes call.status {status: ringing}."""
     if member.opted_out_at is not None:
         raise schemas.ApiError(409, "consent_missing", f"{member.name} has left Callback.")
     limits.check(db, "call")
     if is_busy(db, member.id):
         raise busy_error(member)
-    if not seen_within(member.last_seen_at, PHONE_ONLINE_SECONDS):
+    if check_phone_online and not seen_within(member.last_seen_at, PHONE_ONLINE_SECONDS):
         raise phone_offline_error(member)
     now = now_iso()
     call = Call(
@@ -273,6 +279,13 @@ async def create_welcome_call(member_id: str, db: DbSession = Depends(get_db)) -
     )
     db.add(call)
     change_status(db, call, "ringing")
+    return call
+
+
+@router.post("/members/{member_id}/welcome-call", status_code=201, response_model=schemas.CallCreated)
+async def create_welcome_call(member_id: str, db: DbSession = Depends(get_db)) -> schemas.CallCreated:
+    """Ring the member's phone page with the welcome agent (start_welcome_call)."""
+    call = start_welcome_call(db, get_member(db, member_id))
     return schemas.CallCreated(call_id=call.id, status=call.status)
 
 
