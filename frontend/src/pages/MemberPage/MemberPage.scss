@@ -250,8 +250,9 @@
     gap: 12px;
     padding: 14px;
     border-radius: 16px;
-    background: var(--accent-soft);
-    color: #a94f3e;
+    // The tip tone, not the scam red: a weak spot is where to practise next.
+    background: var(--rv-tip-soft);
+    color: var(--rv-yellow-ink);
 
     svg { flex: none; margin-top: 2px; }
 
@@ -259,7 +260,7 @@
       margin: 0 0 4px;
       font-size: 0.82rem;
       font-weight: 700;
-      color: #a94f3e;
+      color: var(--rv-yellow-ink);
     }
 
     p { margin: 0; color: var(--ink); line-height: 1.5; font-size: 0.95rem; }

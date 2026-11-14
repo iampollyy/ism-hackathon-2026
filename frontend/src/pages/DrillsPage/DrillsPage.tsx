@@ -15,6 +15,7 @@ import {
 } from './ReviewParts';
 import { drillState, plural, type DrillView } from './reviewWords';
 import { usePolled } from './usePolled';
+import { useShieldCalls, type ShieldInfo } from './useShieldCalls';
 import './review.scss';
 
 const REFRESH_MS = 5000;
@@ -45,6 +46,7 @@ export function DrillsPage() {
   const drills = memberId ? one.data?.drills ?? null : all.data?.drills ?? null;
   const selected = members.find((member) => member.id === memberId) ?? null;
   const familyName = family.data?.name ?? null;
+  const shields = useShieldCalls(drills);
   useRememberFamily(family.data?.id);
 
   const choose = (next: string | null) => {
@@ -124,7 +126,7 @@ export function DrillsPage() {
             <NoDrillsYet familyId={familyId} />
           )
         ) : (
-          <DrillGroups drills={drills} family={family.data} />
+          <DrillGroups drills={drills} family={family.data} shields={shields} />
         )}
       </section>
     </div>
@@ -133,7 +135,9 @@ export function DrillsPage() {
 
 // ---------------------------------------------------------------- groups
 
-function DrillGroups({ drills, family }: { drills: DrillView[]; family: FamilyView | null }) {
+type DrillGroupsProps = { drills: DrillView[]; family: FamilyView | null; shields: Map<string, ShieldInfo> };
+
+function DrillGroups({ drills, family, shields }: DrillGroupsProps) {
   const now = drills.filter((drill) => ['live', 'reviewing'].includes(drillState(drill)));
   const upcoming = drills.filter((drill) => drillState(drill) === 'upcoming')
     // soonest first
@@ -149,6 +153,7 @@ function DrillGroups({ drills, family }: { drills: DrillView[]; family: FamilyVi
           drill={drill}
           colorIndex={memberIndex(family, drill.member.id)}
           relationship={relationship(drill.member.id)}
+          shield={shields.get(drill.call_id)}
         />
       ))}
     </ul>

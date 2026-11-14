@@ -553,6 +553,34 @@
     margin-top: 8px;
   }
 
+  .lc-result__learn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 14px;
+    color: var(--navy);
+    font-size: 0.9rem;
+    font-weight: 650;
+    text-decoration: underline;
+    text-decoration-color: rgba(17, 34, 49, 0.25);
+    text-underline-offset: 4px;
+    transition: text-decoration-color 160ms ease-out, color 160ms ease-out;
+
+    svg:last-child { transition: transform 160ms ease-out; }
+
+    &:hover {
+      text-decoration-color: currentColor;
+
+      svg:last-child { transform: translateX(2px); }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--navy);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+  }
+
   .lc-used {
     display: inline-flex;
     align-items: center;
@@ -588,6 +616,13 @@
     overflow-y: auto;
     padding-right: 6px;
     scrollbar-width: thin;
+
+    // Not live (a replay, or before the call is answered): the whole
+    // conversation, top to bottom, with the page's own scroll.
+    &.is-whole {
+      max-height: none;
+      overflow: visible;
+    }
   }
 
   .lc-turn {

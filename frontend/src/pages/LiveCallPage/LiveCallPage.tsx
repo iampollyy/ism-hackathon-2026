@@ -205,7 +205,13 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
                 callback={state.callback}
                 callbackClosed={callbackWindowOver(call.ended_at)}
               />
-              <ResultPanel target={target} status={status} result={state.result} hadConversation={state.turns.length > 0} />
+              <ResultPanel
+                target={target}
+                status={status}
+                result={state.result}
+                hadConversation={state.turns.length > 0}
+                familyId={call.family_id}
+              />
             </>
           ) : null}
 

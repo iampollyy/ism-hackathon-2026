@@ -1,4 +1,7 @@
-import { CircleCheck, Hourglass, Lightbulb, LoaderCircle, PhoneForwarded, ShieldCheck, TriangleAlert } from 'lucide-react';
+import {
+  BookOpen, ChevronRight, CircleCheck, Hourglass, Lightbulb, LoaderCircle, PhoneForwarded, ShieldCheck, TriangleAlert,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { CallStatus, Outcome as OutcomeKey, Tactic } from '../../api/types';
 import { OUTCOME_LABELS, TACTIC_LABELS } from '../../api/types';
 import { duration } from './format';
@@ -113,10 +116,12 @@ type ResultPanelProps = {
   status: CallStatus;
   result: LiveResult | null;
   hadConversation: boolean;
+  /** For a link to the tactic's card on the family's learning page. */
+  familyId?: string | null;
 };
 
 /** After scoring: the lesson, the debrief, and the tactics used against those that worked. */
-export function ResultPanel({ target, status, result, hadConversation }: ResultPanelProps) {
+export function ResultPanel({ target, status, result, hadConversation, familyId = null }: ResultPanelProps) {
   if (status === 'ended') {
     return (
       <section className="lc-card lc-result lc-result--pending">
@@ -141,6 +146,8 @@ export function ResultPanel({ target, status, result, hadConversation }: ResultP
 
   const worked = new Set<Tactic>(result.tactics_worked);
   const safe = isSafe(result.outcome);
+  // The tactic worth reading about first: one that worked, else the first used.
+  const learnKey = result.tactics_worked[0] ?? result.tactics_used[0] ?? null;
   return (
     <section className={`lc-card lc-result${safe ? ' is-safe' : ''}`} aria-label="Result">
       <div className="lc-result__head">
@@ -171,6 +178,13 @@ export function ResultPanel({ target, status, result, hadConversation }: ResultP
               </span>
             ))}
           </div>
+        ) : null}
+        {familyId && learnKey ? (
+          <Link to={`/family/${familyId}/learn#tactic-${learnKey}`} className="lc-result__learn">
+            <BookOpen size={15} aria-hidden />
+            {result.tactics_used.length > 1 ? 'How to handle these tactics' : `How to handle “${TACTIC_LABELS[learnKey]}”`}
+            <ChevronRight size={15} aria-hidden />
+          </Link>
         ) : null}
       </div>
     </section>

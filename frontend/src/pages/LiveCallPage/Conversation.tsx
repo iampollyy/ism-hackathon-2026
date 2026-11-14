@@ -29,11 +29,12 @@ export function Conversation({
   const stick = useRef(true);
   const lastTop = useRef(0);
 
-  // Follow the newest line, unless someone scrolled up to read.
+  // While the call is live, follow the newest line, unless someone scrolled
+  // up to read. A replay shows the whole conversation from the first line.
   useEffect(() => {
     const el = body.current;
-    if (el && stick.current) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [turns.length, tactics.length, lightChanges.size, shieldAlert]);
+    if (el && listening && stick.current) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [turns.length, tactics.length, lightChanges.size, shieldAlert, listening]);
 
   // Only a scroll upwards (someone reading back) stops the following, and
   // reaching the bottom again restarts it. The page's own smooth scroll only
@@ -62,7 +63,12 @@ export function Conversation({
         ) : null}
       </div>
 
-      <div className="transcript-body lc-conversation__body" ref={body} onScroll={onScroll} aria-live="polite">
+      <div
+        className={`transcript-body lc-conversation__body${listening ? '' : ' is-whole'}`}
+        ref={body}
+        onScroll={onScroll}
+        aria-live={listening ? 'polite' : 'off'}
+      >
         {turns.length === 0 ? <p className="lc-empty">{emptyText}</p> : null}
         {turns.map((turn, index) => {
           const isCaller = turn.speaker === 'agent';

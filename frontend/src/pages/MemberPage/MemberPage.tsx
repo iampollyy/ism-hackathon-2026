@@ -16,6 +16,7 @@ import {
 } from '../DrillsPage/ReviewParts';
 import { isSafeOutcome, lowerFirst, plural, possessive, whenWords, type LessonView } from '../DrillsPage/reviewWords';
 import { usePolled } from '../DrillsPage/usePolled';
+import { useShieldCalls } from '../DrillsPage/useShieldCalls';
 import { Readiness } from './Readiness';
 import '../DrillsPage/review.scss';
 import './MemberPage.scss';
@@ -28,6 +29,7 @@ export function MemberPage() {
   const drills = usePolled<DrillList>(() => api.drills(familyId, memberId, 20), `${familyId}:${memberId}`, REFRESH_MS, 'The drills could not be loaded.');
   const family = usePolled<FamilyView>(() => api.getFamily(familyId), familyId, REFRESH_MS, 'The family could not be loaded.');
   const protection = usePolled<ProtectionView>(() => api.protection(familyId), familyId, 15_000, 'The protection settings could not be loaded.');
+  const shields = useShieldCalls(drills.data?.drills);
   useRememberFamily(family.data?.id);
 
   const member = family.data?.members.find((one) => one.id === memberId) ?? null;
@@ -123,7 +125,14 @@ export function MemberPage() {
                 <DrillListHead showWho={false} />
                 <ul className="rv-drill-list">
                   {drills.data.drills.map((drill) => (
-                    <DrillRow key={drill.call_id} drill={drill} colorIndex={index} showWho={false} showLesson={false} />
+                    <DrillRow
+                      key={drill.call_id}
+                      drill={drill}
+                      colorIndex={index}
+                      showWho={false}
+                      showLesson={false}
+                      shield={shields.get(drill.call_id)}
+                    />
                   ))}
                 </ul>
               </>

@@ -4,10 +4,12 @@
 
 import { Link } from 'react-router-dom';
 import {
-  ChevronRight, CircleDashed, Hourglass, Lightbulb, LoaderCircle, PhoneForwarded, PhoneOff, ShieldCheck,
+  BellRing, ChevronRight, CircleDashed, Hourglass, Lightbulb, LoaderCircle, PhoneForwarded, PhoneOff, ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 import { TacticBadge } from '../../components/molecules/TacticBadge';
 import { PersonAvatar, RiskLamp } from './ReviewParts';
+import type { ShieldInfo } from './useShieldCalls';
 import {
   DIFFICULTY_WORDS, drillOutcomeWords, drillState, secondsWords, voiceWords, whenWords, type DrillView,
 } from './reviewWords';
@@ -21,6 +23,8 @@ type DrillRowProps = {
   showWho?: boolean;
   /** Leave out the lesson (where the lessons are listed on their own). */
   showLesson?: boolean;
+  /** Set when this drill was a Shield demo call. */
+  shield?: ShieldInfo | null;
 };
 
 const STATE_ICONS = {
@@ -32,7 +36,9 @@ const STATE_ICONS = {
   unanswered: PhoneOff,
 } as const;
 
-export function DrillRow({ drill, colorIndex, relationship, showWho = true, showLesson = true }: DrillRowProps) {
+export function DrillRow({
+  drill, colorIndex, relationship, showWho = true, showLesson = true, shield = null,
+}: DrillRowProps) {
   const state = drillState(drill);
   const outcome = drillOutcomeWords(drill);
   const voice = voiceWords(drill);
@@ -57,7 +63,14 @@ export function DrillRow({ drill, colorIndex, relationship, showWho = true, show
         ) : null}
 
         <div className="rv-drill__call">
-          <strong className="rv-drill__title">{title}</strong>
+          <strong className="rv-drill__title">
+            {title}
+            {shield ? (
+              <span className="rv-shield-tag" title="A simulated real scam call with Callback Shield on">
+                <ShieldAlert size={12} aria-hidden /> Shield demo
+              </span>
+            ) : null}
+          </strong>
           <span className="rv-drill__meta">{meta}</span>
           {drill.tactics.length ? (
             <span className="rv-drill__tactics" aria-label="Pressure tactics the caller used">
@@ -72,6 +85,11 @@ export function DrillRow({ drill, colorIndex, relationship, showWho = true, show
             {outcome.label}
           </span>
           {outcome.detail ? <small>{outcome.detail}</small> : null}
+          {shield && shield.alerted > 0 ? (
+            <small className="rv-drill__shield">
+              <BellRing size={13} aria-hidden /> Shield alerted {shield.alerted === 1 ? '1 person' : `${shield.alerted} people`}
+            </small>
+          ) : null}
           {done && callback ? (
             <small className="rv-drill__callback">
               <PhoneForwarded size={13} aria-hidden /> Called the family number {callback} later

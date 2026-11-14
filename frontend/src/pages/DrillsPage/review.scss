@@ -436,6 +436,31 @@
     font-weight: 600;
   }
 
+  // A Shield demo call: the same navy as the Shield on the live call screen.
+  .rv-shield-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 2px 8px 2px 6px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    vertical-align: 2px;
+    white-space: nowrap;
+  }
+
+  .rv-drill__shield {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--navy) !important;
+    font-weight: 600;
+  }
+
   .rv-outcome {
     display: inline-flex;
     align-items: center;

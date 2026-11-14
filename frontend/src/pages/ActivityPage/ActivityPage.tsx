@@ -19,6 +19,7 @@ import {
 } from '../DrillsPage/ReviewParts';
 import { clockTime, dayHeading, dayKey, drillState, plural, type ActivityItem, type DrillView } from '../DrillsPage/reviewWords';
 import { usePolled } from '../DrillsPage/usePolled';
+import { useShieldCalls, type ShieldInfo } from '../DrillsPage/useShieldCalls';
 import '../DrillsPage/review.scss';
 import './ActivityPage.scss';
 
@@ -45,17 +46,20 @@ const LOOKS: Record<Kind, Look> = {
   opted_out: { icon: LogOut, label: 'Left Callback', tone: 'neutral' },
 };
 
-/** A drill's look depends on how it went, which the drills list knows. */
-function lookFor(item: ActivityItem, drills: Map<string, DrillView>): Look {
+/** A drill's look depends on how it went, which the drills list knows, and
+ * on whether it was a Shield demo call. */
+function lookFor(item: ActivityItem, drills: Map<string, DrillView>, shields: Map<string, ShieldInfo>): Look {
   const base = LOOKS[item.kind] ?? LOOKS.message;
-  if (item.kind !== 'drill') return base;
+  if (item.kind !== 'drill' && item.kind !== 'drill_unanswered') return base;
+  const name = item.call_id && shields.has(item.call_id) ? 'Shield demo' : base.label;
+  if (item.kind === 'drill_unanswered') return { ...base, label: name };
   const drill = item.call_id ? drills.get(item.call_id) : undefined;
   const state = drill ? drillState(drill) : null;
-  if (state === 'safe') return { ...base, label: 'Drill · handled the safe way' };
-  if (state === 'tip') return { ...base, icon: Lightbulb, tone: 'tip', label: 'Drill · a tip for next time' };
-  if (state === 'reviewing') return { ...base, icon: Hourglass, tone: 'neutral', label: 'Drill · being reviewed' };
+  if (state === 'safe') return { ...base, label: `${name} · handled the safe way` };
+  if (state === 'tip') return { ...base, icon: Lightbulb, tone: 'tip', label: `${name} · a tip for next time` };
+  if (state === 'reviewing') return { ...base, icon: Hourglass, tone: 'neutral', label: `${name} · being reviewed` };
   // Not in the drills list (older than its last 100): say only that it was a drill.
-  return { ...base, icon: PhoneCall, tone: 'neutral' };
+  return { ...base, icon: PhoneCall, tone: 'neutral', label: name };
 }
 
 type Day = { key: string; title: string; detail: string | null; items: ActivityItem[] };
@@ -89,6 +93,7 @@ export function ActivityPage() {
     () => new Map((drillList.data?.drills ?? []).map((drill) => [drill.call_id, drill] as const)),
     [drillList.data],
   );
+  const shields = useShieldCalls(drillList.data?.drills);
   const counts = useMemo(() => {
     const map = new Map<string, number>();
     for (const item of items ?? []) if (item.member) map.set(item.member.id, (map.get(item.member.id) ?? 0) + 1);
@@ -193,7 +198,7 @@ export function ActivityPage() {
                     <TimelineItem
                       key={`${item.when}-${item.kind}-${index}`}
                       item={item}
-                      look={lookFor(item, drills)}
+                      look={lookFor(item, drills, shields)}
                       colorIndex={item.member ? memberIndex(family.data, item.member.id) : 0}
                     />
                   ))}
