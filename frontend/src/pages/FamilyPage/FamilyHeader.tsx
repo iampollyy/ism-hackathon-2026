@@ -31,9 +31,9 @@ export function FamilyHeader({ family, plan, protectionOn }: Props) {
   const base = `/family/${family.id}`;
 
   const links = [
-    { to: `${base}/drills`, label: 'Drills', note: 'Replays and the risk light', icon: ListChecks },
-    { to: `${base}/activity`, label: 'Activity', note: 'Who did what, and when', icon: Activity },
-    { to: `${base}/learn`, label: 'Learn', note: 'The tricks scammers use', icon: BookOpen },
+    { to: `${base}/drills`, label: 'Drills', note: 'Replays and lessons', icon: ListChecks },
+    { to: `${base}/activity`, label: 'Activity', note: 'Who did what', icon: Activity },
+    { to: `${base}/learn`, label: 'Learn', note: "Scammers' tricks", icon: BookOpen },
     { to: `${base}/news`, label: 'News', note: "This week's scams", icon: Newspaper },
   ];
 

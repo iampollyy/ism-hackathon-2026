@@ -61,6 +61,8 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
   const [notice, setNotice] = useState<Notice | null>(null);
   const [linksOpen, setLinksOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
     if (consentSent !== null && member.consent.practice === consentSent) setConsentSent(null);
@@ -78,6 +80,10 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
   // "Ringing on …" follows the welcome call it started.
   const noticeStatus = notice?.callId ? week.find((item) => item.call_id === notice.callId)?.status : undefined;
   useEffect(() => {
+    if (notice && !notice.callId && notice.tone === 'good') {
+      const timer = window.setTimeout(() => setNotice(null), 8000);
+      return () => window.clearTimeout(timer);
+    }
     if (!notice?.callId || noticeStatus === 'in_progress') return;
     if (noticeStatus && noticeStatus !== 'ringing') {
       setNotice(null);
@@ -104,6 +110,21 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
       setNotice({ tone: 'bad', text: errorText(error) });
     } finally {
       setConsentBusy(false);
+    }
+  };
+
+  const removeVoice = async () => {
+    setRemoving(true);
+    setNotice(null);
+    try {
+      await api.deleteVoice(member.id);
+      setConfirmRemove(false);
+      setNotice({ tone: 'good', text: `${member.name}'s cloned voice is deleted. Drills use a stranger's voice for them instead.` });
+      onChanged();
+    } catch (error) {
+      setNotice({ tone: 'bad', text: errorText(error, `${member.name}'s voice wasn't deleted. Please try again.`) });
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -218,6 +239,16 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
             <span className={`fh-fact-value ${voice.tone}`}>
               {voice.tone === 'good' ? <Check size={15} aria-hidden="true" /> : null}
               {voice.text}
+              {member.voice_ready && !confirmRemove ? (
+                <button
+                  type="button"
+                  className="fh-text-button quiet"
+                  onClick={() => setConfirmRemove(true)}
+                  aria-label={`Remove ${member.name}'s cloned voice`}
+                >
+                  Remove
+                </button>
+              ) : null}
             </span>
             {voice.detail ? (
               <small className="fh-fact-detail" title={voice.detail}>
@@ -305,6 +336,23 @@ export function MemberRow({ member, color, initials, familyId, familyName, sampl
           </div>
           <div className="fh-qr">
             <LinkQrCode url={phoneUrl} owner={member.name} size={132} />
+          </div>
+        </div>
+      ) : null}
+
+      {confirmRemove && member.voice_ready ? (
+        <div className="fh-row-confirm" role="group" aria-label={`Remove ${member.name}'s voice`}>
+          <span>
+            Delete {member.name}'s cloned voice for good? Drills that would sound like {member.name} use a stranger's
+            voice instead, until they agree to a new one.
+          </span>
+          <div>
+            <button type="button" className="fh-chip-button danger" onClick={removeVoice} disabled={removing}>
+              {removing ? 'Deleting…' : 'Delete the voice'}
+            </button>
+            <button type="button" className="fh-chip-button" onClick={() => setConfirmRemove(false)} disabled={removing}>
+              Keep it
+            </button>
           </div>
         </div>
       ) : null}

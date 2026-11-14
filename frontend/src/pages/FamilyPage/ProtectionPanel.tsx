@@ -18,6 +18,8 @@ type Props = {
   familyId: string;
   poll: Poll<ProtectionView>;
   people: Record<string, Person>;
+  /** The page already says the server can't be reached. */
+  pageStale: boolean;
 };
 
 const PER_WEEK = [1, 2, 3, 4, 5, 6, 7];
@@ -47,7 +49,7 @@ function drillLine(member: ProtectionMemberView, protection: ProtectionView): { 
   return { text: 'Choosing a moment for the next drill…', tone: 'quiet' };
 }
 
-export function ProtectionPanel({ familyId, poll, people }: Props) {
+export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
   const [saving, setSaving] = useState<string | null>(null);
   const [pausing, setPausing] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -255,9 +257,9 @@ export function ProtectionPanel({ familyId, poll, people }: Props) {
           {failure}
         </div>
       ) : null}
-      {poll.error ? (
+      {poll.error && !pageStale ? (
         <p className="fh-prot-stale" role="status">
-          Can't reach Callback right now. Showing the last settings; trying again.
+          The settings didn't refresh. Showing the last ones; trying again.
         </p>
       ) : null}
 

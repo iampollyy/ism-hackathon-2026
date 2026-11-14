@@ -139,9 +139,36 @@ export function FamilyPage() {
   );
 
   if (!family.data || !members) {
+    if (!family.error) {
+      // The page's own shape while the family loads.
+      return (
+        <div className="fh" aria-busy="true">
+          <span className="fh-visually-hidden" role="status">
+            Loading your family…
+          </span>
+          <div className="fh-header" aria-hidden="true">
+            <span className="fh-skeleton title" />
+            <span className="fh-skeleton line" />
+            <div className="fh-quicklinks">
+              {[0, 1, 2, 3].map((key) => (
+                <span key={key} className="fh-skeleton tile" />
+              ))}
+            </div>
+          </div>
+          <div className="fh-layout" aria-hidden="true">
+            <div className="fh-main">
+              <span className="fh-skeleton dark" />
+            </div>
+            <div className="fh-side">
+              <span className="fh-skeleton side" />
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="fh">
-        <div className="fh-state" aria-busy={!family.error}>
+        <div className="fh-state">
           {notFound ? (
             <>
               <h1>We couldn't find this family</h1>
@@ -155,17 +182,10 @@ export function FamilyPage() {
                 </Link>
               </div>
             </>
-          ) : family.error ? (
+          ) : (
             <>
               <h1>Can't reach Callback</h1>
               <p>{family.error.message} Trying again every few seconds.</p>
-            </>
-          ) : (
-            <>
-              <span className="fh-skeleton title" />
-              <span className="fh-skeleton line" />
-              <span className="fh-skeleton block" />
-              <span className="fh-visually-hidden">Loading your family…</span>
             </>
           )}
         </div>
@@ -190,7 +210,7 @@ export function FamilyPage() {
 
       <div className="fh-layout">
         <div className="fh-main">
-          <ProtectionPanel familyId={data.id} poll={protection} people={people} />
+          <ProtectionPanel familyId={data.id} poll={protection} people={people} pageStale={Boolean(family.error)} />
           <MemberRoster
             family={data}
             protection={protection.data}
