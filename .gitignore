@@ -23,3 +23,6 @@ media/
 
 # TypeScript build cache
 *.tsbuildinfo
+
+# macOS folder files
+.DS_Store
