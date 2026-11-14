@@ -100,12 +100,12 @@ img { display: block; max-width: 100%; }
 
 .status-pill.good {
   background: var(--good-soft);
-  color: var(--good);
+  color: var(--good-ink);
 }
 
 .status-pill.warn {
   background: rgba(245, 185, 77, 0.15);
-  color: #b77a15;
+  color: #8a5a06;
 }
 
 .status-pill.accent {

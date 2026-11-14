@@ -1,0 +1,19 @@
+# Footage, renders and working files never go into the public repo:
+# they hold faces and voices of real people. Share them through the team Drive.
+raw/*
+!raw/.gitkeep
+work/
+out/
+# Screenshots of other people's reels: private style references only.
+references/*
+!references/.gitkeep
+
+# Keys and test sessions
+.env
+.secrets/
+
+# Installed packages
+tools/.venv/
+tools/node_modules/
+remotion/node_modules/
+__pycache__/
