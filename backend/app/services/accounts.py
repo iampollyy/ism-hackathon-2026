@@ -11,23 +11,37 @@ Rules (docs/full-app/track1.md):
   `cb_session` (SameSite=Lax, Secure when the request came over https,
   settings.session_days long). Only the token's sha256 is stored, in
   `sessions`. An expired session counts as none, and is deleted when seen.
-- Wrong log-ins: each one writes a `login_failures` row for the email, also
+- scrypt runs in its own small thread pool (run_scrypt, SCRYPT_THREADS
+  threads): never on the event loop the live calls share, never in the
+  default pool voice.py and elevenlabs.py use, and at most SCRYPT_THREADS
+  hashes (16 MB each) at once however many log-ins arrive.
+- Wrong log-ins: every log-in attempt writes a `login_failures` row for the
+  email, committed before the password is checked (record_attempt), also
   for an email with no account (so the answer never tells which emails
-  exist, and a missing account costs the same scrypt time). Once an email
-  has settings.login_max_failures rows inside settings.login_window_minutes,
-  log-in answers 429 too_many_attempts before the password is checked,
-  even a right one. A right password (under the limit) clears the rows.
+  exist, and a missing account costs the same scrypt time). A right
+  password deletes the email's rows (clear_failures), so what is left are
+  the wrong ones and those still being checked. Counting attempts, not
+  failures, means parallel log-ins cannot all pass the check while the
+  first ones are still hashing. Once an email has settings.login_max_failures
+  rows inside settings.login_window_minutes, log-in answers 429
+  too_many_attempts before the password is checked, even a right one.
 - Families: POST /api/families with a valid session writes `family_owners`
-  (claim_family). The family page stays readable by id without a session.
+  (claim_family). The family page stays readable by id without a session,
+  but for a family with an owner only that owner's session sees the invite
+  links and phone numbers (can_see_invites).
 
 Nothing here commits; the routers do.
 """
 
+import asyncio
 import base64
 import hashlib
 import hmac
 import secrets
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from typing import TypeVar
 
 from fastapi import Depends, Request, Response
 from sqlalchemy import delete, func, select
@@ -45,8 +59,12 @@ SCRYPT_KEY_BYTES = 64
 SALT_BYTES = 16
 TOKEN_BYTES = 32
 SCRYPT_MAXMEM = 64 * 1024 * 1024  # n=2**14, r=8 needs 16 MB; leave room for stored hashes with bigger n
+SCRYPT_THREADS = 2
 
 _dummy_hash: str | None = None
+_scrypt_pool = ThreadPoolExecutor(max_workers=SCRYPT_THREADS, thread_name_prefix="scrypt")
+
+T = TypeVar("T")
 
 
 # ---------------------------------------------------------------- passwords
@@ -85,11 +103,28 @@ def verify_password(password: str, stored: str) -> bool:
 
 def dummy_hash() -> str:
     """A hash to check against when the email has no account, so a missing
-    account takes as long as a wrong password."""
+    account takes as long as a wrong password. Made on first use: call it
+    from the scrypt pool (check_password does), never on the event loop."""
     global _dummy_hash
     if _dummy_hash is None:
         _dummy_hash = hash_password(secrets.token_urlsafe(16))
     return _dummy_hash
+
+
+def check_password(password: str, stored: str | None) -> bool:
+    """A log-in's password check; stored is None for an email with no
+    account, which is checked against dummy_hash() and is always False.
+    Blocking (scrypt): run it with run_scrypt. Never raises."""
+    if stored is None:
+        verify_password(password, dummy_hash())
+        return False
+    return verify_password(password, stored)
+
+
+async def run_scrypt(fn: Callable[..., T], *args: object) -> T:
+    """Run a blocking scrypt function (hash_password, check_password) in
+    the scrypt pool and wait for it."""
+    return await asyncio.get_running_loop().run_in_executor(_scrypt_pool, fn, *args)
 
 
 # ---------------------------------------------------------------- accounts
@@ -126,6 +161,16 @@ def claim_family(db: DbSession, account: Account, family_id: str) -> None:
     """Record that this account created the family. Not committed here."""
     if db.get(FamilyOwner, family_id) is None:
         db.add(FamilyOwner(family_id=family_id, account_id=account.id))
+
+
+def can_see_invites(db: DbSession, family_id: str, account: Account | None) -> bool:
+    """Whether the family page shows invite links and phone numbers to this
+    reader: always for a family without an owner (made without a log-in),
+    else only to the owner's session. The member ids are the only key to
+    the invite and phone pages, so a family's own page is the one place
+    that lists them all with contact details."""
+    owner = db.get(FamilyOwner, family_id)
+    return owner is None or (account is not None and owner.account_id == account.id)
 
 
 def family_owner_name(db: DbSession, family_id: str) -> str | None:
@@ -232,9 +277,16 @@ def too_many_failures(db: DbSession, email: str) -> bool:
     return recent_failures(db, email) >= get_settings().login_max_failures
 
 
-def record_failure(db: DbSession, email: str) -> None:
-    """One more wrong log-in; rows older than the window are dropped. Not
-    committed here."""
+def too_many_attempts_message() -> str:
+    minutes = get_settings().login_window_minutes
+    unit = "minute" if minutes == 1 else "minutes"
+    return f"Too many wrong log-ins for this email. Please try again in {minutes} {unit}."
+
+
+def record_attempt(db: DbSession, email: str) -> None:
+    """One more log-in attempt, counted as wrong until clear_failures says
+    otherwise; rows older than the window are dropped. Not committed here:
+    the router commits it before checking the password."""
     db.execute(delete(LoginFailure).where(LoginFailure.created_at < _window_start()))
     db.add(LoginFailure(email=email, created_at=now_iso()))
 

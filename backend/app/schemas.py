@@ -12,7 +12,7 @@ import re
 from typing import Annotated, Any, Literal, Union
 from urllib.parse import urlsplit
 
-from pydantic import AfterValidator, BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 # ---------------------------------------------------------------- fixed lists
 
@@ -195,7 +195,9 @@ class MemberView(BaseModel):
     weak_spot: str | None = None
     said: str | None = None  # their quote from the welcome call
     plan: PlanView | None = None
-    # Track 1: the invite (docs/full-app/track1.md)
+    # Track 1: the invite (docs/full-app/track1.md). invite_link and
+    # phone_number are "" and None unless the reader may see them
+    # (services/accounts.can_see_invites); phone_number is None once they opted out.
     invite_link: str = ""  # /join/{member_id}
     joined: bool = False  # they opened the invite link and joined
     joined_at: str | None = None
@@ -550,7 +552,7 @@ Email = Annotated[str, Field(max_length=254), AfterValidator(_email)]
 
 
 class RegisterIn(BaseModel):
-    name: str = Field(min_length=1, max_length=60)
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]  # trimmed first
     email: Email
     password: str = Field(max_length=PASSWORD_MAX_CHARS)
 
@@ -590,7 +592,8 @@ class FamilyList(BaseModel):
 
 
 class JoinFamily(BaseModel):
-    id: str
+    # No id: the family id opens the family page, which lists every member's
+    # id (the only key to their invite and phone pages).
     name: str
     safe_word_set: bool
 

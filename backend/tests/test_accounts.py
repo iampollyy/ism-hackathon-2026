@@ -1,9 +1,11 @@
 """Track 1: organiser accounts (register, log-in, log-out, me), the wrong
 log-in limit, and families that belong to an account."""
 
+import asyncio
 import hashlib
 from datetime import timedelta
 
+import httpx
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
@@ -123,10 +125,16 @@ def test_register_checks_the_password_and_email(client):
     assert (response.status_code, error_code(response)) == (422, "password_too_short")
     response = register(client, email="not an email")
     assert (response.status_code, error_code(response)) == (422, "invalid_request")
-    response = client.post("/api/auth/register", json={"name": "", "email": "a@b.co", "password": PASSWORD})
-    assert response.status_code == 422
+    for name in ("", "   "):
+        response = client.post("/api/auth/register", json={"name": name, "email": "a@b.co", "password": PASSWORD})
+        assert (response.status_code, error_code(response)) == (422, "invalid_request"), name
     with new_session() as db:
         assert db.scalars(select(Account)).all() == []
+
+
+def test_register_trims_the_name(client):
+    response = register(client, name="  Jon Kovacs ")
+    assert response.json()["account"]["name"] == "Jon Kovacs"
 
 
 def test_me_without_a_session_is_401(client):
@@ -228,12 +236,78 @@ def test_failures_for_unknown_emails_count_too(client):
 
 def test_the_limit_follows_the_settings(client, monkeypatch):
     monkeypatch.setenv("LOGIN_MAX_FAILURES", "2")
+    monkeypatch.setenv("LOGIN_WINDOW_MINUTES", "5")
     get_settings.cache_clear()
     register(client)
     client.cookies.clear()
     login(client, password="wrong horse")
     login(client, password="wrong horse")
-    assert error_code(login(client)) == "too_many_attempts"
+    response = login(client)
+    assert error_code(response) == "too_many_attempts"
+    assert "try again in 5 minutes" in response.json()["error"]["message"]
+
+
+def test_the_429_message_names_the_window(client):
+    for _ in range(5):
+        login(client, email="ghost@example.com")
+    response = login(client, email="ghost@example.com")
+    assert response.json()["error"]["message"].endswith("try again in 15 minutes.")
+
+
+async def test_parallel_wrong_logins_cannot_pass_the_limit_together():
+    """Every attempt is counted before its password is checked, so a batch
+    sent at once gets 5 wrong_login answers and the rest 429."""
+    from app.main import app
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as http:
+        created = await http.post("/api/auth/register", json={"name": "Jon", "email": "jon@example.com",
+                                                              "password": PASSWORD})
+        assert created.status_code == 201
+        http.cookies.clear()
+        answers = await asyncio.gather(*[
+            http.post("/api/auth/login", json={"email": "jon@example.com", "password": "wrong horse"})
+            for _ in range(30)
+        ])
+        codes = [error_code(answer) for answer in answers]
+        assert codes.count("wrong_login") == 5
+        assert codes.count("too_many_attempts") == 25
+        right = await http.post("/api/auth/login", json={"email": "jon@example.com", "password": PASSWORD})
+        assert error_code(right) == "too_many_attempts"
+
+
+async def test_parallel_right_logins_all_work():
+    from app.main import app
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as http:
+        await http.post("/api/auth/register", json={"name": "Jon", "email": "jon@example.com", "password": PASSWORD})
+        http.cookies.clear()
+        answers = await asyncio.gather(*[
+            http.post("/api/auth/login", json={"email": "jon@example.com", "password": PASSWORD})
+            for _ in range(4)
+        ])
+        assert [answer.status_code for answer in answers] == [200] * 4
+    with new_session() as db:
+        assert db.scalars(select(LoginFailure)).all() == []
+
+
+def test_unknown_emails_never_hash_on_the_event_loop(monkeypatch):
+    """The dummy hash for an email with no account is made inside
+    check_password, which runs in the scrypt pool."""
+    monkeypatch.setattr(accounts, "_dummy_hash", None)
+    assert accounts.check_password(PASSWORD, None) is False
+    assert accounts._dummy_hash is not None
+    stored = accounts.hash_password(PASSWORD)
+    assert accounts.check_password(PASSWORD, stored) is True
+    assert accounts.check_password("wrong horse", stored) is False
+
+
+async def test_scrypt_runs_in_its_own_pool():
+    import threading
+
+    name = await accounts.run_scrypt(lambda: threading.current_thread().name)
+    assert name.startswith("scrypt")
 
 
 # ---------------------------------------------------------------- families of an account

@@ -85,12 +85,16 @@ async def set_practice_consent(member_id: str, body: schemas.ConsentUpdate,
 
 
 @router.get("/families/{family_id}", response_model=schemas.FamilyView)
-async def get_family(family_id: str, db: Session = Depends(get_db)) -> schemas.FamilyView:
+async def get_family(family_id: str, db: Session = Depends(get_db),
+                     account: Account | None = Depends(accounts.optional_account)) -> schemas.FamilyView:
+    """Readable by id without a log-in. For a family with an owner, only
+    the owner's session sees invite links and phone numbers (track 1)."""
     family = db.get(Family, family_id)
     if family is None:
         raise schemas.ApiError(404, "not_found", "No family with this id.")
     members = list(db.scalars(select(Member).where(Member.family_id == family_id).order_by(Member.created_at)))
-    views = [member_view(db, member) for member in members]
+    invites = accounts.can_see_invites(db, family_id, account)
+    views = [member_view(db, member, invites=invites) for member in members]
     return schemas.FamilyView(
         id=family.id,
         name=family.name,
@@ -187,7 +191,10 @@ def is_phone_online(last_seen_at: str | None) -> bool:
     return seen is not None and (utcnow() - seen).total_seconds() <= PHONE_ONLINE_SECONDS
 
 
-def member_view(db: Session, member: Member) -> schemas.MemberView:
+def member_view(db: Session, member: Member, invites: bool = False) -> schemas.MemberView:
+    """invites: fill invite_link and phone_number (the reader may see them:
+    accounts.can_see_invites). An opted-out member's phone number is never
+    shown."""
     profile = _as_dict(_load_json(member.profile_json))
     plan = _as_dict(_load_json(member.plan_json))
     opted_out = member.opted_out_at is not None
@@ -210,10 +217,10 @@ def member_view(db: Session, member: Member) -> schemas.MemberView:
         weak_spot=plan.get("weak_spot") or profile.get("weak_spot"),
         said=profile.get("said"),
         plan=plan_view(plan) if plan else None,
-        invite_link=f"/join/{member.id}",
+        invite_link=f"/join/{member.id}" if invites else "",
         joined=joined is not None,
         joined_at=joined.joined_at if joined else None,
-        phone_number=joined.phone_number if joined else None,
+        phone_number=joined.phone_number if joined and invites and not opted_out else None,
     )
 
 

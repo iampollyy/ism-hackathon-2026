@@ -9,7 +9,7 @@ All requests and answers are JSON. Errors have the usual shape, `{ "error": { "c
 **Organiser.**
 1. `/register` page: `POST /api/auth/register`. The answer sets the log-in cookie; the browser keeps it.
 2. Sign-up page: `POST /api/families` as before. Because the browser is logged in, the family now belongs to the account.
-3. Family page (`GET /api/families/{id}`): each member has `invite_link` (`/join/{member_id}`), `joined`, `joined_at` and `phone_number`. Show the invite link as a QR code or a share button, and a "joined" badge.
+3. Family page (`GET /api/families/{id}`): each member has `invite_link` (`/join/{member_id}`), `joined`, `joined_at` and `phone_number`. Show the invite link as a QR code or a share button, and a "joined" badge. The invite links and phone numbers are only filled in for the organiser's own log-in (see "Changes to existing endpoints").
 4. Later visits: `GET /api/auth/me` on load. `401 not_logged_in` means show `/login`; otherwise `families[0].id` opens their family page. `GET /api/families` gives a list with counts, for a picker.
 
 **Member.**
@@ -36,7 +36,7 @@ Creates an organiser account and logs it in.
   "families": [] }
 ```
 
-- The email is stored trimmed and lower-cased. `name` is 1 to 60 characters, the password 8 to 200.
+- The email is stored trimmed and lower-cased. `name` is trimmed, then 1 to 60 characters (a name of only spaces is `422 invalid_request`); the password 8 to 200.
 - `409 email_taken`: an account with this email exists ("Please log in").
 - `422 password_too_short`: under 8 characters.
 - `422 invalid_request`: the email is not an email address, the name is empty, and so on.
@@ -50,7 +50,7 @@ Creates an organiser account and logs it in.
 `200` with the same body as `/me`, and a new `Set-Cookie: cb_session=…`.
 
 - `401 wrong_login`, "Wrong email or password.": the same answer for a wrong password and an unknown email.
-- `429 too_many_attempts`: 5 wrong log-ins for this email in the last 15 minutes. It is checked before the password, so even the right password is refused until the window passes. A right password before the limit clears the count.
+- `429 too_many_attempts`, "Too many wrong log-ins for this email. Please try again in 15 minutes." (the number is `LOGIN_WINDOW_MINUTES`): 5 wrong log-ins for this email in the last 15 minutes. It is checked before the password, so even the right password is refused until the window passes. A right password before the limit clears the count. Attempts still being checked count too, so a burst of parallel log-ins gets at most 5 answers that are not `429`.
 
 ### `POST /api/auth/logout`
 
@@ -85,7 +85,7 @@ The logged-in account's families, oldest first, with counts for a picker or a da
 What the invite page shows. No log-in: the member id in the link is the key, as for the phone page.
 
 ```json
-{ "family": { "id": "fam_k2x9…", "name": "The Kovacs", "safe_word_set": true },
+{ "family": { "name": "The Kovacs", "safe_word_set": true },
   "organiser": { "name": "Jon Kovacs" },
   "member": { "id": "mem_Qz81hT0a", "name": "Sara", "relationship": "mother" },
   "joined": false,
@@ -96,6 +96,7 @@ What the invite page shows. No log-in: the member id in the link is the key, as 
   "phone_link": "/phone/mem_Qz81hT0a" }
 ```
 
+- `family` has no `id`, on purpose: the family id opens the family page, which lists every member's id, and a member id is the only key to that member's invite, phone and consent pages. Do not link from the invite or phone pages to the family page.
 - `organiser`: the name on the account that created the family; for a family made without a log-in, the first member marked `is_organiser`; `null` if neither exists.
 - `joined`, `joined_at`, `phone_number`: from their last join, so the form can be filled in again. `joined_at` is the first join's time.
 - `consents.practice`: they currently agree to practice calls (the sign-up tick, this page's tick, or a yes on the welcome call). Pre-tick the box with it.
@@ -129,7 +130,7 @@ Rules:
 
 **`POST /api/families`**: unchanged without a session. With a valid session cookie, the new family also belongs to that account (it shows in `/me` and `GET /api/families`).
 
-**`GET /api/families/{id}`**: still readable by id without a log-in. Each member has four new fields, after the existing ones:
+**`GET /api/families/{id}`**: still readable by id without a log-in. Each member has four new fields, after the existing ones (an example as the organiser sees it):
 
 ```json
 { "id": "mem_Qz81hT0a", "name": "Sara", "…": "existing fields as before",
@@ -139,7 +140,12 @@ Rules:
   "phone_number": "+49 151 2345678" }
 ```
 
-`joined` is false (and the other two `null`) for members who have not used their invite link, including every member made before this change.
+`joined` is false (and `joined_at` and `phone_number` are `null`) for members who have not used their invite link, including every member made before this change.
+
+Who sees what:
+- A family made while logged in (it has an owner): `invite_link` and `phone_number` are filled in only when the request carries **that owner's** session. Anyone else (nobody logged in, or another account) gets `"invite_link": ""` and `"phone_number": null`; `joined` and `joined_at` are always there. So the organiser's family page must be opened while logged in to show the invite links.
+- A family made without a log-in (no owner): everyone sees them, as before.
+- A member who opted out: `phone_number` is always `null`.
 
 **`GET /api/members/{id}/phone-state`**: same answer as before. New: for a member who joined and has never had a welcome call, this request first starts one, so `incoming_call` is already set in its answer (`kind: "welcome"`, caller `Callback`).
 
@@ -175,7 +181,8 @@ The latest of `clone_from_call` and `clone_from_call_withdrawn` is the member's 
 
 - Passwords: `hashlib.scrypt` (n=2¹⁴, r=8, p=1, a 16-byte random salt, a 64-byte key), stored with its parameters as `scrypt$n$r$p$salt$key`, compared with `hmac.compare_digest`.
 - The cookie `cb_session` holds a random 32-byte token: HttpOnly, SameSite=Lax, Path=/, Secure when the request came over https (the server's uvicorn trusts nginx's forwarded scheme), 30 days. Only the token's sha256 is stored (`sessions`). Logging out deletes that row.
-- Wrong log-ins are counted per email in `login_failures`, also for emails without an account, so the answers never reveal which emails exist.
+- Log-in attempts are counted per email in `login_failures`, also for emails without an account, so the answers never reveal which emails exist. Each attempt's row is written before its password is checked and a right password deletes the email's rows, so what remains are the wrong attempts (and those still being checked).
+- scrypt runs in its own pool of 2 threads, never on the event loop and never in the default thread pool the voice uploads use; a burst of log-ins queues there instead of taking 16 MB per attempt at once.
 
 ## Tables (new only)
 
@@ -184,7 +191,7 @@ The latest of `clone_from_call` and `clone_from_call_withdrawn` is the member's 
 | `accounts` | `id` (`acc_…`), `email` (unique, lower-cased), `name`, `password_hash`, `created_at` |
 | `sessions` | `token_hash` (sha256, primary key), `account_id`, `created_at`, `expires_at` |
 | `family_owners` | `family_id` (primary key), `account_id` |
-| `login_failures` | `id`, `email`, `created_at` |
+| `login_failures` | `id`, `email`, `created_at` (one row per log-in attempt; a right password deletes the email's rows) |
 | `member_joins` | `member_id` (primary key), `joined_at`, `phone_number` |
 
 ## Settings

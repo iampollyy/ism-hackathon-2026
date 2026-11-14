@@ -62,7 +62,7 @@ def test_invite_page_before_joining(client, make_family):
     response = client.get(f"/api/join/{sara}")
     assert response.status_code == 200, response.text
     assert response.json() == {
-        "family": {"id": family["family_id"], "name": "The Kovacs", "safe_word_set": True},
+        "family": {"name": "The Kovacs", "safe_word_set": True},  # never the family id
         "organiser": {"name": "Jon"},  # the organiser member, when no account owns the family
         "member": {"id": sara, "name": "Sara", "relationship": "mother"},
         "joined": False,
@@ -72,6 +72,15 @@ def test_invite_page_before_joining(client, make_family):
         "consents": {"practice": False, "clone_from_call": False},
         "phone_link": f"/phone/{sara}",
     }
+
+
+def test_invite_page_never_shows_the_family_id(client, make_family):
+    family = make_family()
+    sara, _ = members(family)
+    join(client, sara, phone="+49 151 2345678")
+    for response in (client.get(f"/api/join/{sara}"), join(client, sara)):
+        assert response.status_code == 200
+        assert family["family_id"] not in response.text
 
 
 def test_invite_page_names_the_account_that_made_the_family(client):
@@ -243,6 +252,50 @@ def test_family_view_shows_who_joined(client, make_family):
     # the existing fields are unchanged
     assert by_id[sara]["phone_link"] == f"/phone/{sara}"
     assert by_id[sara]["consent"] == {"clone": False, "practice": True}
+
+
+def owned_family(client) -> tuple[str, str, str]:
+    """A family made while logged in, with Sara joined (with a phone number).
+    Returns (family_id, sara, jon); the client is still logged in."""
+    client.post("/api/auth/register", json={"name": "Jon", "email": "jon@example.com", "password": "correct horse"})
+    family = client.post("/api/families", json={"name": "The Kovacs", "members": [
+        {"name": "Sara", "relationship": "mother", "consent_practice": True},
+        {"name": "Jon", "relationship": "son", "is_organiser": True}]}).json()
+    sara, jon = family["members"][0]["id"], family["members"][1]["id"]
+    join(client, sara, phone="+49 151 2345678")
+    return family["family_id"], sara, jon
+
+
+def test_the_owner_sees_invite_links_and_phone_numbers(client):
+    family_id, sara, _ = owned_family(client)
+    by_id = {m["id"]: m for m in client.get(f"/api/families/{family_id}").json()["members"]}
+    assert by_id[sara]["invite_link"] == f"/join/{sara}"
+    assert by_id[sara]["phone_number"] == "+49 151 2345678"
+
+
+def test_others_do_not_see_an_owned_familys_invite_links_and_phone_numbers(client):
+    family_id, sara, _ = owned_family(client)
+    client.post("/api/auth/logout")
+    client.post("/api/auth/register", json={"name": "Ana", "email": "ana@example.com", "password": "correct horse"})
+    for reader in ("another account", "nobody logged in"):
+        if reader == "nobody logged in":
+            client.post("/api/auth/logout")
+        response = client.get(f"/api/families/{family_id}")
+        assert response.status_code == 200, reader  # still readable by id
+        by_id = {m["id"]: m for m in response.json()["members"]}
+        assert by_id[sara]["joined"] is True and by_id[sara]["joined_at"], reader
+        assert (by_id[sara]["invite_link"], by_id[sara]["phone_number"]) == ("", None), reader
+        assert "+49 151" not in response.text, reader
+
+
+def test_an_opted_out_members_phone_number_is_not_shown(client, make_family):
+    family = make_family()
+    sara, _ = members(family)
+    join(client, sara, phone="+49 151 2345678")
+    update_member(sara, opted_out_at=now_iso())
+    by_id = {m["id"]: m for m in client.get(f"/api/families/{family['family_id']}").json()["members"]}
+    assert by_id[sara]["joined"] is True
+    assert by_id[sara]["phone_number"] is None
 
 
 # ---------------------------------------------------------------- the welcome call starts by itself

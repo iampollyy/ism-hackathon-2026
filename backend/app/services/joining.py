@@ -2,7 +2,9 @@
 
 Rules (docs/full-app/track1.md):
 - A member's invite link is /join/{member_id} (a front-end route). The
-  member id is the key, as it is for the phone page.
+  member id is the key, as it is for the phone page. The invite page never
+  shows the family id (it would open the family page, and with it every
+  other member's key).
 - Joining (POST /api/join/{id}) records the member's own two ticks as
   `consents` rows with source `invite`:
   - practice ("I agree to receive practice calls without knowing when"):
@@ -125,7 +127,7 @@ def join_view(db: DbSession, member: Member) -> schemas.JoinView:
     joined = get_join(db, member.id)
     organiser = organiser_name(db, member.family_id)
     return schemas.JoinView(
-        family=schemas.JoinFamily(id=member.family_id, name=family.name if family else "",
+        family=schemas.JoinFamily(name=family.name if family else "",
                                   safe_word_set=bool(family and family.safe_word_set)),
         organiser=schemas.JoinOrganiser(name=organiser) if organiser else None,
         member=schemas.JoinMember(id=member.id, name=member.name, relationship=member.relationship),
