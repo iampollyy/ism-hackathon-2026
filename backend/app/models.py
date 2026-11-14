@@ -186,3 +186,36 @@ class ModelRun(Base):
     input_tokens: Mapped[int | None] = mapped_column(Integer)
     output_tokens: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+# ---------------------------------------------------------------- billing (Saturday, demo mode)
+
+
+class FamilyPlan(Base):
+    """The family's plan. Demo mode: choosing a plan never takes a payment
+    and no card details exist anywhere. No row: a 30-day trial counted from
+    the family's created_at."""
+
+    __tablename__ = "family_plans"
+
+    family_id: Mapped[str] = mapped_column(ForeignKey("families.id"), primary_key=True)
+    plan: Mapped[str] = mapped_column(String, nullable=False)  # trial | family_monthly | family_yearly | bank
+    status: Mapped[str] = mapped_column(String, nullable=False)  # trialing | active | canceled
+    bank_code: Mapped[str | None] = mapped_column(String)
+    started_at: Mapped[str] = mapped_column(String, nullable=False)
+    updated_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class WaitlistEntry(Base):
+    """Sign-ups from the landing page: families wanting early access, and
+    banks wanting to talk. Added on Saturday (routers/waitlist.py)."""
+
+    __tablename__ = "waitlist"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String, nullable=False)  # family | bank
+    organisation: Mapped[str | None] = mapped_column(String)
+    message: Mapped[str | None] = mapped_column(Text)
+    source: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
