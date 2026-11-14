@@ -72,7 +72,7 @@ export function WaitingScreen(props: WaitingScreenProps) {
         ) : left ? (
           <span className="status-pill phone-status-off">Off</span>
         ) : link === 'online' ? (
-          <span className="status-pill good">On</span>
+          <span className="status-pill good phone-status-on">On</span>
         ) : null}
       </header>
 
@@ -128,7 +128,7 @@ function HomeTab({
   onResetAlert,
   memberChoices,
 }: WaitingScreenProps & { memberChoices: ReturnType<typeof useMemberChoices> }) {
-  const { phone, link, notice } = state;
+  const { phone, notice } = state;
   const hidden = new Set(state.hiddenMessages);
   const visible = (phone?.messages ?? []).filter((message) => !hidden.has(message.id));
   // A family alert is urgent: it goes first, above everything else.
@@ -142,7 +142,6 @@ function HomeTab({
     return (
       <>
         <Card className="phone-hero phone-hero--left">
-          <span className="phone-hero__light" aria-hidden="true" />
           <h1 className="phone-hero__title">You’ve left Callback</h1>
           <p className="phone-hero__who">
             <strong>{choices.join.member.name}</strong>
@@ -173,7 +172,6 @@ function HomeTab({
       )}
 
       <Card className="phone-hero">
-        <span className={`phone-hero__light ${link === 'online' ? 'is-on' : ''}`} aria-hidden="true" />
         <h1 className="phone-hero__title">Callback is on</h1>
         <p className="phone-hero__who">
           {phone ? (

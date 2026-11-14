@@ -246,7 +246,7 @@ body:has(.phone-page) {
 }
 
 .phone-section-title {
-  margin: 8px 0 0;
+  margin: 8px 0 12px;
   font-family: 'Space Grotesk', sans-serif;
   font-size: 1.2rem;
   font-weight: 700;
@@ -1779,6 +1779,11 @@ $shield-amber: #f5b94d;
 }
 
 // Someone who left Callback: the page says so, calmly.
+// The live light: the header's "On" breathes while the phone is connected.
+.phone-status-on::before {
+  animation: phone-on-glow 2.2s ease-out infinite;
+}
+
 .phone-status-off {
   background: rgba(17, 34, 49, 0.07);
   color: var(--muted);
