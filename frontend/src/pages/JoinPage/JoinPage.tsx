@@ -362,7 +362,8 @@ function JoinForm({
           <p className="join-hint join-hint--center">
             <span>
               <Mic className="join-hint__icon" size={16} aria-hidden="true" />
-              Your phone rings in a few seconds. If it asks, allow the microphone so you can talk.
+              Your welcome call rings on this page in a few seconds, so keep it open. If it asks, allow the
+              microphone so you can talk.
             </span>
           </p>
         </>

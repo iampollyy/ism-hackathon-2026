@@ -4,7 +4,7 @@
 // The logic lives in usePhone.ts; the screens are in ./screens.
 
 import { useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Link2Off } from 'lucide-react';
 import type { PhoneState } from '../../api/types';
 import { usePhone } from './usePhone';
@@ -49,7 +49,14 @@ function Phone({ memberId }: { memberId: string }) {
   const { state } = phone;
   const { view } = state;
   const location = useLocation();
-  const fromJoin = (location.state as { fromJoin?: boolean } | null)?.fromJoin === true;
+  const navigate = useNavigate();
+  // Arrived from the Join tap: read once. The router keeps location.state in
+  // the history entry across reloads, so it is cleared at once; a reload
+  // must not say the welcome call is about to ring.
+  const [fromJoin] = useState(() => (location.state as { fromJoin?: boolean } | null)?.fromJoin === true);
+  useEffect(() => {
+    if (location.state != null) navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
   const [tab, setTab] = useState<PhoneTab>('home');
   const dark = view.name === 'ringing' || view.name === 'in_call' || view.name === 'family_line';
   useThemeColor(phone.shield?.warn ? WARNING_BAR : dark ? DARK_BAR : null);

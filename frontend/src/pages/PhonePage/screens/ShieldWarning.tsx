@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { BellRing, ChevronUp, Ear, Phone, PhoneOff, ShieldAlert, TriangleAlert } from 'lucide-react';
 import type { PhoneState } from '../../../api/types';
 
@@ -11,19 +11,24 @@ type ShieldProps = {
   onCallBack: (hasNumber: boolean) => void;
 };
 
+type ShieldLayerProps = ShieldProps & {
+  /** The full warning was folded into a red banner, to keep talking. The
+   * call screen holds it, to make what is under the warning inert. */
+  folded: boolean;
+  onFold: (folded: boolean) => void;
+};
+
 /** Callback Shield on the in-call screen, only during a Shield call
  * (phone-state.shield is null on every practice drill). Green: a quiet
  * "listening" chip. Yellow: a softer banner. Warn: the full-screen warning,
  * which can be folded into a red banner to keep talking. */
-export function ShieldLayer({ shield, onHangUp, onCallBack }: ShieldProps) {
-  const [folded, setFolded] = useState(false);
-
+export function ShieldLayer({ shield, onHangUp, onCallBack, folded, onFold }: ShieldLayerProps) {
   if (shield.warn && !folded) {
-    return <ShieldWarning shield={shield} onHangUp={onHangUp} onCallBack={onCallBack} onFold={() => setFolded(true)} />;
+    return <ShieldWarning shield={shield} onHangUp={onHangUp} onCallBack={onCallBack} onFold={() => onFold(true)} />;
   }
   if (shield.warn) {
     return (
-      <button type="button" className="shield-banner shield-banner--red" onClick={() => setFolded(false)}>
+      <button type="button" className="shield-banner shield-banner--red" onClick={() => onFold(false)}>
         <ShieldAlert size={20} aria-hidden="true" />
         <span className="shield-banner__text">
           <strong>This sounds like a scam</strong>
@@ -103,9 +108,10 @@ function ShieldWarning({ shield, onHangUp, onCallBack, onFold }: ShieldProps & {
               Call {contact.name}
             </a>
           ) : (
+            // No number: the in-app family line, never a promise of a person.
             <button type="button" className="shield-button shield-button--call" onClick={() => onCallBack(false)}>
               <Phone size={22} aria-hidden="true" />
-              Hang up and call {contact.name}
+              Hang up and call the family number
             </button>
           ))}
         <button type="button" className="shield-warning__fold" onClick={onFold}>

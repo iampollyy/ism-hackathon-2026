@@ -227,7 +227,10 @@ export function YourChoicesCard({
   }
 
   const { join, voice } = choices;
-  const voiceMade = voice?.state === 'ready' && deleting !== 'done';
+  // A copy made from a welcome call is known; one recorded another way (with
+  // the family) is not visible here, so deleting is always on offer: it is
+  // harmless when there is none.
+  const voiceMade = voice?.state === 'ready';
   return (
     <Card className="phone-card phone-choices">
       <h2 className="phone-card__title">Your choices</h2>
@@ -248,20 +251,30 @@ export function YourChoicesCard({
         </div>
       </dl>
 
-      {voiceMade && deleting !== 'asking' && deleting !== 'busy' && (
-        <p className="phone-choices__voice">
-          A copy of your voice was made from your welcome call. Only your family’s practice calls use it.{' '}
-          <button type="button" className="phone-link-button" onClick={() => setDeleting('asking')}>
-            Delete my voice
-          </button>
-        </p>
-      )}
+      {deleting === 'idle' &&
+        (voiceMade ? (
+          <p className="phone-choices__voice">
+            A copy of your voice was made from your welcome call. Only your family’s practice calls use it.{' '}
+            <button type="button" className="phone-link-button" onClick={() => setDeleting('asking')}>
+              Delete my voice
+            </button>
+          </p>
+        ) : (
+          <p className="phone-choices__voice">
+            <button type="button" className="phone-link-button" onClick={() => setDeleting('asking')}>
+              Delete any copy of my voice
+            </button>
+          </p>
+        ))}
       {(deleting === 'asking' || deleting === 'busy') && (
         <div className="phone-alert__confirm">
-          <p>Delete the copy of your voice? Practice calls will stop using it straight away.</p>
+          <p>
+            {voiceMade ? 'Delete the copy of your voice?' : 'Delete any copy of your voice?'} Practice calls will stop
+            using it straight away.
+          </p>
           <div className="phone-alert__buttons">
             <button type="button" className="phone-alert__send" onClick={deleteVoice} disabled={deleting === 'busy'}>
-              {deleting === 'busy' ? 'Deleting…' : 'Delete my voice'}
+              {deleting === 'busy' ? 'Deleting…' : 'Yes, delete it'}
             </button>
             <button type="button" className="phone-quiet-button" onClick={() => setDeleting('idle')} disabled={deleting === 'busy'}>
               Keep it
@@ -277,7 +290,7 @@ export function YourChoicesCard({
       )}
       {deleting === 'done' && (
         <p className="phone-choices__voice" role="status">
-          <Check size={16} aria-hidden="true" /> Your voice copy has been deleted.
+          <Check size={16} aria-hidden="true" /> {voiceMade ? 'Your voice copy has been deleted.' : 'Any copy of your voice has been deleted.'}
         </p>
       )}
 

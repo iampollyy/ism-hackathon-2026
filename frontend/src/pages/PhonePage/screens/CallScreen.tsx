@@ -49,6 +49,10 @@ export function CallScreen({
   onEnd,
 }: CallScreenProps) {
   const seconds = useSecondsSince(startedAt);
+  const [shieldFolded, setShieldFolded] = useState(false);
+  // While the full Shield warning covers the screen, nothing under it can be
+  // reached by keyboard or screen reader.
+  const covered = Boolean(shield?.warn) && !shieldFolded;
   const status = ending
     ? 'Ending…'
     : !connected
@@ -64,9 +68,17 @@ export function CallScreen({
     <main
       className={`phone-screen phone-dark phone-in-call phone-in-call--${variant}${shield?.warn ? ' is-warned' : ''}`}
     >
-      {shield && <ShieldLayer shield={shield} onHangUp={onEnd} onCallBack={onCallBack ?? (() => onEnd())} />}
+      {shield && (
+        <ShieldLayer
+          shield={shield}
+          folded={shieldFolded}
+          onFold={setShieldFolded}
+          onHangUp={onEnd}
+          onCallBack={onCallBack ?? (() => onEnd())}
+        />
+      )}
 
-      <div className="call-head">
+      <div className="call-head" inert={covered}>
         <span className="call-avatar call-avatar--small" aria-hidden="true">
           <Icon size={36} strokeWidth={1.6} />
         </span>
@@ -87,7 +99,7 @@ export function CallScreen({
       </div>
 
       {variant === 'welcome' && (
-        <section className="call-note" aria-label="About this call">
+        <section className="call-note" aria-label="About this call" inert={covered}>
           {recording && (
             <p className="call-note__recording" role="status">
               <span className="call-note__dot" aria-hidden="true" />
@@ -102,7 +114,7 @@ export function CallScreen({
         </section>
       )}
 
-      <div className="call-buttons call-buttons--single">
+      <div className="call-buttons call-buttons--single" inert={covered}>
         <div className="call-button">
           <button
             type="button"

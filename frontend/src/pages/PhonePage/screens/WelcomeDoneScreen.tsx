@@ -112,7 +112,15 @@ function VoiceCard({ voice, voiceConsent }: { voice: VoiceProgress; voiceConsent
   let title: string;
   let text: string | null = null;
 
-  if (voice.phase === 'no_recording') {
+  if (voice.phase === 'not_allowed') {
+    // They said yes on the call but had not ticked the box at join: say why
+    // nothing was made, and where to change it.
+    if (voiceConsent !== true) return null;
+    tone = 'calm';
+    title = 'No copy of your voice was made';
+    text =
+      'You didn’t tick the box for it when you joined, so this call wasn’t recorded. You can change that under “Your choices” on your home screen.';
+  } else if (voice.phase === 'no_recording') {
     // Only worth saying when they agreed to a copy on the call.
     if (voiceConsent !== true) return null;
     tone = 'warn';

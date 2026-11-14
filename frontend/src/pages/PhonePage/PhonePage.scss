@@ -1792,3 +1792,33 @@ $shield-amber: #f5b94d;
 .phone-page .phone-hero--left .phone-hero__title {
   font-size: clamp(1.9rem, 8vw, 2.3rem);
 }
+
+// Practice calls switched off: the same hero, calmer, with the way back on.
+.phone-page .phone-hero--off .phone-hero__title {
+  font-size: clamp(1.9rem, 8vw, 2.3rem);
+}
+
+.phone-hero__switch {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 14px 0 18px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color 160ms ease, background-color 160ms ease;
+
+  &:hover {
+    border-color: var(--navy);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--navy);
+    outline-offset: 3px;
+  }
+}

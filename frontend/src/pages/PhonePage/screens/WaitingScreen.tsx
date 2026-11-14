@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { BellRing, BookOpen, Check, CircleAlert, House, Info, MicOff, Newspaper, PhoneMissed, ShieldCheck, Volume2, WifiOff, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BellRing, BookOpen, Check, ChevronRight, CircleAlert, House, Info, MicOff, Newspaper, PhoneMissed, ShieldCheck, Volume2, WifiOff, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Badge } from '../../../components/atoms/Badge';
 import { Card } from '../../../components/atoms/Card';
@@ -27,7 +28,7 @@ type WaitingScreenProps = {
   soundBusy: boolean;
   /** The family's id, when the phone knows it (the News tab needs it). */
   familyId: string | null;
-  /** Arrived from the Join page: the welcome call is about to ring. */
+  /** Arrived from the Join tap (once; never after a reload). */
   fromJoin: boolean;
   tab: PhoneTab;
   alert: AlertState;
@@ -48,6 +49,7 @@ export function WaitingScreen(props: WaitingScreenProps) {
   // Callback changes what the whole screen says.
   const memberChoices = useMemberChoices(props.memberId, state.voice?.phase === 'final' ? state.voice.callId : '');
   const left = memberChoices.choices?.join.opted_out === true;
+  const practiceOff = practiceIsOff(memberChoices.choices);
   const tabs: { key: PhoneTab; label: string; icon: LucideIcon }[] = [
     { key: 'home', label: 'Home', icon: House },
     { key: 'learn', label: 'Learn', icon: BookOpen },
@@ -71,6 +73,8 @@ export function WaitingScreen(props: WaitingScreenProps) {
           <span className="status-pill warn">Offline</span>
         ) : left ? (
           <span className="status-pill phone-status-off">Off</span>
+        ) : link === 'online' && practiceOff ? (
+          <span className="status-pill phone-status-off">Practice off</span>
         ) : link === 'online' ? (
           <span className="status-pill good phone-status-on">On</span>
         ) : null}
@@ -134,8 +138,11 @@ function HomeTab({
   // A family alert is urgent: it goes first, above everything else.
   const alerts = visible.filter((message) => message.kind === 'alert');
   const messages = visible.filter((message) => message.kind !== 'alert');
-  const awaitingWelcome = fromJoin && state.welcomeOffer !== 'show' && state.voice === null;
+  // Just joined, and nothing has rung or been learned about a welcome call yet.
+  // Once one rings, or the history says there was one, the usual line is back.
+  const awaitingWelcome = fromJoin && state.welcomeOffer === 'unknown' && state.voice === null;
   const { choices, error: choicesError, reload } = memberChoices;
+  const practiceOff = practiceIsOff(choices);
 
   if (choices?.join.opted_out) {
     const { organiser, family } = choices.join;
@@ -171,8 +178,8 @@ function HomeTab({
         </section>
       )}
 
-      <Card className="phone-hero">
-        <h1 className="phone-hero__title">Callback is on</h1>
+      <Card className={`phone-hero ${practiceOff ? 'phone-hero--off' : ''}`}>
+        <h1 className="phone-hero__title">{practiceOff ? 'Practice calls are off' : 'Callback is on'}</h1>
         <p className="phone-hero__who">
           {phone ? (
             <>
@@ -185,11 +192,22 @@ function HomeTab({
         </p>
         <p className="phone-hero__text">
           {awaitingWelcome
-            ? 'Your welcome call will ring here in a moment.'
-            : 'Keep this page open with the screen on. A call can come at any time.'}
+            ? 'Your welcome call will ring on this page in a few seconds. Keep it open.'
+            : practiceOff
+              ? 'You won’t get practice calls. You can switch them on any time.'
+              : 'Keep this page open with the screen on. A call can come at any time.'}
         </p>
 
-        <SoundControl sound={sound} busy={soundBusy} onSound={onSound} />
+        {practiceOff && !awaitingWelcome ? (
+          // Nothing rings by itself while practice is off, so no sound button:
+          // "Start my welcome call" switches the sound on with its own tap.
+          <Link className="phone-hero__switch" to={`/join/${memberId}`}>
+            Switch on practice calls
+            <ChevronRight size={18} aria-hidden="true" />
+          </Link>
+        ) : (
+          <SoundControl sound={sound} busy={soundBusy} onSound={onSound} />
+        )}
       </Card>
 
       {state.welcomeOffer === 'show' && (
@@ -216,6 +234,12 @@ function HomeTab({
       </p>
     </>
   );
+}
+
+/** They said no to practice calls (at join, or out loud on the welcome call).
+ * Unknown while their choices load: then the usual "Callback is on". */
+function practiceIsOff(choices: ReturnType<typeof useMemberChoices>['choices']): boolean {
+  return choices !== null && !choices.join.opted_out && !choices.join.consents.practice;
 }
 
 const WHEN = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });

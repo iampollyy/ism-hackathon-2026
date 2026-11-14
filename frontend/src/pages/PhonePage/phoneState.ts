@@ -68,7 +68,8 @@ export type PhoneView =
 /** What became of the recording of their side of the welcome call. */
 export type VoiceProgress = {
   callId: string;
-  phase: 'uploading' | 'checking' | 'final' | 'no_recording' | 'upload_failed';
+  /** not_allowed: not recorded at all, as they did not tick the voice box at join. */
+  phase: 'uploading' | 'checking' | 'final' | 'no_recording' | 'upload_failed' | 'not_allowed';
   state: VoiceSampleStatus['state'] | null;
   reason: string | null;
 };
@@ -201,7 +202,9 @@ function finishedState(state: PhoneUiState, action: Extract<PhoneAction, { type:
     return {
       ...state,
       notice: null,
-      welcomeOffer: action.endedBy === 'error' && action.consent === null ? 'show' : 'hide',
+      // No answer yet (the line dropped, or they hung up early): the home
+      // screen keeps offering the welcome call, however it ended.
+      welcomeOffer: action.consent === null ? 'show' : 'hide',
       view: {
         name: 'welcome_done',
         callId: action.callId,

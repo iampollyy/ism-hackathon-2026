@@ -1,5 +1,7 @@
 // The member's own side of the welcome call, recorded so their voice can be
-// copied after a spoken yes (docs/full-app/voice-from-call.md).
+// copied after a spoken yes (docs/full-app/voice-from-call.md). Only for a
+// member who ticked "Callback may make a copy of my voice" when they joined:
+// usePhone.ts never starts it for anyone else.
 //
 // Only their microphone, through a stream of its own, never the agent's
 // audio. Echo cancellation stays on so the agent's voice from the speaker
@@ -41,8 +43,15 @@ export class WelcomeRecorder {
   /** Open the microphone and start recording. Never throws, and gives up
    * waiting after a few seconds so the call is never held up by it. */
   start(): Promise<void> {
+    return Promise.race([this.opened, sleep(START_WAIT_MS)]);
+  }
+
+  /** Settles once the microphone has opened and recording has begun (or it
+   * could not), however long that takes: a slow permission prompt can outlast
+   * start()'s wait, and the call screen must still say it is recording. */
+  get opened(): Promise<void> {
     if (!this.starting) this.starting = this.open();
-    return Promise.race([this.starting, sleep(START_WAIT_MS)]);
+    return this.starting;
   }
 
   get recording(): boolean {

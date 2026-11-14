@@ -9,7 +9,9 @@
 //
 // The welcome call also records the member's own side (voiceRecorder.ts) and
 // uploads it when the call ends, for a copy of their voice after a spoken
-// yes. A Shield call shows phone-state.shield's live warning (ShieldWarning).
+// yes, but only when they ticked the voice box at join: nobody else's
+// microphone is recorded or sent. A Shield call shows phone-state.shield's
+// live warning (ShieldWarning).
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Conversation } from '@elevenlabs/client';
@@ -62,6 +64,9 @@ type CallRun = {
   consent: boolean | null;
   /** The welcome call's answer about a copy of their voice. */
   voiceConsent: boolean | null;
+  /** The welcome call: whether they ticked "Callback may make a copy of my
+   * voice" at join, asked while the call is answered. */
+  mayRecord: Promise<boolean> | null;
   /** The welcome call's recording of their own microphone. */
   recorder: WelcomeRecorder | null;
   /** The recording, once stopped at the end of the call. */
@@ -78,7 +83,7 @@ export type AlertState =
   | { status: 'sent'; alerted: number }
   | { status: 'error'; message: string };
 
-function newRun(callId: string, session: Session): CallRun {
+function newRun(callId: string, session: Session, mayRecord: Promise<boolean> | null = null): CallRun {
   return {
     callId,
     kind: session.kind,
@@ -92,9 +97,23 @@ function newRun(callId: string, session: Session): CallRun {
     endSent: false,
     consent: null,
     voiceConsent: null,
+    mayRecord,
     recorder: null,
     recording: null,
   };
+}
+
+/** Did they tick the voice box at join (and are still in)? Asked fresh for
+ * each welcome call, since they can change it any time. Anything unclear is
+ * a no: no recording without the tick. */
+async function cloneTicked(memberId: string): Promise<boolean> {
+  try {
+    const join = await api.getJoin(memberId);
+    return join.consents.clone_from_call && !join.opted_out;
+  } catch (error) {
+    console.warn('Callback: could not check the voice choice, so the welcome call is not recorded:', error);
+    return false;
+  }
 }
 
 /** An error as one plain sentence for the screen. Never a stack. */
@@ -304,6 +323,10 @@ export function usePhone(memberId: string) {
       }
       // After the end, as the back end expects; the screen does not wait for it.
       if (run.kind === 'welcome' && run.recorder) void sendVoice(run);
+      else if (run.kind === 'welcome' && run.mayRecord && !(await run.mayRecord)) {
+        // Not recorded: they did not tick the voice box when they joined.
+        act({ type: 'voice', progress: { callId: run.callId, phase: 'not_allowed', state: null, reason: null } });
+      }
       if (!drained && run.queue.size > 0) {
         // Never lose events: the end has gone, the rest keep trying (the back
         // end still takes them after the end).
@@ -381,12 +404,25 @@ export function usePhone(memberId: string) {
             };
 
       // The welcome call records their own microphone, opened just before
-      // the call's own (see voiceRecorder.ts for why first).
+      // the call's own (see voiceRecorder.ts for why first), and only when
+      // they ticked the voice box at join.
       if (session.kind === 'welcome') {
-        run.recorder = new WelcomeRecorder();
-        await run.recorder.start();
-        if (run.finished) return; // ended while the microphone opened: finish() has it
-        setRecording(run.recorder.recording);
+        const allowed = run.mayRecord ? await run.mayRecord : false;
+        if (run.finished) return; // ended meanwhile: finish() has it
+        if (allowed) {
+          const recorder = new WelcomeRecorder();
+          run.recorder = recorder;
+          await recorder.start();
+          if (run.finished) return; // ended while the microphone opened: finish() has it
+          setRecording(recorder.recording);
+          // A slow microphone prompt can outlast start()'s wait: the notice
+          // still appears the moment recording really begins.
+          if (!recorder.recording) {
+            void recorder.opened.then(() => {
+              if (!run.finished) setRecording(recorder.recording);
+            });
+          }
+        }
       }
 
       try {
@@ -445,6 +481,8 @@ export function usePhone(memberId: string) {
     act({ type: 'answer', call, at });
     const pending: PendingAnswer = { callId: call.call_id, cancelledBy: null };
     pendingRef.current = pending;
+    // Asked alongside the answer, so the welcome call does not wait for it.
+    const mayRecord = call.kind === 'welcome' ? cloneTicked(memberId) : null;
     if (call.kind === 'practice') {
       saveOpenPractice(memberId, { callId: call.call_id, voiceOf: null, voiceKnown: false, at, endedBy: null });
     }
@@ -472,7 +510,7 @@ export function usePhone(memberId: string) {
         shield: session.reveal?.kind === 'shield',
       });
     }
-    const run = newRun(call.call_id, session);
+    const run = newRun(call.call_id, session, mayRecord);
     if (pending.cancelledBy || !aliveRef.current) {
       // End was tapped (or the page went away) while the answer was on its
       // way: end it the normal way, without starting the voice.
@@ -733,16 +771,24 @@ export function usePhone(memberId: string) {
     };
   }, [act, memberId]);
 
-  // Once online: did they ever answer a welcome call? If not (and none is
-  // ringing), the home screen offers to start one.
+  // Once online: did a welcome call of theirs ever get as far as their
+  // answer? If not (and none is ringing), the home screen offers to start
+  // one, after a reload too, the same as after the call itself.
   const online = state.link === 'online';
   useEffect(() => {
     if (!online || historyAskedRef.current) return;
     historyAskedRef.current = true;
-    api.memberVoiceSample(memberId).then(
-      (status) => act({ type: 'welcome_history', answered: status.call_id !== null }),
-      () => undefined, // the offer still shows after a missed or failed call here
-    );
+    api
+      .memberVoiceSample(memberId)
+      .then(async (status) => {
+        if (status.call_id === null) return false;
+        const call = await api.getCall(status.call_id).catch(() => null);
+        return call ? call.consent_given != null : true;
+      })
+      .then(
+        (answered) => act({ type: 'welcome_history', answered }),
+        () => undefined, // the offer still shows after a missed or failed call here
+      );
   }, [act, memberId, online]);
 
   // The ringtone and vibration, while it rings. A new call also means the
