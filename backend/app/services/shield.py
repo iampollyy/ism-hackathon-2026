@@ -32,8 +32,14 @@ Rules:
   family member; the imitated relative gets a specific one instead. Then
   `shield.alert` {alerted, level} is published on the call's stream. Web
   Push sends every new message by itself (services/push.py).
-- The manual alert (send_manual_alert, POST /api/members/{id}/alert): the
-  same messages, outside any call. The same tap again within
+  This weekend every shield call is the organiser's demo (POST
+  /api/families/{id}/shield-call), so the alert says plainly that it is a
+  demo and nothing is wrong (demo_alert_text, demo_imitated_alert_text):
+  a relative must never get a real-looking emergency from a practice.
+- The manual alert (send_manual_alert, POST /api/members/{id}/alert): its
+  own wording (manual_alert_text), since it may come from an idle home
+  screen with no call at all; it says only that the person tapped "Tell my
+  family" and something worried them. The same tap again within
   MANUAL_REPEAT_SECONDS writes nothing more.
 on_risk, phone_shield and call_shield_view never raise.
 
@@ -72,12 +78,19 @@ def warning_text(call_back_name: str) -> str:
     return f"This sounds like a scam. Hang up and call {call_back_name} on their usual number."
 
 
-def family_alert_text(name: str) -> str:
-    return f"{name} is on a call that sounds like a scam. Call them now on their usual number."
+def demo_alert_text(name: str) -> str:
+    """To the family, when a Shield demo call sounds like a scam."""
+    return f"Shield demo, nothing is wrong: {name} is on a practice scam call. This is how a real alert looks."
 
 
-def imitated_alert_text(name: str) -> str:
-    return f"{name} is on a call from someone pretending to be you. Call them now."
+def demo_imitated_alert_text(name: str) -> str:
+    """To the relative whose voice the Shield demo call imitates."""
+    return f"Shield demo, nothing is wrong: a practice caller pretended to be you on a call to {name}."
+
+
+def manual_alert_text(name: str) -> str:
+    """To the family, when the person taps "Tell my family" (no call needed)."""
+    return f"{name} tapped 'Tell my family': something worried them. Please call them."
 
 
 # ---------------------------------------------------------------- reading
@@ -239,18 +252,29 @@ def call_shield_view(db: DbSession, call: Call) -> schemas.CallShieldView | None
 # ---------------------------------------------------------------- alerting the family
 
 
+def recipients(db: DbSession, person: Member) -> list[Member]:
+    """Every other family member who has not left."""
+    return [member for member in family_members(db, person.family_id)
+            if member.id != person.id and member.opted_out_at is None]
+
+
 def alert_messages(db: DbSession, person: Member, imitated: Member | None) -> list[tuple[str, str]]:
-    """(member_id, text) for every other family member who has not left:
-    the imitated relative gets the specific text, everyone else the general one."""
+    """The Shield demo call's alert, as (member_id, text) for every other
+    family member who has not left: the imitated relative gets the specific
+    demo text, everyone else the general one."""
     messages: list[tuple[str, str]] = []
-    for member in family_members(db, person.family_id):
-        if member.id == person.id or member.opted_out_at is not None:
-            continue
+    for member in recipients(db, person):
         if imitated is not None and member.id == imitated.id:
-            messages.append((member.id, imitated_alert_text(person.name)))
+            messages.append((member.id, demo_imitated_alert_text(person.name)))
         else:
-            messages.append((member.id, family_alert_text(person.name)))
+            messages.append((member.id, demo_alert_text(person.name)))
     return messages
+
+
+def manual_alert_messages(db: DbSession, person: Member) -> list[tuple[str, str]]:
+    """The "Tell my family" alert, as (member_id, text) for every other
+    family member who has not left."""
+    return [(member.id, manual_alert_text(person.name)) for member in recipients(db, person)]
 
 
 def add_alerts(db: DbSession, messages: list[tuple[str, str]], now: str) -> int:
@@ -298,27 +322,25 @@ def on_risk(call_id: str, data: dict[str, Any] | None) -> int | None:
 
 
 def send_manual_alert(db: DbSession, member_id: str, claimed_member_id: str | None) -> int:
-    """POST /api/members/{id}/alert: the alert messages from a "Something's
-    wrong" button, outside any call. Commits. Returns how many family
-    members are alerted. A recipient who got the very same alert in the
-    last MANUAL_REPEAT_SECONDS gets nothing new (a double tap) but still
-    counts. Raises schemas.ApiError: 404 not_found (unknown member, or a
-    claimed member outside the family), 409 consent_missing (the member
-    has left Callback)."""
+    """POST /api/members/{id}/alert: the "Tell my family" alert, which may
+    come from an idle home screen, so it claims no call: everyone gets
+    manual_alert_text. Commits. Returns how many family members are
+    alerted. A recipient who got the very same alert in the last
+    MANUAL_REPEAT_SECONDS gets nothing new (a double tap) but still counts.
+    Raises schemas.ApiError: 404 not_found (unknown member, or a claimed
+    member outside the family), 409 consent_missing (the member has left
+    Callback)."""
     person = db.get(Member, member_id)
     if person is None:
         raise schemas.ApiError(404, "not_found", "No member with this id.")
     if person.opted_out_at is not None:
         raise schemas.ApiError(409, "consent_missing", f"{person.name} has left Callback.")
-    imitated: Member | None = None
-    if claimed_member_id:
-        imitated = db.get(Member, claimed_member_id)
-        if imitated is None or imitated.family_id != person.family_id:
+    if claimed_member_id:  # still checked, though the wording no longer names them
+        claimed = db.get(Member, claimed_member_id)
+        if claimed is None or claimed.family_id != person.family_id:
             raise schemas.ApiError(404, "not_found", "The claimed relative is not in this family.")
-        if imitated.id == person.id:
-            imitated = None
     since = to_iso(utcnow() - timedelta(seconds=MANUAL_REPEAT_SECONDS))
-    messages = alert_messages(db, person, imitated)
+    messages = manual_alert_messages(db, person)
     fresh = [(recipient, body) for recipient, body in messages if db.scalar(
         select(Message.id).where(Message.member_id == recipient, Message.kind == ALERT_KIND,
                                  Message.text == body, Message.created_at >= since).limit(1)

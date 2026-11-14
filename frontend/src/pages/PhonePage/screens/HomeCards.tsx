@@ -57,7 +57,10 @@ export function NextSteps() {
         </li>
         <li>
           <Ear size={20} aria-hidden="true" />
-          <span>Callback Shield listens for the signs of a scam call and warns you while it happens.</span>
+          <span>
+            Callback Shield: on calls that come through Callback, like a Shield demo call, your phone warns you while it
+            happens.
+          </span>
         </li>
         <li>
           <PhoneCall size={20} aria-hidden="true" />

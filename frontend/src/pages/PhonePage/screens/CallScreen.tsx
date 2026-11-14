@@ -16,6 +16,8 @@ type CallScreenProps = {
   shield?: ShieldState | null;
   /** The welcome call records the member's own side: say so, plainly. */
   recording?: boolean;
+  /** A plain line under the call, e.g. who answers the practice line. */
+  note?: string;
   onCallBack?: (hasNumber: boolean) => void;
   onEnd: () => void;
 };
@@ -45,6 +47,7 @@ export function CallScreen({
   ending = false,
   shield = null,
   recording = false,
+  note,
   onCallBack,
   onEnd,
 }: CallScreenProps) {
@@ -111,6 +114,12 @@ export function CallScreen({
               ? 'Callback keeps it only if you agreed when you joined and say yes on the call. You can delete it any time.'
               : 'Just talk as you normally would. There are no wrong answers.'}
           </p>
+        </section>
+      )}
+
+      {variant !== 'welcome' && note && (
+        <section className="call-note" aria-label="About this call" inert={covered}>
+          <p className="call-note__text">{note}</p>
         </section>
       )}
 

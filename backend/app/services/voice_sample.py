@@ -18,7 +18,9 @@ Rules:
   Both are checked when the clone starts and again before it is stored.
 - The latest spoken answer in the call counts. A no, a missing join tick or
   an opt-out means the recording is not kept: it is deleted and the
-  sample's state is `none`, with the reason. A no never touches a clone
+  sample's state is `none`, with the reason. So does no yes at all: once
+  the call is over (ended, scored or failed) for ANSWER_GRACE_SECONDS, a
+  yes can no longer come, and settle() lets the recording go. A no never touches a clone
   the member already has. An opt-out (POST /api/members/{id}/opt-out)
   lets go of the member's kept recordings at once (forget_member).
 - Whichever of the recording and the spoken yes arrives second starts the
@@ -65,7 +67,7 @@ from sqlalchemy.orm import Session as DbSession
 
 from app import schemas
 from app.config import get_settings
-from app.db import new_session, now_iso
+from app.db import new_session, now_iso, seconds_between
 from app.models import Call, CallEvent, Consent, Member, VoiceSample
 from app.routers import voice as voice_router
 from app.services import audio, elevenlabs, limits, run_in_background
@@ -86,6 +88,12 @@ ANSWERED_STATUSES = ("in_progress", "ended", "scored")
 NOT_ANSWERED_STATUSES = ("scheduled", "ringing", "declined", "missed")
 
 FFPROBE_SECONDS = 30.0
+
+# How long after the call ended a spoken yes may still arrive (the page
+# sends the call's last events as it hangs up). After that, a recording
+# still waiting for a yes is let go.
+ANSWER_GRACE_SECONDS = 30.0
+OVER_STATUSES = ("ended", "scored", "failed")
 
 NOT_WELCOME = "Only a welcome call records the member's voice."
 NO_RECORDING = "No recording from this call yet."
@@ -187,6 +195,15 @@ def refusal(db: DbSession, call: Call, member: Member | None) -> str | None:
     if spoken_answer(db, call.id) is False:
         return _said_no(name)
     return None
+
+
+def answer_window_closed(call: Call) -> bool:
+    """The call has been over for ANSWER_GRACE_SECONDS, so no spoken answer
+    can still arrive for it."""
+    if call.status not in OVER_STATUSES or not call.ended_at:
+        return False
+    since = seconds_between(call.ended_at, now_iso())
+    return since is not None and since >= ANSWER_GRACE_SECONDS
 
 
 def check_call(call: Call) -> None:
@@ -296,8 +313,8 @@ def record_voice_consent(db: DbSession, call: Call, given: bool) -> None:
 
 def settle(call_id: str) -> bool:
     """Start the clone when this call's recording and both consents are in;
-    let go of a waiting recording that may not be used; otherwise leave it
-    waiting. Returns True if a clone started. Call from inside the running
+    let go of a waiting recording that may not be used, or whose call has
+    been over too long for a yes to come; otherwise leave it waiting. Returns True if a clone started. Call from inside the running
     event loop (a request handler). Never raises."""
     try:
         with new_session() as db:
@@ -313,6 +330,10 @@ def settle(call_id: str) -> bool:
                 return False
             assert member is not None  # refusal() covers a missing member
             if spoken_answer(db, call_id) is not True or not spoken_yes_recorded(db, call_id):
+                if call is not None and answer_window_closed(call):  # no yes came, and none can now
+                    _let_go(sample, _no_yes(member.name))
+                    db.commit()
+                    return False
                 if sample.state != WAITING or sample.reason != _waiting(member.name):
                     _set(sample, WAITING, _waiting(member.name))
                     db.commit()

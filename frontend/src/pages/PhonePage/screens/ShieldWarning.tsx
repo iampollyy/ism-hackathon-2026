@@ -7,7 +7,7 @@ export type ShieldState = NonNullable<PhoneState['shield']>;
 type ShieldProps = {
   shield: ShieldState;
   onHangUp: () => void;
-  /** hasNumber: the tel: link opens the dialler; without it, the family line. */
+  /** "Call {name}": the tel: link opens the dialler and this ends the call. */
   onCallBack: (hasNumber: boolean) => void;
 };
 
@@ -108,10 +108,11 @@ function ShieldWarning({ shield, onHangUp, onCallBack, onFold }: ShieldProps & {
               Call {contact.name}
             </a>
           ) : (
-            // No number: the in-app family line, never a promise of a person.
-            <button type="button" className="shield-button shield-button--call" onClick={() => onCallBack(false)}>
+            // No number saved: hang up and let them call on a number they
+            // already know. Never an in-app line in the middle of a scam.
+            <button type="button" className="shield-button shield-button--call" onClick={onHangUp}>
               <Phone size={22} aria-hidden="true" />
-              Hang up and call the family number
+              Hang up and call your family on a number you know
             </button>
           ))}
         <button type="button" className="shield-warning__fold" onClick={onFold}>

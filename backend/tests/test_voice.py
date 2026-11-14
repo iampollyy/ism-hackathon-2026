@@ -7,8 +7,9 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.db import new_session, now_iso
-from app.models import Consent, Member
+from app.models import Consent, FamilyOwner, Member, MemberJoin
 from app.routers import voice as voice_router
 from app.services import audio, elevenlabs
 
@@ -70,6 +71,38 @@ def record_deletes(monkeypatch, fail: bool = False) -> list[str]:
 
     monkeypatch.setattr(elevenlabs, "delete_voice", fake_delete)
     return deleted
+
+
+def owned_family(client) -> dict:
+    """A family made by a logged-in organiser (a family_owners row): Sara
+    (mother) and Jon (son, the organiser)."""
+    registered = client.post("/api/auth/register", json={"name": "Jon", "email": "jon@example.com",
+                                                         "password": "correct horse"})
+    assert registered.status_code in (200, 201), registered.text
+    response = client.post("/api/families", json={"name": "The Kovacs", "safe_word_set": True, "members": [
+        {"name": "Sara", "relationship": "mother", "consent_practice": True},
+        {"name": "Jon", "relationship": "son", "is_organiser": True, "consent_practice": True},
+    ]})
+    assert response.status_code == 201, response.text
+    family = response.json()
+    with new_session() as s:
+        assert s.get(FamilyOwner, family["family_id"]) is not None
+    return family
+
+
+def join(client, member_id: str, clone: bool, phone: str | None = None) -> None:
+    body = {"consent_practice": True, "consent_clone_from_call": clone, "phone_number": phone}
+    response = client.post(f"/api/join/{member_id}", json=body)
+    assert response.status_code == 200, response.text
+
+
+def upload(client, member_id: str, audio: bytes):
+    return client.post(f"/api/members/{member_id}/voice", files={"audio": ("recording.webm", audio, "audio/webm")})
+
+
+def consent_files(member_id: str) -> list[str]:
+    folder = get_settings().media_path / "consent"
+    return sorted(path.name for path in folder.glob(f"{member_id}.*")) if folder.is_dir() else []
 
 
 # ---------------------------------------------------------------- audio clean-up
@@ -247,7 +280,105 @@ def test_opted_out_member_cannot_upload(client, make_family, webm) -> None:
     assert response.status_code == 409
 
 
+# ---------------------------------------------------------------- POST /voice in a family an account made
+
+
+def test_owned_family_refuses_a_member_who_never_joined(client, webm) -> None:
+    sara = owned_family(client)["members"][0]["id"]
+    response = upload(client, sara, webm)
+    assert response.status_code == 409, response.text
+    assert response.json()["error"] == {
+        "code": "consent_missing",
+        "message": "Sara hasn't agreed to a copy of their voice. They can tick it on their own phone first.",
+    }
+    row = member(sara)
+    assert row.voice_id is None and row.voice_status == "none" and row.consent_clone_at is None
+    assert consent_files(sara) == [], "refused before anything is written"
+    assert not voice_router.clean_path(sara).exists()
+    assert [c.kind for c in consents(sara) if c.kind == "clone"] == []
+
+
+def test_owned_family_refuses_a_member_who_joined_without_the_voice_tick(client, webm) -> None:
+    sara = owned_family(client)["members"][0]["id"]
+    join(client, sara, clone=False)
+    response = upload(client, sara, webm)
+    assert (response.status_code, response.json()["error"]["code"]) == (409, "consent_missing")
+    assert member(sara).voice_id is None and consent_files(sara) == []
+
+
+def test_owned_family_clones_a_member_who_ticked_it_themselves(client, webm) -> None:
+    sara = owned_family(client)["members"][0]["id"]
+    join(client, sara, clone=True)
+    response = upload(client, sara, webm)
+    assert response.status_code == 200, response.text
+    row = member(sara)
+    assert row.voice_id and row.voice_status == "ready"
+    assert consent_files(sara) == [f"{sara}.webm"]
+
+
+def test_owned_family_refuses_once_the_voice_tick_is_taken_back(client, webm) -> None:
+    sara = owned_family(client)["members"][0]["id"]
+    join(client, sara, clone=True)
+    join(client, sara, clone=False)  # joined again, the tick left empty
+    response = upload(client, sara, webm)
+    assert (response.status_code, response.json()["error"]["code"]) == (409, "consent_missing")
+
+
+def test_owned_family_lets_the_organiser_record_their_own_voice(client, webm) -> None:
+    jon = owned_family(client)["members"][1]["id"]
+    with new_session() as s:
+        assert s.get(MemberJoin, jon) is None  # never joined: the organiser made the family
+    response = upload(client, jon, webm)
+    assert response.status_code == 200, response.text
+    assert member(jon).voice_status == "ready"
+
+
+def test_owned_family_withdrawal_while_cloning_keeps_no_clone(client, webm, monkeypatch) -> None:
+    sara = owned_family(client)["members"][0]["id"]
+    join(client, sara, clone=True)
+    deleted = record_deletes(monkeypatch)
+
+    async def clone_then_untick(name: str, path: Path) -> str:
+        with new_session() as s:  # the member takes the tick back while the clone is being made
+            s.add(Consent(member_id=sara, kind="clone_from_call_withdrawn", source="invite",
+                          evidence="Left the voice tick empty on the invite page.", created_at=now_iso()))
+            s.commit()
+        return "voice_new"
+
+    monkeypatch.setattr(elevenlabs, "clone_voice", clone_then_untick)
+    response = upload(client, sara, webm)
+    assert (response.status_code, response.json()["error"]["code"]) == (409, "consent_missing")
+    assert deleted == ["voice_new"]
+    assert member(sara).voice_id is None
+    assert consent_files(sara) == [] and not voice_router.clean_path(sara).exists()
+
+
 # ---------------------------------------------------------------- DELETE /voice
+
+
+def test_delete_voice_also_deletes_the_raw_recordings(client, make_family, webm, mp4, monkeypatch) -> None:
+    jon = make_family()["members"][1]["id"]
+    assert upload(client, jon, webm).status_code == 200
+    assert client.post(f"/api/members/{jon}/voice", files={"audio": ("blob", mp4, "audio/mp4")}).status_code == 200
+    assert consent_files(jon) == [f"{jon}.mp4", f"{jon}.webm"]
+    other = make_family()["members"][1]["id"]
+    assert upload(client, other, webm).status_code == 200
+    record_deletes(monkeypatch)
+
+    assert client.delete(f"/api/members/{jon}/voice").status_code == 200
+    assert consent_files(jon) == [], "the raw recording is enough to clone again"
+    assert not voice_router.clean_path(jon).exists()
+    assert [c.kind for c in consents(jon)].count("clone") == 2, "the consents rows stay as the record"
+    assert consent_files(other) == [f"{other}.webm"], "nobody else's recording is touched"
+
+
+def test_delete_voice_deletes_a_raw_recording_whose_clone_failed(client, make_family, monkeypatch) -> None:
+    jon = make_family()["members"][1]["id"]
+    assert upload(client, jon, b"nope" * 100).status_code == 502  # kept as the record, no clone
+    assert consent_files(jon) == [f"{jon}.webm"]
+    assert client.delete(f"/api/members/{jon}/voice").status_code == 200
+    assert consent_files(jon) == []
+
 
 
 def test_delete_voice_deletes_at_elevenlabs_and_clears_it(client, make_family, monkeypatch) -> None:
@@ -301,6 +432,23 @@ def test_opt_out_records_and_deletes_the_clone(client, make_family, monkeypatch)
     assert len(opt_outs) == 1 and opt_outs[0].source == "manual"
     view = next(m for m in client.get(f"/api/families/{family['family_id']}").json()["members"] if m["id"] == jon)
     assert view["consent"] == {"clone": False, "practice": False}
+
+
+def test_opt_out_deletes_the_raw_recording_and_forgets_the_phone_number(client, webm, monkeypatch) -> None:
+    sara = owned_family(client)["members"][0]["id"]
+    join(client, sara, clone=True, phone="+49 151 23456789")
+    assert upload(client, sara, webm).status_code == 200
+    assert client.get(f"/api/join/{sara}").json()["phone_number"] == "+49 151 23456789"
+    record_deletes(monkeypatch)
+
+    assert client.post(f"/api/members/{sara}/opt-out").status_code == 200
+    assert consent_files(sara) == [] and not voice_router.clean_path(sara).exists()
+    view = client.get(f"/api/join/{sara}").json()
+    assert (view["opted_out"], view["phone_number"]) == (True, None)
+    with new_session() as s:
+        assert s.get(MemberJoin, sara).phone_number is None
+    kinds = [c.kind for c in consents(sara)]
+    assert "clone" in kinds and "opt_out" in kinds, "the consents rows stay as the record"
 
 
 def test_opt_out_is_recorded_even_if_deletion_fails_and_can_be_retried(client, make_family, monkeypatch) -> None:

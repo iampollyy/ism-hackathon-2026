@@ -288,10 +288,11 @@ def test_a_red_risk_event_alerts_the_family_exactly_once(client, kovacs, live_sh
     assert messages_of(kovacs.jon) == [] and messages_of(kovacs.ana) == []
 
     store_risk(live_shield_call, risk_data("red", ["new_number", "money_request"]))
+    # Every shield call this weekend is the organiser's demo: the alert says so.
     assert [(m.kind, m.text) for m in messages_of(kovacs.jon)] == [
-        ("alert", "Sara is on a call from someone pretending to be you. Call them now.")]
+        ("alert", "Shield demo, nothing is wrong: a practice caller pretended to be you on a call to Sara.")]
     assert [(m.kind, m.text) for m in messages_of(kovacs.ana)] == [
-        ("alert", "Sara is on a call that sounds like a scam. Call them now on their usual number.")]
+        ("alert", "Shield demo, nothing is wrong: Sara is on a practice scam call. This is how a real alert looks.")]
     assert messages_of(kovacs.sara) == []
     with new_session() as db:
         row = db.get(CallShield, live_shield_call)
@@ -317,7 +318,7 @@ def test_a_library_voice_alert_says_nobody_is_imitated(client, kovacs):
     call_id = start_shield_call(client, kovacs.family, kovacs.sara, scenario="bank_security")["call_id"]
     answer(client, call_id)
     store_risk(call_id, risk_data("red", ["asks_for_code"]))
-    general = "Sara is on a call that sounds like a scam. Call them now on their usual number."
+    general = "Shield demo, nothing is wrong: Sara is on a practice scam call. This is how a real alert looks."
     assert [m.text for m in messages_of(kovacs.jon)] == [general]
     assert [m.text for m in messages_of(kovacs.ana)] == [general]
 
@@ -326,7 +327,7 @@ def test_the_alert_reaches_the_phone_and_the_family_page(client, kovacs, live_sh
     store_risk(live_shield_call, risk_data("red", ["money_request"]))
     messages = phone_state(client, kovacs.ana)["messages"]
     assert [(m["kind"], m["text"]) for m in messages] == [
-        ("alert", "Sara is on a call that sounds like a scam. Call them now on their usual number.")]
+        ("alert", "Shield demo, nothing is wrong: Sara is on a practice scam call. This is how a real alert looks.")]
     family = client.get(f"/api/families/{kovacs.family['family_id']}")
     assert family.status_code == 200, family.text
     assert "alert" in [item["kind"] for item in family.json()["week"]]
@@ -406,19 +407,22 @@ def test_phone_shield_never_raises(client, kovacs, live_shield_call, monkeypatch
 
 
 def test_manual_alert_tells_the_family(client, kovacs):
+    """'Tell my family' may come from an idle home screen: it claims no call
+    and no scam, only that something worried them."""
     response = client.post(f"/api/members/{kovacs.sara}/alert", json={})
     assert response.status_code == 200
     assert response.json() == {"alerted": 2}
-    general = "Sara is on a call that sounds like a scam. Call them now on their usual number."
-    assert [(m.kind, m.text) for m in messages_of(kovacs.jon)] == [("alert", general)]
-    assert [(m.kind, m.text) for m in messages_of(kovacs.ana)] == [("alert", general)]
+    manual = "Sara tapped 'Tell my family': something worried them. Please call them."
+    assert [(m.kind, m.text) for m in messages_of(kovacs.jon)] == [("alert", manual)]
+    assert [(m.kind, m.text) for m in messages_of(kovacs.ana)] == [("alert", manual)]
+    assert "scam" not in manual and "pretending" not in manual
 
 
 def test_manual_alert_with_a_claimed_relative(client, kovacs):
     assert client.post(f"/api/members/{kovacs.sara}/alert",
                        json={"claimed_member_id": kovacs.jon}).json() == {"alerted": 2}
     assert [m.text for m in messages_of(kovacs.jon)] == [
-        "Sara is on a call from someone pretending to be you. Call them now."]
+        "Sara tapped 'Tell my family': something worried them. Please call them."]
     # A double tap writes nothing more, and still counts the family as alerted.
     assert client.post(f"/api/members/{kovacs.sara}/alert",
                        json={"claimed_member_id": kovacs.jon}).json() == {"alerted": 2}

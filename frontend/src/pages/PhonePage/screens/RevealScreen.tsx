@@ -22,7 +22,10 @@ export function revealWords(voiceOf: string | null, kind: RevealView['kind'] = '
     : `This was a Callback practice call. ${voice}`;
 }
 
-export const HABIT_LINE = 'Next time, hang up and call back on the family number, or ask for the family word.';
+export const HABIT_LINE = 'Next time, hang up and call back on a number you already know, or ask for the family word.';
+
+/** The practice line is answered by an AI helper: say so before the tap. */
+export const PRACTICE_LINE_NOTE = 'A Callback helper answers and lets your family know you called back. It isn’t a real person.';
 
 export function RevealScreen({ view, familyNumber, onCallFamily, onDone }: RevealScreenProps) {
   const { result } = view;
@@ -84,9 +87,10 @@ export function RevealScreen({ view, familyNumber, onCallFamily, onDone }: Revea
             ) : (
               <Phone size={24} aria-hidden="true" />
             )}
-            {view.startingFamilyLine ? 'Calling…' : 'Call the family number'}
+            {view.startingFamilyLine ? 'Calling…' : 'Practise calling back'}
           </button>
         )}
+        {familyNumber && <p className="phone-reveal__hint">{PRACTICE_LINE_NOTE}</p>}
         {view.familyLineError && (
           <p className="phone-inline-error" role="alert">
             <CircleAlert size={16} aria-hidden="true" />

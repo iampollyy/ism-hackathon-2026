@@ -11,6 +11,9 @@ type WelcomeDoneScreenProps = {
   onDone: () => void;
 };
 
+/** Practice calls only start once the organiser turns protection on. */
+export const PRACTICE_SOON = 'Practice calls come at random times once your family switches protection on.';
+
 /** After the welcome call: thanks that match what they said, and what
  * became of the copy of their voice. */
 export function WelcomeDoneScreen({ view, name, voice, welcomeStart, onStartWelcome, onDone }: WelcomeDoneScreenProps) {
@@ -39,8 +42,9 @@ export function WelcomeDoneScreen({ view, name, voice, welcomeStart, onStartWelc
   } else if (view.consent === true) {
     tone = 'good';
     title = `You’re all set${who}`;
-    text =
-      'Thank you for the call. Callback is on. Practice calls will come at random times, and each one tells you at the end that it was a practice.';
+    // Phone-state doesn't know whether the family has switched protection on
+    // yet, so never say "Callback is on" here.
+    text = `Thank you for the call. You’re set up. ${PRACTICE_SOON} Each one tells you at the end that it was a practice.`;
   } else if (view.consent === false) {
     tone = 'calm';
     Icon = HeartHandshake;
@@ -148,18 +152,18 @@ function VoiceCard({ voice, voiceConsent }: { voice: VoiceProgress; voiceConsent
       voiceConsent === false
         ? 'You said no, so nothing from this call was kept.'
         : 'Nothing from this call was kept.';
-  } else if (voice.state === 'waiting_for_consent') {
-    if (voice.phase === 'final') {
-      tone = 'calm';
-      title = 'No copy of your voice was made';
-      text = 'Callback didn’t hear a clear yes on the call, so it won’t use the recording.';
-    } else {
-      title = 'Checking your answer…';
-      text = 'A copy is only made after a clear yes on the call.';
-    }
-  } else {
+  } else if (voice.state === 'waiting_for_consent' && voice.phase === 'final') {
+    tone = 'calm';
+    title = 'No copy of your voice was made';
+    text = 'Callback didn’t hear a clear yes on the call, so it won’t use the recording.';
+  } else if (voice.state === 'cloning') {
+    // Only once the back end has really started the copy.
     title = 'Making a copy of your voice…';
     text = 'This takes a few seconds.';
+  } else {
+    // Waiting for the spoken yes, or not known yet.
+    title = 'Checking your answer…';
+    text = 'A copy is only made after a clear yes on the call.';
   }
 
   const Icon =

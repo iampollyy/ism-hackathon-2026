@@ -462,6 +462,16 @@ body:has(.phone-page) {
   padding-top: 8px;
 }
 
+// Under "Practise calling back": who answers, before the tap.
+.phone-reveal__hint {
+  margin: -4px 4px 4px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--muted);
+  text-align: center;
+  text-wrap: balance;
+}
+
 .phone-inline-error {
   display: flex;
   align-items: flex-start;
