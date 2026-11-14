@@ -17,7 +17,7 @@ from app.config import get_settings
 from app.db import new_session, now_iso, parse_time, to_iso, utcnow
 from app.ids import new_call_id
 from app.models import Call, DrillCall, Member, MemberDrillSettings, ProtectionSettings
-from app.services import protection, scheduler
+from app.services import briefs, protection, scheduler
 
 VILNIUS = ZoneInfo("Europe/Vilnius")
 
@@ -76,6 +76,34 @@ def in_window(moment: datetime, start: int = 10, end: int = 19, zone=VILNIUS) ->
     local = moment.astimezone(zone)
     minutes = local.hour * 60 + local.minute
     return start * 60 <= minutes < end * 60
+
+
+def during_build(monkeypatch, action) -> list[str]:
+    """Run action() once while create_practice awaits the director, as a
+    request that arrives meanwhile would. Returns the targets briefed."""
+    original = briefs.build_brief
+    briefed: list[str] = []
+
+    async def build(db, target, voice_member, scenario_key, difficulty):
+        briefed.append(target.id)
+        if len(briefed) == 1:
+            action()
+        return await original(db, target, voice_member, scenario_key, difficulty)
+
+    monkeypatch.setattr(briefs, "build_brief", build)
+    return briefed
+
+
+def plan_steps(member_id: str) -> list[dict]:
+    with new_session() as db:
+        return json.loads(db.get(Member, member_id).plan_json)["steps"]
+
+
+def two_step_plan(member_id: str) -> dict:
+    return {"member_id": member_id, "weak_spot": "authority", "this_week": "Two calls.",
+            "steps": [{"when": "today", "scenario": "police", "difficulty": 2, "voice_of": None, "why": "x"},
+                      {"when": "in three days", "scenario": "hospital", "difficulty": 3, "voice_of": None,
+                       "why": "y"}]}
 
 
 @pytest.fixture
@@ -490,3 +518,191 @@ def test_surprise_drill_for_a_busy_member_is_409_busy(client, make_family):
     response = client.post(f"/api/families/{family['family_id']}/surprise-drill", json={"member_id": sara})
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "busy"
+
+
+# ---------------------------------------------------------------- spreading drills out
+
+
+def test_drill_time_weighs_each_day_by_its_window_time():
+    # 18:35 in Vilnius: 15 minutes of today's window are left, against 27
+    # hours over the next three days, so today is rarely picked.
+    now = datetime(2026, 11, 14, 16, 35, tzinfo=timezone.utc)
+    moments = [protection.drill_time(now, settings_row(drills_per_week=2), random.Random(seed))
+               for seed in range(300)]
+    assert all(in_window(m) and now + timedelta(minutes=10) <= m <= now + timedelta(days=3.5) for m in moments)
+    days = [m.astimezone(VILNIUS).date().day for m in moments]
+    assert days.count(14) <= 10
+    assert all(days.count(day) >= 70 for day in (15, 16, 17))
+
+
+def test_drill_time_skips_the_day_the_last_drill_rang():
+    now = datetime(2026, 11, 14, 12, 0, tzinfo=timezone.utc)  # 14:00 in Vilnius
+    for per_week in (2, 7):
+        for seed in range(30):
+            moment = protection.drill_time(now, settings_row(drills_per_week=per_week), random.Random(seed),
+                                           last_drill=now - timedelta(minutes=1))
+            assert in_window(moment) and moment.astimezone(VILNIUS).date().day != 14
+            assert moment <= now + timedelta(days=7 / per_week)
+
+
+def test_drill_time_skipping_the_only_day_takes_the_next_window():
+    now = datetime(2026, 11, 14, 7, 0, tzinfo=timezone.utc)  # 09:00 in Vilnius; 7 a week reaches only today
+    for seed in range(20):
+        moment = protection.drill_time(now, settings_row(drills_per_week=7), random.Random(seed),
+                                       last_drill=now - timedelta(hours=1))
+        assert moment.astimezone(VILNIUS).date().day == 15
+        assert in_window(moment)
+
+
+async def test_random_pass_after_a_drill_rang_picks_another_day(client, make_family):
+    family = make_family()
+    sara, jon = ids(family)
+    client.put(f"/api/members/{jon}/drills", json={"paused": True})
+    enable(client, family["family_id"], drills_per_week=7)
+    now = datetime(2026, 11, 14, 12, 0, tzinfo=timezone.utc)
+    add_rung_practice(family, sara, now - timedelta(minutes=2))
+    for seed in range(5):
+        created = await protection.schedule_random_drills(now=now, rng=random.Random(seed))
+        moment = parse_time(load_call(created[0]).scheduled_for)
+        assert moment.astimezone(VILNIUS).date().day == 15 and in_window(moment)
+        client.put(f"/api/members/{sara}/drills", json={"paused": True})  # cancel it, plan again
+        client.put(f"/api/members/{sara}/drills", json={"paused": False})
+
+
+# ---------------------------------------------------------------- what changes while a drill is made
+
+
+async def test_random_pass_waits_while_the_last_call_is_scored(client, make_family):
+    family = make_family()
+    sara, jon = ids(family)
+    enable(client, family["family_id"])
+    now = utcnow()
+    with new_session() as db:
+        db.add(Call(id=new_call_id(), family_id=family["family_id"], kind="practice", target_member_id=sara,
+                    scenario="police", difficulty=1, status="ended", ended_at=to_iso(now - timedelta(minutes=1)),
+                    created_at=to_iso(now - timedelta(minutes=3))))
+        db.commit()
+    created = await protection.schedule_random_drills(now=now, rng=random.Random(1))
+    assert [load_call(call_id).target_member_id for call_id in created] == [jon]
+    # A call left `ended` (its after-call work failed) does not block drills for good.
+    created = await protection.schedule_random_drills(now=now + protection.SCORING_WAIT + timedelta(minutes=1),
+                                                      rng=random.Random(1))
+    assert [load_call(call_id).target_member_id for call_id in created] == [sara]
+
+
+async def test_a_drill_never_overwrites_a_plan_written_while_it_was_made(client, make_family, monkeypatch):
+    family = make_family()
+    sara, jon = ids(family)
+    client.put(f"/api/members/{jon}/drills", json={"paused": True})
+    update_member(sara, plan_json=json.dumps(two_step_plan(sara)))
+    enable(client, family["family_id"])
+    new_plan = {"member_id": sara, "weak_spot": "money", "this_week": "New.", "family_tasks": [],
+                "steps": [{"when": "tomorrow", "scenario": "bank_security", "difficulty": 1, "voice_of": None,
+                           "why": "z"}]}
+    during_build(monkeypatch, lambda: update_member(sara, plan_json=json.dumps(new_plan)))  # the planner
+    created = await protection.schedule_random_drills(now=utcnow(), rng=random.Random(1))
+    assert load_call(created[0]).scenario == "police"  # chosen from the plan it read
+    with new_session() as db:
+        assert json.loads(db.get(Member, sara).plan_json) == new_plan  # as the planner wrote it
+    assert drill_calls()[0][1].plan_step_json is None
+
+
+async def test_a_drill_marks_its_step_in_the_fresh_plan(client, make_family, monkeypatch):
+    family = make_family()
+    sara, jon = ids(family)
+    client.put(f"/api/members/{jon}/drills", json={"paused": True})
+    update_member(sara, plan_json=json.dumps(two_step_plan(sara)))
+    enable(client, family["family_id"])
+    rewritten = {**two_step_plan(sara), "this_week": "Rewritten."}  # the same next step
+    during_build(monkeypatch, lambda: update_member(sara, plan_json=json.dumps(rewritten)))
+    await protection.schedule_random_drills(now=utcnow(), rng=random.Random(1))
+    with new_session() as db:
+        plan = json.loads(db.get(Member, sara).plan_json)
+    assert plan["this_week"] == "Rewritten."
+    assert [step.get("status", "planned") for step in plan["steps"]] == ["scheduled", "planned"]
+    assert json.loads(drill_calls()[0][1].plan_step_json) == {"scenario": "police", "when": "today"}
+
+
+async def test_a_pause_while_a_random_drill_is_made_fails_it(client, make_family, monkeypatch):
+    family = make_family()
+    sara, jon = ids(family)
+    client.put(f"/api/members/{jon}/drills", json={"paused": True})
+    update_member(sara, plan_json=json.dumps(two_step_plan(sara)))
+    enable(client, family["family_id"])
+
+    def pause() -> None:
+        with new_session() as db:
+            protection.set_paused(db, sara, True)  # PUT /api/members/{id}/drills, mid-await
+
+    briefed = during_build(monkeypatch, pause)
+    assert await protection.schedule_random_drills(now=utcnow(), rng=random.Random(1)) == []
+    assert briefed == [sara]
+    [(call, drill)] = drill_calls()
+    assert (call.status, call.target_member_id, drill.source, drill.plan_step_json) == (
+        "failed", sara, "random", None)
+    assert [step.get("status", "planned") for step in plan_steps(sara)] == ["planned", "planned"]
+    member = client.get(f"/api/families/{family['family_id']}/protection").json()["members"][0]
+    assert (member["paused"], member["next_drill_at"]) == (True, None)
+
+
+@pytest.mark.parametrize("change, drill_status", [
+    ({"window_end_hour": 20}, "failed"),
+    ({"enabled": False}, "failed"),
+    ({"drills_per_week": 5}, "failed"),
+    ({"timezone": "Europe/Berlin"}, "failed"),
+    ({"shield_enabled": False}, "scheduled"),  # not a drill setting
+    ({"enabled": True}, "scheduled"),  # no change
+])
+async def test_a_settings_change_while_a_random_drill_is_made(client, make_family, monkeypatch, change,
+                                                              drill_status):
+    family = make_family()
+    sara, jon = ids(family)
+    client.put(f"/api/members/{jon}/drills", json={"paused": True})
+    enable(client, family["family_id"])
+
+    def put_settings() -> None:
+        with new_session() as db:
+            protection.update_settings(db, family["family_id"], schemas.ProtectionUpdate(**change))
+
+    during_build(monkeypatch, put_settings)
+    created = await protection.schedule_random_drills(now=utcnow(), rng=random.Random(1))
+    [(call, _)] = drill_calls()
+    assert call.status == drill_status
+    assert created == ([call.id] if drill_status == "scheduled" else [])
+
+
+def test_a_pause_while_a_surprise_drill_is_made_fails_it(client, make_family, monkeypatch):
+    family = make_family()
+    sara, _ = ids(family)
+
+    def pause() -> None:
+        with new_session() as db:
+            protection.set_paused(db, sara, True)
+
+    during_build(monkeypatch, pause)
+    response = client.post(f"/api/families/{family['family_id']}/surprise-drill", json={"member_id": sara})
+    assert response.status_code == 409
+    assert response.json()["error"] == {"code": "not_eligible",
+                                        "message": "Sara cannot get a drill now. Drills are paused."}
+    [(call, drill)] = drill_calls()
+    assert (call.status, drill.source) == ("failed", "surprise")
+
+
+async def test_cancelling_a_drill_puts_its_plan_step_back(client, make_family):
+    family = make_family()
+    sara, jon = ids(family)
+    client.put(f"/api/members/{jon}/drills", json={"paused": True})
+    update_member(sara, plan_json=json.dumps(two_step_plan(sara)))
+    enable(client, family["family_id"])
+
+    def statuses() -> list[str]:
+        return [step.get("status", "planned") for step in plan_steps(sara)]
+
+    first = await protection.schedule_random_drills(now=utcnow(), rng=random.Random(1))
+    assert (load_call(first[0]).scenario, statuses()) == ("police", ["scheduled", "planned"])
+    client.put(f"/api/families/{family['family_id']}/protection", json={"window_end_hour": 20})
+    assert (load_call(first[0]).status, statuses()) == ("failed", ["planned", "planned"])
+    second = await protection.schedule_random_drills(now=utcnow(), rng=random.Random(2))
+    assert (load_call(second[0]).scenario, statuses()) == ("police", ["scheduled", "planned"])  # the same step
+    client.put(f"/api/members/{sara}/drills", json={"paused": True})
+    assert (load_call(second[0]).status, statuses()) == ("failed", ["planned", "planned"])

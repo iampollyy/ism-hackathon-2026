@@ -245,3 +245,6 @@ class DrillCall(Base):
     member_id: Mapped[str] = mapped_column(ForeignKey("members.id"), nullable=False, index=True)
     source: Mapped[str] = mapped_column(String, nullable=False)  # random | surprise
     created_at: Mapped[str] = mapped_column(String, nullable=False)
+    # The plan step the drill used, {"scenario", "when"}, so cancelling the
+    # drill can set it back to planned; null when no plan step was used.
+    plan_step_json: Mapped[str | None] = mapped_column(Text)

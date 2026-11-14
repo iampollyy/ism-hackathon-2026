@@ -67,7 +67,7 @@ Every field is optional; a missing or `null` field keeps its value.
 
 Returns the protection object, as `GET`.
 
-- Any change to `enabled`, `drills_per_week`, the window or `timezone` cancels the family's pending random drills (they show as `failed` in the family page's `week`). If drills are on, the next pass (within about a minute) plans new ones with the new settings. Changing only `shield_enabled` cancels nothing.
+- Any change to `enabled`, `drills_per_week`, the window or `timezone` cancels the family's pending random drills (they show as `failed` in the family page's `week`, and the plan step each one used goes back to planned). A random drill that was still being made when the change arrived is made `failed` as soon as it exists. If drills are on, the next pass (within about a minute) plans new ones with the new settings. Changing only `shield_enabled` cancels nothing. Sending the same values again changes nothing, so a PUT per control change is fine.
 - Errors: `404 not_found`; `422 invalid_request` when `drills_per_week` is outside 1 to 7, `window_start_hour` outside 0 to 23, `window_end_hour` outside 1 to 24, the start is not before the end (also against the stored value of the hour not sent), or the time zone is unknown. Nothing is changed on an error.
 
 ### `PUT /api/members/{id}/drills`
@@ -83,7 +83,7 @@ Returns that member's entry, as in `members[]` above:
   "paused": true, "next_drill_at": null, "drills_last_7_days": 1 }
 ```
 
-Pausing cancels the member's pending random and surprise drills (other scheduled practices, such as the weekly run's, stay). Errors: `404 not_found`, `422 invalid_request` (no `paused`).
+Pausing cancels the member's pending random and surprise drills (other scheduled practices, such as the weekly run's, stay), including one still being made at that moment, and puts back the plan step each used. Errors: `404 not_found`, `422 invalid_request` (no `paused`).
 
 ### `POST /api/families/{id}/surprise-drill`
 
@@ -105,7 +105,7 @@ Returns `201`:
 
 The call is a normal practice call with status `scheduled`; the scheduler rings it at `scheduled_for`, with the phone page open or not (Web Push wakes a closed one). The laptop can follow it with `GET /api/calls/{call_id}` or the live stream as usual. It works whether or not random drills are enabled. The scenario, difficulty and voice are chosen as for a random drill (below).
 
-Errors: `404 not_found` (family, or a member not in this family); `409 not_eligible` (that member cannot get a drill, or nobody can; the message says why, such as "Sara cannot get a drill now. Drills are paused."); `409 busy` (that member is on a call); `422 invalid_request` (`within_seconds` out of range); `429 daily_limit`.
+Errors: `404 not_found` (family, or a member not in this family); `409 not_eligible` (that member cannot get a drill, or nobody can, or the member paused drills while this one was being made; the message says why, such as "Sara cannot get a drill now. Drills are paused."); `409 busy` (that member is on a call); `422 invalid_request` (`within_seconds` out of range); `429 daily_limit`.
 
 ### `POST /api/families/{id}/shield-call`
 
@@ -190,7 +190,7 @@ Web Push sends each one with the title "Family alert" and `Urgency: high`.
 
 **Eligible for a drill**: has agreed to practice calls, has not left Callback, has not paused drills, and at least one scenario can be used (a clone scenario needs another family member with a ready voice; library scenarios always work).
 
-**Random drills.** About once a minute, for each family with drills enabled, each eligible member who has no scheduled practice and fewer drills in the last 7 days than `drills_per_week` gets the next one: at a random time inside the family's window (its time zone), on a random day within the next 7 / `drills_per_week` days, never sooner than 10 minutes from now. So with 2 a week the next drill is within three and a half days.
+**Random drills.** About once a minute, for each family with drills enabled, each eligible member who has no scheduled practice, no call still being scored (so the next drill is chosen from their latest result and plan), and fewer drills in the last 7 days than `drills_per_week` gets the next one: at a random time inside the family's window (its time zone) within the next 7 / `drills_per_week` days, never sooner than 10 minutes from now. The moment is spread evenly over all the window time in that stretch, and never falls on the (local) day the member's last drill rang, so two drills do not ring close together. So with 2 a week the next drill is within three and a half days.
 
 **Choosing a drill** (random and surprise): the scenario and difficulty of the member's next planned step (`plan.steps`, marked `scheduled` once used), else the readiness rule the planner uses (the story they would most likely believe first; after that, a new story or the same pressure in a different story). For a clone scenario, a random other family member with a ready voice; if there is none, a random library scenario instead.
 
@@ -244,6 +244,6 @@ For a drill instead: `POST /api/families/{id}/surprise-drill` with Sara, and it 
 | `protection_settings` | `family_id` (key), `enabled`, `drills_per_week`, `window_start_hour`, `window_end_hour`, `timezone`, `shield_enabled`, `updated_at` |
 | `member_drill_settings` | `member_id` (key), `paused`, `updated_at` |
 | `call_shield` | `call_id` (key), `created_at`, `alerted_at`, `alert_level`. A practice call with a row here is a shield call. |
-| `drill_calls` | `call_id` (key), `family_id`, `member_id`, `source` (`random` or `surprise`), `created_at`. Says which scheduled calls a pause or a settings change may cancel. |
+| `drill_calls` | `call_id` (key), `family_id`, `member_id`, `source` (`random` or `surprise`), `created_at`, `plan_step_json` (`{scenario, when}` of the plan step it used, or null). Says which scheduled calls a pause or a settings change may cancel, and which plan step to put back. |
 
 `member_joins` (track 1) is read for `call_back.phone_number`, defensively: with raw SQL, and `null` when the table or the row is missing.

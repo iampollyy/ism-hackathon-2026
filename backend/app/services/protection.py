@@ -10,8 +10,9 @@ Settings
 - A change to the drill settings (enabled, drills_per_week, the window, the
   time zone) cancels the family's pending random drills, and a pause
   cancels the member's pending random and surprise drills: they become
-  `failed` (drill_calls says which calls are drills). The next pass plans
-  again with the new settings.
+  `failed` (drill_calls says which calls are drills), and the plan step a
+  cancelled drill used goes back to `planned`. The next pass plans again
+  with the new settings.
 
 Eligible for a drill: practice consent, not opted out, not paused, and at
 least one usable scenario (a clone scenario needs another family member
@@ -21,13 +22,17 @@ Random drills: the scheduler loop calls start_random_drills on every tick;
 at most every Settings.drill_pass_seconds (and never two at once) it starts
 schedule_random_drills in the background, so the loop never waits for the
 director. For each family with drills enabled, each eligible member with no
-scheduled practice (of any source) and fewer drills in the last 7 days than
-drills_per_week gets the next one: at a random time inside the family's
-daily window (its time zone, zoneinfo; UTC if the zone is unknown), on a
-random day within the next 7 / drills_per_week days, never in the past and
-never sooner than 10 minutes from now. "Drills in the last 7 days" are the
-member's practice calls that rang (ring_at) in the last 7 days; shield
-calls do not count.
+scheduled practice (of any source), no call still being scored (status
+`ended`, ended within SCORING_WAIT: the next drill is chosen from a scored
+history), and fewer drills in the last 7 days than drills_per_week gets the
+next one: at a random time inside the family's daily window (its time zone,
+zoneinfo; UTC if the zone is unknown), within the next 7 / drills_per_week
+days, never in the past and never sooner than 10 minutes from now. The
+moment is uniform over all the window time in that stretch (a short piece
+of today is as likely as its length), and the local day the member's last
+drill rang is left out, so two drills do not ring close together. "Drills
+in the last 7 days" are the member's practice calls that rang (ring_at) in
+the last 7 days; shield calls do not count.
 
 Choosing a drill (choose_drill): the scenario and difficulty of the
 member's next planned step in plan_json, if there is one; else
@@ -40,6 +45,13 @@ Every drill is made by calls.create_practice(check_phone_online=False,
 delay_seconds), so it is `scheduled`, holds the consent gate and the daily
 caps (services/limits.py), and the scheduler rings it when due, re-running
 the gate. Its scheduled_for is then set to exactly the moment chosen.
+create_practice awaits the director, so once it returns (and with no await
+until the commit) create_drill reads again what may have changed meanwhile:
+a pause (or, for a random drill, a change of the drill settings) makes the
+new drill `failed` at once; and the plan is read fresh, so the step is
+marked `scheduled` only if the fresh plan still has it planned (matched on
+scenario and when) and a plan the planner wrote meanwhile is never
+overwritten.
 
 Shield calls (start_shield_call): rung now through calls.create_practice
 with the normal checks (the phone page must be open), plus the call_shield
@@ -56,7 +68,7 @@ import logging
 import math
 import random
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta, timezone, tzinfo
+from datetime import date, datetime, time, timedelta, timezone, tzinfo
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -80,6 +92,9 @@ DEFAULTS: dict[str, Any] = {
 DRILL_FIELDS = ("enabled", "drills_per_week", "window_start_hour", "window_end_hour", "timezone")
 MIN_LEAD = timedelta(minutes=10)  # a random drill is never sooner than this
 WEEK = timedelta(days=7)
+# A call `ended` for longer than this is not waited for (its after-call work
+# failed; main.py runs it again at the next start).
+SCORING_WAIT = timedelta(minutes=10)
 SURPRISE_MIN_SECONDS = 10
 SHIELD_DIFFICULTY = 2  # a shield call plays a persistent scammer
 SHIELD_SCENARIO = "relative_new_number"
@@ -89,6 +104,7 @@ REASON_LEFT = "Has left Callback."
 REASON_NO_CONSENT = "Has not agreed to practice calls."
 REASON_PAUSED = "Drills are paused."
 REASON_NO_SCENARIO = "No practice scenario can be used yet."
+REASON_SETTINGS_CHANGED = "The drill settings changed while the drill was being made."
 
 # The scheduler's pass: the running one and when the last one started.
 # Only touched from the event loop, so no lock is needed.
@@ -128,9 +144,16 @@ def is_known_zone(name: str) -> bool:
     return True
 
 
-def is_paused(db: DbSession, member_id: str) -> bool:
-    row = db.get(MemberDrillSettings, member_id)
+def is_paused(db: DbSession, member_id: str, fresh: bool = False) -> bool:
+    """fresh=True reads the row again even if this session holds it (after an await)."""
+    row = db.get(MemberDrillSettings, member_id, populate_existing=fresh)
     return row is not None and bool(row.paused)
+
+
+def drill_fields(db: DbSession, family_id: str) -> tuple[Any, ...] | None:
+    """The family's stored drill settings, read fresh; None without a row."""
+    row = db.get(ProtectionSettings, family_id, populate_existing=True)
+    return None if row is None else tuple(getattr(row, field) for field in DRILL_FIELDS)
 
 
 def members_of(db: DbSession, family_id: str) -> list[Member]:
@@ -176,16 +199,31 @@ def next_drill_at(pending: list[Call]) -> str | None:
     return to_iso(min(moments)) if moments else None
 
 
-def drills_last_7_days(db: DbSession, member_id: str, now: datetime) -> int:
-    """The member's practice calls that rang in the 7 days before now; shield calls not counted."""
+def rung_drills(db: DbSession, member_id: str, now: datetime) -> list[datetime]:
+    """When the member's practice calls rang, up to now; shield calls not counted."""
     rang = db.scalars(
         select(Call.ring_at)
         .outerjoin(CallShield, CallShield.call_id == Call.id)
         .where(Call.target_member_id == member_id, Call.kind == "practice", Call.ring_at.is_not(None),
                CallShield.call_id.is_(None))
     )
-    since = now - WEEK
-    return sum(1 for raw in rang if (moment := parse_time(raw)) is not None and since <= moment <= now)
+    return [moment for raw in rang if (moment := parse_time(raw)) is not None and moment <= now]
+
+
+def in_last_week(rang: list[datetime], now: datetime) -> int:
+    return sum(1 for moment in rang if moment >= now - WEEK)
+
+
+def drills_last_7_days(db: DbSession, member_id: str, now: datetime) -> int:
+    """The member's practice calls that rang in the 7 days before now; shield calls not counted."""
+    return in_last_week(rung_drills(db, member_id, now), now)
+
+
+def being_scored(db: DbSession, member_id: str, now: datetime) -> bool:
+    """True while one of the member's calls is `ended` (its after-call work
+    is still scoring it and planning) and ended within SCORING_WAIT."""
+    ended = db.scalars(select(Call.ended_at).where(Call.target_member_id == member_id, Call.status == "ended"))
+    return any((moment := parse_time(raw)) is not None and now - moment <= SCORING_WAIT for raw in ended)
 
 
 def member_view(db: DbSession, member: Member, family_members: list[Member], available: list[dict[str, Any]],
@@ -228,21 +266,37 @@ def protection_view(db: DbSession, family_id: str, now: datetime | None = None) 
 def cancel_pending_drills(db: DbSession, family_id: str | None = None, member_id: str | None = None,
                           sources: tuple[str, ...] = ("random",)) -> int:
     """The family's (or member's) drills from these sources that are still
-    scheduled become failed; each change is committed and published.
-    Commit your own writes first. Returns how many."""
-    query = (select(Call).join(DrillCall, DrillCall.call_id == Call.id)
+    scheduled become failed, and the plan step each one used goes back to
+    planned; each change is committed and published. Commit your own
+    writes first. Returns how many."""
+    query = (select(Call, DrillCall).join(DrillCall, DrillCall.call_id == Call.id)
              .where(Call.status == "scheduled", DrillCall.source.in_(sources)))
     if family_id is not None:
         query = query.where(DrillCall.family_id == family_id)
     if member_id is not None:
         query = query.where(DrillCall.member_id == member_id)
-    pending = list(db.scalars(query))
+    pending = list(db.execute(query).tuples())
     now = now_iso()
-    for call in pending:
-        calls.change_status(db, call, "failed", ended_at=now)
+    for call, drill in pending:
+        release_plan_step(db, drill)
+        calls.change_status(db, call, "failed", ended_at=now)  # commits the plan too
     if pending:
         log.info("cancelled %s pending drills (family %s, member %s)", len(pending), family_id, member_id)
     return len(pending)
+
+
+def release_plan_step(db: DbSession, drill: DrillCall) -> None:
+    """Set the plan step the drill used back to planned, if the member's
+    plan still has it scheduled. Does not commit."""
+    ref = _load_json(drill.plan_step_json)
+    member = db.get(Member, drill.member_id, populate_existing=True) if ref else None
+    if member is None:
+        return
+    plan = _load_json(member.plan_json)
+    step = find_step(plan, ref, "scheduled")
+    if step is not None:
+        step["status"] = "planned"
+        member.plan_json = json.dumps(plan)
 
 
 def update_settings(db: DbSession, family_id: str, body: schemas.ProtectionUpdate) -> schemas.ProtectionView:
@@ -297,7 +351,6 @@ class DrillChoice:
     difficulty: int
     voice_member: Member | None = None
     step: dict[str, Any] | None = None  # the plan step used; marked scheduled once the call exists
-    plan: dict[str, Any] | None = None  # the plan that holds it
 
 
 def _load_json(raw: str | None) -> dict[str, Any]:
@@ -312,6 +365,19 @@ def next_planned_step(plan: dict[str, Any]) -> dict[str, Any] | None:
     """The plan's first step still planned (as the weekly run reads it)."""
     for step in plan.get("steps") or []:
         if isinstance(step, dict) and step.get("status", "planned") == "planned":
+            return step
+    return None
+
+
+def step_ref(step: dict[str, Any]) -> dict[str, Any]:
+    """What identifies a plan step across reads of the plan."""
+    return {"scenario": step.get("scenario"), "when": step.get("when")}
+
+
+def find_step(plan: dict[str, Any], ref: dict[str, Any], status: str) -> dict[str, Any] | None:
+    """The plan's first step with this status that matches ref (step_ref)."""
+    for step in plan.get("steps") or []:
+        if isinstance(step, dict) and step.get("status", "planned") == status and step_ref(step) == step_ref(ref):
             return step
     return None
 
@@ -332,18 +398,19 @@ def choose_drill(db: DbSession, member: Member, family_members: list[Member],
                                        available)
         scenario, difficulty = rule.scenarios[0], rule.difficulty
     if scenario in libraries:
-        return DrillChoice(scenario, difficulty, None, step, plan if step else None)
+        return DrillChoice(scenario, difficulty, None, step)
     voices = ready_voices(member, family_members)
     if scenario in clones and voices:
-        return DrillChoice(scenario, difficulty, rng.choice(voices), step, plan if step else None)
+        return DrillChoice(scenario, difficulty, rng.choice(voices), step)
     if not libraries:
         return None
     return DrillChoice(rng.choice(libraries), difficulty)  # no ready voice: a library scenario instead
 
 
-def window_spans(now: datetime, row: ProtectionSettings, horizon: datetime) -> list[tuple[datetime, datetime]]:
-    """Per local day, the part of the family's daily window that lies
-    between now + MIN_LEAD and the horizon, as (start, end) in UTC."""
+def window_spans(now: datetime, row: ProtectionSettings, horizon: datetime,
+                 skip_day: date | None = None) -> list[tuple[datetime, datetime]]:
+    """Per local day (but skip_day), the part of the family's daily window
+    that lies between now + MIN_LEAD and the horizon, as (start, end) in UTC."""
     local = zone(row.timezone)
     earliest = now + MIN_LEAD
     spans: list[tuple[datetime, datetime]] = []
@@ -353,24 +420,39 @@ def window_spans(now: datetime, row: ProtectionSettings, horizon: datetime) -> l
         start = (midnight + timedelta(hours=row.window_start_hour)).astimezone(timezone.utc)  # wall-clock hours
         end = (midnight + timedelta(hours=row.window_end_hour)).astimezone(timezone.utc)
         low, high = max(start, earliest), min(end, horizon)
-        if high > low:
+        if high > low and day != skip_day:
             spans.append((low, high))
         day += timedelta(days=1)
     return spans
 
 
-def drill_time(now: datetime, row: ProtectionSettings, rng: random.Random) -> datetime:
-    """A random moment inside the daily window, on a random day within the
-    next 7 / drills_per_week days, at least MIN_LEAD from now. If that
-    stretch holds no window time, the first window after it."""
+def uniform_moment(spans: list[tuple[datetime, datetime]], rng: random.Random) -> datetime:
+    """A moment drawn uniformly over the total length of the spans, so a
+    short span is as likely as its length, not as likely as a whole day."""
+    offset = rng.uniform(0, sum((high - low).total_seconds() for low, high in spans))
+    for low, high in spans:
+        length = (high - low).total_seconds()
+        if offset < length:
+            return low + timedelta(seconds=math.floor(offset))
+        offset -= length
+    return spans[-1][0]  # only when the draw lands exactly on the end
+
+
+def drill_time(now: datetime, row: ProtectionSettings, rng: random.Random,
+               last_drill: datetime | None = None) -> datetime:
+    """A random moment inside the daily window within the next
+    7 / drills_per_week days, at least MIN_LEAD from now, uniform over the
+    window time in that stretch, and not on the local day of last_drill
+    (when the member's last drill rang). If that stretch holds no window
+    time, the first window after it."""
     per_week = max(1, min(7, int(row.drills_per_week or 1)))
-    spans = window_spans(now, row, now + timedelta(days=7 / per_week))
+    skip_day = last_drill.astimezone(zone(row.timezone)).date() if last_drill is not None else None
+    spans = window_spans(now, row, now + timedelta(days=7 / per_week), skip_day)
     if not spans:
-        spans = window_spans(now, row, now + timedelta(days=8))[:1]
+        spans = window_spans(now, row, now + timedelta(days=8), skip_day)[:1]
     if not spans:  # cannot happen with a valid window; never in the past anyway
         return now + MIN_LEAD
-    low, high = rng.choice(spans)
-    return low + timedelta(seconds=int(rng.uniform(0, (high - low).total_seconds())))
+    return uniform_moment(spans, rng)
 
 
 # ---------------------------------------------------------------- creating drills
@@ -379,10 +461,14 @@ def drill_time(now: datetime, row: ProtectionSettings, rng: random.Random) -> da
 async def create_drill(db: DbSession, member: Member, choice: DrillChoice, when: datetime, now: datetime,
                        source: str) -> Call:
     """Create the drill through calls.create_practice as a scheduled call at
-    `when`, record it in drill_calls and mark its plan step scheduled.
-    Raises schemas.ApiError (the consent gate, busy, the daily cap)."""
+    `when`, record it in drill_calls and mark its plan step scheduled (in
+    the plan read fresh after the await). If the member paused, or (source
+    random) the drill settings changed, while the director ran, the new
+    call becomes failed and this raises 409 not_eligible. Raises
+    schemas.ApiError (also the consent gate, busy, the daily cap)."""
     delay = max(1, math.ceil((when - now).total_seconds()))
     voice_member_id = choice.voice_member.id if choice.voice_member else None
+    settings_before = drill_fields(db, member.family_id) if source == "random" else None
     db.commit()  # nothing pending while create_practice awaits the director
     try:
         call = await calls.create_practice(db, member.id, voice_member_id, choice.scenario, choice.difficulty,
@@ -390,12 +476,27 @@ async def create_drill(db: DbSession, member: Member, choice: DrillChoice, when:
     except Exception:
         db.rollback()
         raise
+    # No await from here to the commit: what changed during the director's
+    # await is read now, and nothing can change it again before the commit.
     call.scheduled_for = to_iso(when)  # the moment chosen, not counted from after the director
-    db.add(DrillCall(call_id=call.id, family_id=call.family_id, member_id=member.id, source=source,
-                     created_at=now_iso()))
-    if choice.step is not None and choice.plan is not None:
-        choice.step["status"] = "scheduled"
-        member.plan_json = json.dumps(choice.plan)
+    drill = DrillCall(call_id=call.id, family_id=call.family_id, member_id=member.id, source=source,
+                      created_at=now_iso())
+    db.add(drill)
+    reason = REASON_PAUSED if is_paused(db, member.id, fresh=True) else None
+    if reason is None and source == "random" and drill_fields(db, member.family_id) != settings_before:
+        reason = REASON_SETTINGS_CHANGED
+    if reason is not None:
+        calls.change_status(db, call, "failed", ended_at=now_iso())  # commits the drill row too
+        log.info("drill %s for %s dropped: %s", call.id, member.id, reason)
+        raise schemas.ApiError(409, "not_eligible", f"{member.name} cannot get a drill now. {reason}")
+    if choice.step is not None:
+        db.refresh(member)  # the planner may have written a new plan meanwhile
+        plan = _load_json(member.plan_json)
+        step = find_step(plan, choice.step, "planned")
+        if step is not None:
+            step["status"] = "scheduled"
+            member.plan_json = json.dumps(plan)
+            drill.plan_step_json = json.dumps(step_ref(step))
     db.commit()
     return call
 
@@ -413,12 +514,16 @@ async def drill_for_member(member_id: str, now: datetime, rng: random.Random) ->
             available = pipeline.available_scenarios()
             if ineligible_reason(db, member, family_members, available) is not None:
                 return None
-            if pending_practices(db, member.id) or drills_last_7_days(db, member.id, now) >= row.drills_per_week:
+            if pending_practices(db, member.id) or being_scored(db, member.id, now):
+                return None  # a drill is waiting, or the last call's result and new plan are not in yet
+            rang = rung_drills(db, member.id, now)
+            if in_last_week(rang, now) >= row.drills_per_week:
                 return None
             choice = choose_drill(db, member, family_members, available, rng)
             if choice is None:
                 return None
-            call = await create_drill(db, member, choice, drill_time(now, row, rng), now, "random")
+            when = drill_time(now, row, rng, last_drill=max(rang, default=None))
+            call = await create_drill(db, member, choice, when, now, "random")
             log.info("random drill %s for %s at %s (%s)", call.id, member.id, call.scheduled_for, call.scenario)
             return call.id
     except schemas.ApiError as error:
