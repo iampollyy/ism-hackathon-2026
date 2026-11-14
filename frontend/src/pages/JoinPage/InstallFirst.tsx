@@ -32,10 +32,10 @@ export function wantsInstallFirst(): boolean {
 export function InstallFirst({ memberId, onContinue }: { memberId: string; onContinue: () => void }) {
   const install = useInstallOffer(memberId);
   const [inApp] = useState(isInAppBrowser);
-  const first = useRef<HTMLButtonElement>(null);
+  const sheet = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    first.current?.focus();
+    sheet.current?.focus(); // the sheet, not a button: no focus ring on open
     const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onContinue();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -46,9 +46,16 @@ export function InstallFirst({ memberId, onContinue }: { memberId: string; onCon
 
   return (
     <div className="join-install" role="presentation">
-      <section className="join-install__sheet" role="dialog" aria-modal="true" aria-labelledby="join-install-title">
+      <section
+        ref={sheet}
+        tabIndex={-1}
+        className="join-install__sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="join-install-title"
+      >
         <span className="join-install__app" aria-hidden="true">
-          <img src="/icon-192.png" alt="" width={56} height={56} />
+          <img src="/icon-192.png" alt="" width={48} height={48} />
         </span>
         <h2 className="join-install__title" id="join-install-title">
           {done ? 'Now open Callback from your Home Screen' : 'First, put Callback on your Home Screen'}
@@ -56,11 +63,11 @@ export function InstallFirst({ memberId, onContinue }: { memberId: string; onCon
         <p className="join-install__lead">
           {done
             ? 'Look for the Callback icon and open it. Your invitation is waiting there.'
-            : 'Then Callback opens like an app, and practice calls and warnings reach you there. It takes about 20 seconds.'}
+            : 'It then opens like an app, and practice calls reach you there. About 20 seconds.'}
         </p>
 
         {mode === 'prompt' && (
-          <button ref={first} type="button" className="join-button join-button--go" onClick={() => void install.install()}>
+          <button type="button" className="join-button join-button--go" onClick={() => void install.install()}>
             <Download size={22} aria-hidden="true" />
             Add Callback to my Home Screen
           </button>
@@ -157,12 +164,7 @@ export function InstallFirst({ memberId, onContinue }: { memberId: string; onCon
           </p>
         )}
 
-        <button
-          ref={mode === 'prompt' ? undefined : first}
-          type="button"
-          className="join-button join-button--quiet"
-          onClick={onContinue}
-        >
+        <button type="button" className="join-button join-button--quiet" onClick={onContinue}>
           Continue here instead
         </button>
       </section>

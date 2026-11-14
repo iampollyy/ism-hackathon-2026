@@ -688,12 +688,13 @@ $focus: rgba(19, 134, 83, 0.55);
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
   max-width: 480px;
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100dvh - 24px);
   overflow-y: auto;
-  padding: 28px 22px 20px;
+  padding: 22px 18px 16px;
+  outline: none;
   border-radius: 28px;
   background: var(--surface-strong, #fff);
   box-shadow: 0 24px 60px rgba(29, 22, 71, 0.35);
@@ -713,7 +714,7 @@ $focus: rgba(19, 134, 83, 0.55);
 .join-install__title {
   margin: 0;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.45rem;
+  font-size: 1.3rem;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.02em;
@@ -742,9 +743,9 @@ $focus: rgba(19, 134, 83, 0.55);
   li {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 0;
-    line-height: 1.45;
+    gap: 12px;
+    padding: 9px 0;
+    line-height: 1.4;
     color: var(--ink);
     border-bottom: 1px solid var(--line);
 
@@ -758,16 +759,16 @@ $focus: rgba(19, 134, 83, 0.55);
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
   background: var(--accent-soft);
   color: var(--navy-soft);
 }
 
 .join-install__note {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   text-align: center;
   color: var(--muted);
 }
