@@ -174,9 +174,10 @@
 
 // Where the family stands on this kind of call: who already practised it, and
 // the way to practise it. A quiet tinted band, so the briefing stays calm.
+// The way to practise sits beside the people when they fit, under them when not.
 .np-family {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px 20px;
   margin-top: 2px;
@@ -186,6 +187,7 @@
 }
 
 .np-family__body {
+  flex: 1 1 auto;
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -469,7 +471,7 @@
   .np-paper { padding: 0 20px 4px; }
   .np-pattern { padding: 24px 0; }
   .np-pattern__summary { font-size: 1.02rem; }
-  .np-family { grid-template-columns: minmax(0, 1fr); align-items: stretch; padding: 14px; }
+  .np-family { flex-direction: column; align-items: stretch; padding: 14px; }
   .np-family__list li { flex: 1 1 100%; }
 
   // Name and day on the first line, what they did under it, the arrow on the right.
