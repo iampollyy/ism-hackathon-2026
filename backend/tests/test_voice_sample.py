@@ -9,6 +9,7 @@ runs the real ffmpeg clean-up end to end."""
 import json
 import subprocess
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -287,6 +288,64 @@ def test_without_a_spoken_yes_the_recording_waits_and_nothing_is_cloned(client, 
     assert status(client, call_id)["state"] == "waiting_for_consent"
     assert fakes.clones == [] and clone_rows(sara) == []
     assert member(sara).voice_id is None
+
+
+def ended_seconds_ago(call_id: str, seconds: float) -> None:
+    with new_session() as db:
+        call = db.get(Call, call_id)
+        call.ended_at = (datetime.now(timezone.utc) - timedelta(seconds=seconds)).isoformat()
+        db.commit()
+
+
+def test_no_yes_once_the_call_is_long_over_lets_go_of_the_recording(client, sara_joined, fakes) -> None:
+    """A recording never waits forever: once the call has been over for the
+    grace period, a yes can no longer come, so it is deleted and both the
+    phone and the organiser read "no copy"."""
+    _, sara = sara_joined
+    call_id = welcome_call(client, sara)
+    assert client.post(f"/api/calls/{call_id}/end", json={"ended_by": "agent"}).status_code == 200
+    upload(client, call_id)
+    ended_seconds_ago(call_id, voice_sample.ANSWER_GRACE_SECONDS - 10)
+    assert status(client, call_id)["state"] == "waiting_for_consent", "a late yes may still arrive"
+    assert len(stored_files()) == 1
+
+    ended_seconds_ago(call_id, voice_sample.ANSWER_GRACE_SECONDS + 1)
+    view = status(client, call_id)
+    assert view["state"] == "none"
+    assert view["reason"] == "Sara's spoken yes for this call is missing, so the recording is not kept."
+    assert stored_files() == [], "the recording is deleted"
+    row = sample_row(call_id)
+    assert (row.state, row.path) == ("none", None)
+    member_view = client.get(f"/api/members/{sara}/voice-sample").json()
+    assert (member_view["call_id"], member_view["state"]) == (call_id, "none")
+    assert fakes.clones == [] and clone_rows(sara) == [] and member(sara).voice_id is None
+
+    say(client, call_id, True)  # far too late: nothing is left to clone
+    assert fakes.clones == [] and sample_row(call_id).state == "none"
+
+
+def test_a_call_still_in_progress_keeps_waiting_for_the_yes(client, sara_joined, fakes) -> None:
+    _, sara = sara_joined
+    call_id = welcome_call(client, sara)
+    upload(client, call_id)  # the page may upload before the call is marked ended
+    with new_session() as db:
+        db.get(Call, call_id).answered_at = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+        db.commit()
+    assert status(client, call_id)["state"] == "waiting_for_consent"
+    assert len(stored_files()) == 1
+
+
+def test_a_failed_call_without_a_yes_lets_go_too(client, sara_joined, fakes) -> None:
+    _, sara = sara_joined
+    call_id = welcome_call(client, sara)
+    upload(client, call_id)
+    with new_session() as db:
+        call = db.get(Call, call_id)
+        call.status, call.ended_by = "failed", "error"
+        db.commit()
+    ended_seconds_ago(call_id, voice_sample.ANSWER_GRACE_SECONDS + 5)
+    assert status(client, call_id)["state"] == "none"
+    assert stored_files() == []
 
 
 def test_a_spoken_no_lets_go_of_the_recording(client, sara_joined, fakes) -> None:

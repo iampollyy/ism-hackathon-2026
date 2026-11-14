@@ -1,6 +1,11 @@
 """Voice upload, clone deletion and opt-out. OWNER: track A.
 
 POST /api/members/{id}/voice: multipart, one file field `audio` (webm or mp4).
+0. In a family an account made (a family_owners row), only the organiser's
+   own voice, or a member who joined and ticked "my voice may be copied"
+   themselves, may be copied: anyone else is 409 consent_missing, before
+   anything is written. (Families made without an account keep the older
+   rule: the organiser's tick at sign-up.)
 1. Save the upload unchanged as media/consent/{member_id}.{ext}: it opens with
    the spoken consent sentence, so it is the consent record. Write a consents
    row (clone, voice_recording) and commit.
@@ -10,10 +15,13 @@ POST /api/members/{id}/voice: multipart, one file field `audio` (webm or mp4).
 4. {"voice_ready": true}, or 502 clone_failed.
 
 DELETE /api/members/{id}/voice deletes the clone at ElevenLabs, then clears
-voice_id and sets voice_status deleted (rule 7: deletion is real).
+voice_id and sets voice_status deleted (rule 7: deletion is real). The raw
+recordings it was made from (media/consent/{member_id}.*, enough to clone
+again) and the cleaned copy go too; the consents rows stay as the record.
 POST /api/members/{id}/opt-out records the opt-out first, so no new practice
 can start, then deletes the clone the same way. It also deletes a recording
-from the welcome call that is still kept (track 2, services/voice_sample.py).
+from the welcome call that is still kept (track 2, services/voice_sample.py)
+and forgets the phone number they gave when joining.
 
 Every write is committed before awaiting ffmpeg or ElevenLabs (db.py, "Hard rule").
 """
@@ -28,7 +36,7 @@ from sqlalchemy.orm import Session as DbSession
 from app import schemas
 from app.config import get_settings
 from app.db import get_db, now_iso
-from app.models import Consent, Member
+from app.models import Consent, FamilyOwner, Member, MemberJoin
 from app.services import audio as audio_service
 from app.services import elevenlabs, limits
 
@@ -72,6 +80,48 @@ def consent_path(member_id: str, extension: str) -> Path:
 
 def clean_path(member_id: str) -> Path:
     return get_settings().media_path / "voices" / f"{member_id}.mp3"
+
+
+def consent_recordings(member_id: str) -> list[Path]:
+    """Every saved original of the member's recordings (consent_path, any
+    extension)."""
+    folder = get_settings().media_path / "consent"
+    if not folder.is_dir():
+        return []
+    return [path for path in folder.glob(f"{member_id}.*") if path.stem == member_id]
+
+
+def _unlink_quietly(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        log.exception("could not delete %s; delete it by hand", path)
+
+
+def _delete_recordings(member_id: str) -> None:
+    """Delete the cleaned copy and every raw recording of the member's voice.
+    The consents rows stay: they are the record of what was agreed."""
+    _unlink_quietly(clean_path(member_id))
+    for path in consent_recordings(member_id):
+        _unlink_quietly(path)
+
+
+def own_clone_consent_missing(db: DbSession, member: Member) -> bool:
+    """True when the member's family belongs to an account and the member has
+    not agreed themselves: not the organiser, and not joined with the voice
+    tick (joining.clone_from_call_given). Families made without an account
+    keep the older rule (the organiser's tick at sign-up)."""
+    if db.get(FamilyOwner, member.family_id) is None or member.is_organiser:
+        return False
+    from app.services import joining  # imported here: joining imports calls, which imports voice_sample, which imports this module
+    return db.get(MemberJoin, member.id) is None or not joining.clone_from_call_given(db, member)
+
+
+def _consent_missing(member: Member) -> schemas.ApiError:
+    return schemas.ApiError(
+        409, "consent_missing",
+        f"{member.name} hasn't agreed to a copy of their voice. They can tick it on their own phone first.",
+    )
 
 
 async def _read_upload(upload: UploadFile) -> bytes:
@@ -162,7 +212,7 @@ async def _delete_clone(db: DbSession, member: Member, delete_newer: bool = Fals
         member.voice_status = "deleted"
     db.commit()
     if member.voice_id is None:
-        clean_path(member.id).unlink(missing_ok=True)
+        _delete_recordings(member.id)
 
 
 # ---------------------------------------------------------------- endpoints
@@ -174,6 +224,8 @@ async def upload_voice(member_id: str, audio: UploadFile = File(...),
     member = _member_or_404(db, member_id)
     if member.opted_out_at:
         raise schemas.ApiError(409, "opted_out", "This member has opted out.")
+    if own_clone_consent_missing(db, member):  # before anything is written
+        raise _consent_missing(member)
     limits.check(db, "clone")
     content = await _read_upload(audio)
     extension = upload_extension(audio.filename, audio.content_type)
@@ -191,6 +243,11 @@ async def upload_voice(member_id: str, audio: UploadFile = File(...),
     if member.opted_out_at:  # opted out while the clone was being made
         await _delete_new_clone_after_opt_out(db, member, new_voice_id)
         raise schemas.ApiError(409, "opted_out", "This member has opted out.")
+    if own_clone_consent_missing(db, member):  # took the tick away while the clone was being made
+        await _delete_clone_quietly(new_voice_id)
+        if member.voice_id is None:
+            _delete_recordings(member.id)
+        raise _consent_missing(member)
     old_voice_id = member.voice_id
     member.voice_id = new_voice_id
     member.voice_status = "ready"
@@ -217,6 +274,10 @@ async def opt_out(member_id: str, db: DbSession = Depends(get_db)) -> schemas.Ok
         member.opted_out_at = now
         db.add(Consent(member_id=member.id, kind="opt_out", source="manual",
                        evidence="Opted out from the app.", created_at=now))
+        db.commit()
+    joined = db.get(MemberJoin, member.id)
+    if joined is not None and joined.phone_number is not None:  # they left: forget their number
+        joined.phone_number = None
         db.commit()
     from app.services import voice_sample  # track 2; imported here because voice_sample imports this module
     voice_sample.forget_member(db, member.id)  # deletes a welcome-call recording still kept
