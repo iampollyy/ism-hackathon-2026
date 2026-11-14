@@ -8,6 +8,7 @@ No shape here has a field for the safe word. Only `safe_word_set` exists.
 """
 
 import base64
+import json
 import re
 from typing import Annotated, Any, Literal, Union
 from urllib.parse import urlsplit
@@ -15,7 +16,7 @@ from urllib.parse import urlsplit
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints
 
 
-from pydantic import AfterValidator, BaseModel, Field, StrictBool
+from pydantic import AfterValidator, BaseModel, Field, StrictBool, field_validator
 
 # ---------------------------------------------------------------- fixed lists
 
@@ -422,6 +423,7 @@ class IncomingCall(BaseModel):
     call_id: str
     kind: Literal["welcome", "practice"]
     caller: Caller
+    live: bool = False  # a person on the other end (services/live_call.py), not a voice agent
 
 
 class PhoneMessage(BaseModel):
@@ -1004,3 +1006,44 @@ class MemberAdded(BaseModel):
     relationship: str
     invite_link: str  # /join/{id}: open it on their phone to join
     phone_link: str
+
+
+# ---------------------------------------------------------------- live calls (services/live_call.py)
+
+
+class LiveCallRequest(BaseModel):
+    member_id: str
+
+
+class LiveCallCreated(BaseModel):
+    call_id: str
+    member: PersonRef
+
+
+class LiveSignalIn(BaseModel):
+    side: Literal["caller", "callee"]
+    kind: Literal["offer", "answer", "ice", "bye"]
+    data: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("data")
+    @classmethod
+    def small_enough(cls, value: dict[str, Any]) -> dict[str, Any]:
+        if len(json.dumps(value)) > 20_000:
+            raise ValueError("signal too large")
+        return value
+
+
+class LiveSignal(BaseModel):
+    n: int
+    kind: str
+    data: dict[str, Any]
+
+
+class LiveSignals(BaseModel):
+    messages: list[LiveSignal]
+    status: str
+
+
+class ScribeToken(BaseModel):
+    token: str
+    model_id: str = "scribe_v2_realtime"

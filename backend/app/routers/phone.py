@@ -49,7 +49,7 @@ from sqlalchemy.orm import Session as DbSession
 from app import events, schemas
 from app.db import get_db, now_iso, parse_time, seconds_between, utcnow
 from app.ids import new_call_id
-from app.models import Call, Family, Member, Message, ReadinessSnapshot, Result
+from app.models import Call, Family, LiveCall, Member, Message, ReadinessSnapshot, Result
 from app.routers.calls import (DEFAULT_CALLER_LABEL, DEFAULT_CALLER_NUMBER, change_status, get_member,
                                start_after_call, start_session)
 from app.services import joining, limits, readiness, shield
@@ -76,7 +76,8 @@ def incoming_call(db: DbSession, member_id: str) -> schemas.IncomingCall | None:
         label=call.caller_label or DEFAULT_CALLER_LABEL,
         number=call.caller_number or DEFAULT_CALLER_NUMBER,
     )
-    return schemas.IncomingCall(call_id=call.id, kind=call.kind, caller=caller)
+    live = db.get(LiveCall, call.id) is not None  # a person calling (services/live_call.py)
+    return schemas.IncomingCall(call_id=call.id, kind=call.kind, caller=caller, live=live)
 
 
 def unread_messages(db: DbSession, member_id: str) -> list[schemas.PhoneMessage]:
