@@ -7,9 +7,13 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ChevronRight, Flame, Lightbulb, Mic, Phone, PhoneIncoming, ShieldCheck, Target } from 'lucide-react';
+import {
+  ChevronRight, Flame, Lightbulb, LoaderCircle, Mic, Phone, PhoneIncoming, ShieldCheck, Target, Zap,
+} from 'lucide-react';
 import { api, ApiError } from '../../api/client';
-import type { DrillList, FamilyView, MemberView, ProgressView, ProtectionView } from '../../api/types';
+import type {
+  DrillList, FamilyView, MemberView, ProgressView, ProtectionView, SurpriseDrillCreated,
+} from '../../api/types';
 import { DrillListHead, DrillRow } from '../DrillsPage/DrillRow';
 import {
   EmptyState, LoadError, LoadingRows, memberIndex, PersonAvatar, ReviewHeader, StaleNotice, useRememberFamily,
@@ -146,7 +150,18 @@ export function MemberPage() {
 
         <aside className="rv-member__side">
           <Record progress={data} name={name} />
-          <NextDrill progress={data} protection={protection.data} memberId={memberId} familyId={familyId} name={name} />
+          <NextDrill
+            progress={data}
+            protection={protection.data}
+            memberId={memberId}
+            familyId={familyId}
+            name={name}
+            onStarted={() => {
+              progress.reload();
+              drills.reload();
+              protection.reload();
+            }}
+          />
           <ConsentPanel
             member={member}
             protection={protection.data}
@@ -225,10 +240,29 @@ type NextDrillProps = {
   memberId: string;
   familyId: string;
   name: string;
+  /** A surprise drill was planned: load the page's numbers again. */
+  onStarted: () => void;
 };
 
-function NextDrill({ progress, protection, memberId, familyId, name }: NextDrillProps) {
+function NextDrill({ progress, protection, memberId, familyId, name, onStarted }: NextDrillProps) {
   const entry = protection?.members.find((one) => one.member_id === memberId) ?? null;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [started, setStarted] = useState<SurpriseDrillCreated | null>(null);
+
+  const surprise = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      setStarted(await api.surpriseDrill(familyId, { member_id: memberId, within_seconds: 60 }));
+      onStarted();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'The drill couldn’t be planned. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const next = progress.next_drill_at;
   let line: string;
   let detail: string | null = null;
@@ -256,6 +290,28 @@ function NextDrill({ progress, protection, memberId, familyId, name }: NextDrill
       </div>
       <p className="rv-next__when">{line}</p>
       {detail ? <p className="rv-muted">{detail}</p> : null}
+
+      {started ? (
+        <div className="rv-next__started" role="status">
+          <p>
+            <strong>A surprise drill rings {possessive(name)} phone within a minute.</strong> {name} won’t know when,
+            and it always says what it was at the end.
+          </p>
+          <Link to={`/calls/${started.call_id}`} className="rv-link">
+            Follow it live <ChevronRight size={15} aria-hidden />
+          </Link>
+        </div>
+      ) : entry?.eligible ? (
+        <div className="rv-next__surprise">
+          <button type="button" className="button button-secondary rv-button" onClick={surprise} disabled={busy}>
+            {busy ? <LoaderCircle size={16} className="rv-spin" aria-hidden /> : <Zap size={16} aria-hidden />}
+            {busy ? 'Planning the drill…' : 'Ring a surprise drill'}
+          </button>
+          <p className="rv-muted">Within a minute, at a moment {name} doesn’t know.</p>
+        </div>
+      ) : null}
+      {error ? <p className="rv-form-error" role="alert">{error}</p> : null}
+
       {entry ? <p className="rv-next__week">{plural(entry.drills_last_7_days, 'drill')} in the last 7 days</p> : null}
     </section>
   );

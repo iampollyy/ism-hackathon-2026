@@ -222,8 +222,10 @@
 
     .is-safe { background: var(--good-soft); }
     .is-safe dd { color: var(--good); }
-    .is-streak dd { color: #c4562f; }
-    .is-streak dd svg { color: var(--accent); }
+    // A streak is good news: warm amber, never the orange-red kept for scams.
+    .is-streak { background: var(--rv-tip-soft); }
+    .is-streak dd { color: var(--rv-yellow-ink); }
+    .is-streak dd svg { color: #d08a12; }
   }
 
   .rv-record__last {
@@ -274,6 +276,29 @@
     font-size: 1.5rem;
     font-weight: 600;
     letter-spacing: -0.02em;
+  }
+
+  .rv-next__surprise {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+    margin-top: 14px;
+
+    p { margin: 0; font-size: 0.84rem; }
+  }
+
+  .rv-next__started {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(33, 61, 82, 0.07);
+    animation: rv-rise 240ms cubic-bezier(0.16, 1, 0.3, 1);
+
+    p { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--ink); }
+    strong { font-weight: 650; }
   }
 
   .rv-next__week {
