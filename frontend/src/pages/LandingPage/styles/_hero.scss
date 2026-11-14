@@ -569,8 +569,15 @@
   justify-content: center;
   gap: 20px;
 
-  .lp-capstage {
+  // Centred like subtitles, under the centred caller name.
+  .lp-capstage,
+  .lp-done {
     min-height: 0;
+    text-align: center;
+  }
+  .lp-status {
+    display: flex;
+    justify-content: center;
   }
   .lp-cap--md {
     font-size: 24px;
