@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Check, CircleAlert, KeyRound, Link2Off, LoaderCircle, Mic, Phone, PhoneCall, RotateCw, ShieldCheck, Shuffle,
+  Check, CircleAlert, KeyRound, Link2Off, LoaderCircle, LogOut, Mic, Phone, PhoneCall, RotateCw, ShieldCheck, Shuffle,
 } from 'lucide-react';
 import { ApiError, api } from '../../api/client';
 import type { JoinView } from '../../api/types';
@@ -173,9 +173,8 @@ function JoinReady({
             <div>
               <h2>A short welcome call{view.joined ? '' : ', right now'}</h2>
               <p>
-                About two minutes. A friendly voice explains Callback, checks you are happy to go ahead and asks a few
-                easy questions. Your phone records your side of the call, so a copy of your voice can be made if you say
-                yes.
+                About two minutes. A friendly voice explains Callback and asks a few easy questions. Only if you say yes,
+                your side of the call is used to make a copy of your voice.
               </p>
             </div>
           </li>
@@ -351,12 +350,20 @@ function JoinForm({
       ) : (
         <>
           <button type="submit" className="join-button join-button--go" disabled={busy}>
-            {busy ? <LoaderCircle className="join-spin" size={24} aria-hidden="true" /> : <Phone size={24} aria-hidden="true" />}
-            <span className="join-button__label">{busy ? 'Joining…' : 'Join and start my welcome call'}</span>
+            <span className="join-button__label">
+              {busy ? (
+                <LoaderCircle className="join-spin join-button__icon" size={24} aria-hidden="true" />
+              ) : (
+                <Phone className="join-button__icon" size={24} aria-hidden="true" />
+              )}
+              {busy ? 'Joining…' : 'Join and start my welcome call'}
+            </span>
           </button>
           <p className="join-hint join-hint--center">
-            <Mic size={16} aria-hidden="true" />
-            Your phone will ring in a few seconds. Allow the microphone when asked, so you can talk.
+            <span>
+              <Mic className="join-hint__icon" size={16} aria-hidden="true" />
+              Your phone rings in a few seconds. If it asks, allow the microphone so you can talk.
+            </span>
           </p>
         </>
       )}
@@ -375,7 +382,53 @@ function JoinForm({
       )}
 
       <p className="join-small">You can change these choices, delete your voice or leave Callback at any time.</p>
+      {view.joined && <LeaveCallback memberId={memberId} familyName={view.family.name} onLeft={onOptedOut} />}
     </form>
+  );
+}
+
+/** Leaving is always one calm step away, with a plain question first. */
+function LeaveCallback({ memberId, familyName, onLeft }: { memberId: string; familyName: string; onLeft: () => void }) {
+  const [step, setStep] = useState<'idle' | 'asking' | 'busy'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  const leave = () => {
+    setStep('busy');
+    setError(null);
+    api.optOut(memberId).then(onLeft, (failure: unknown) => {
+      setStep('asking');
+      setError(failure instanceof ApiError ? failure.message : 'Something went wrong. Please try again.');
+    });
+  };
+
+  if (step === 'idle') {
+    return (
+      <button type="button" className="join-leave__open" onClick={() => setStep('asking')}>
+        <LogOut size={18} aria-hidden="true" />
+        Leave Callback
+      </button>
+    );
+  }
+  return (
+    <div className="join-leave" role="group" aria-labelledby={`${memberId}-leave`}>
+      <p className="join-leave__question" id={`${memberId}-leave`}>
+        Leave {familyName} on Callback? Practice calls stop, and any copy of your voice is deleted.
+      </p>
+      <div className="join-leave__buttons">
+        <button type="button" className="join-leave__yes" onClick={leave} disabled={step === 'busy'}>
+          {step === 'busy' ? 'Leaving…' : 'Yes, leave'}
+        </button>
+        <button type="button" className="join-leave__no" onClick={() => setStep('idle')} disabled={step === 'busy'}>
+          Stay
+        </button>
+      </div>
+      {error && (
+        <p className="join-error" role="alert">
+          <CircleAlert size={16} aria-hidden="true" />
+          {error}
+        </p>
+      )}
+    </div>
   );
 }
 

@@ -155,13 +155,13 @@ export function AlertFamilyCard({
 
 // ---------------------------------------------------------------- your choices (consent, always visible)
 
-type Choices = { join: JoinView; voice: VoiceSampleStatus | null };
+export type Choices = { join: JoinView; voice: VoiceSampleStatus | null };
 
-export function YourChoicesCard({ memberId, refreshKey }: { memberId: string; refreshKey: string }) {
+/** The member's own choices (the invite page's view) and their latest
+ * welcome-call voice, for the home tab. */
+export function useMemberChoices(memberId: string, refreshKey: string) {
   const [choices, setChoices] = useState<Choices | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<'idle' | 'asking' | 'busy' | 'done'>('idle');
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setError(null);
@@ -174,6 +174,24 @@ export function YourChoicesCard({ memberId, refreshKey }: { memberId: string; re
   useEffect(() => {
     load();
   }, [load, refreshKey]);
+
+  return { choices, error, reload: load };
+}
+
+export function YourChoicesCard({
+  memberId,
+  choices,
+  error,
+  onReload,
+}: {
+  memberId: string;
+  choices: Choices | null;
+  error: string | null;
+  onReload: () => void;
+}) {
+  const [deleting, setDeleting] = useState<'idle' | 'asking' | 'busy' | 'done'>('idle');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const load = onReload;
 
   const deleteVoice = () => {
     setDeleting('busy');

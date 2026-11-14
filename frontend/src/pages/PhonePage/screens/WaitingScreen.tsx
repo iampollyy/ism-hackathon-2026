@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BookOpen, Check, CircleAlert, House, Info, MicOff, Newspaper, PhoneMissed, ShieldCheck, Volume2, WifiOff, X } from 'lucide-react';
+import { BellRing, BookOpen, Check, CircleAlert, House, Info, MicOff, Newspaper, PhoneMissed, ShieldCheck, Volume2, WifiOff, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Badge } from '../../../components/atoms/Badge';
 import { Card } from '../../../components/atoms/Card';
@@ -7,7 +7,7 @@ import type { PhoneMessage } from '../../../api/types';
 import type { SoundStatus } from '../phoneSound';
 import type { Notice, PhoneUiState } from '../phoneState';
 import type { AlertState } from '../usePhone';
-import { AlertFamilyCard, NextSteps, WelcomeOfferCard, YourChoicesCard } from './HomeCards';
+import { AlertFamilyCard, NextSteps, WelcomeOfferCard, YourChoicesCard, useMemberChoices } from './HomeCards';
 import { LearnTab } from './LearnTab';
 import { NewsTab } from './NewsTab';
 
@@ -44,6 +44,10 @@ type WaitingScreenProps = {
 export function WaitingScreen(props: WaitingScreenProps) {
   const { state, tab, familyId, onTab } = props;
   const { link } = state;
+  // Loaded once for every tab: the home tab shows them, and leaving
+  // Callback changes what the whole screen says.
+  const memberChoices = useMemberChoices(props.memberId, state.voice?.phase === 'final' ? state.voice.callId : '');
+  const left = memberChoices.choices?.join.opted_out === true;
   const tabs: { key: PhoneTab; label: string; icon: LucideIcon }[] = [
     { key: 'home', label: 'Home', icon: House },
     { key: 'learn', label: 'Learn', icon: BookOpen },
@@ -65,6 +69,8 @@ export function WaitingScreen(props: WaitingScreenProps) {
         </span>
         {link === 'offline' ? (
           <span className="status-pill warn">Offline</span>
+        ) : left ? (
+          <span className="status-pill phone-status-off">Off</span>
         ) : link === 'online' ? (
           <span className="status-pill good">On</span>
         ) : null}
@@ -78,7 +84,7 @@ export function WaitingScreen(props: WaitingScreenProps) {
       )}
 
       <div id={`phone-panel-${current}`} role="tabpanel" aria-labelledby={`phone-tab-${current}`} className="phone-panel">
-        {current === 'home' && <HomeTab {...props} />}
+        {current === 'home' && <HomeTab {...props} memberChoices={memberChoices} />}
         {current === 'learn' && <LearnTab />}
         {current === 'news' && familyId && <NewsTab familyId={familyId} memberId={props.memberId} />}
       </div>
@@ -120,15 +126,51 @@ function HomeTab({
   onStartWelcome,
   onAlert,
   onResetAlert,
-}: WaitingScreenProps) {
+  memberChoices,
+}: WaitingScreenProps & { memberChoices: ReturnType<typeof useMemberChoices> }) {
   const { phone, link, notice } = state;
   const hidden = new Set(state.hiddenMessages);
-  const messages = (phone?.messages ?? []).filter((message) => !hidden.has(message.id));
+  const visible = (phone?.messages ?? []).filter((message) => !hidden.has(message.id));
+  // A family alert is urgent: it goes first, above everything else.
+  const alerts = visible.filter((message) => message.kind === 'alert');
+  const messages = visible.filter((message) => message.kind !== 'alert');
   const awaitingWelcome = fromJoin && state.welcomeOffer !== 'show' && state.voice === null;
+  const { choices, error: choicesError, reload } = memberChoices;
+
+  if (choices?.join.opted_out) {
+    const { organiser, family } = choices.join;
+    return (
+      <>
+        <Card className="phone-hero phone-hero--left">
+          <span className="phone-hero__light" aria-hidden="true" />
+          <h1 className="phone-hero__title">You’ve left Callback</h1>
+          <p className="phone-hero__who">
+            <strong>{choices.join.member.name}</strong>
+            <span> · {family.name}</span>
+          </p>
+          <p className="phone-hero__text">
+            No practice calls will come, and nothing is recorded. If you would like to come back,
+            {organiser ? ` ask ${organiser.name}` : ' ask your family'} to add you again.
+          </p>
+        </Card>
+        <p className="phone-habit-line">
+          If a call ever feels wrong: hang up and call back on a number you already have, or ask for the family word.
+        </p>
+      </>
+    );
+  }
 
   return (
     <>
       {notice && <NoticeBanner notice={notice} onDismiss={onDismissNotice} />}
+
+      {alerts.length > 0 && (
+        <section className="phone-messages" aria-label="Family alerts">
+          {alerts.map((message) => (
+            <MessageCard key={message.id} message={message} onDismiss={onDismissMessage} />
+          ))}
+        </section>
+      )}
 
       <Card className="phone-hero">
         <span className={`phone-hero__light ${link === 'online' ? 'is-on' : ''}`} aria-hidden="true" />
@@ -160,21 +202,7 @@ function HomeTab({
         <section className="phone-messages" aria-label="Messages">
           <h2 className="phone-section-title">Messages</h2>
           {messages.map((message) => (
-            <Card
-              key={message.id}
-              className={`phone-message ${message.kind === 'alert' ? 'phone-message--alert' : ''}`}
-            >
-              <div className="phone-message__head">
-                <Badge tone={message.kind === 'callback_notice' ? 'good' : message.kind === 'alert' ? 'accent' : 'neutral'}>
-                  {MESSAGE_KINDS[message.kind]}
-                </Badge>
-              </div>
-              <p className="phone-message__text">{message.text}</p>
-              <button type="button" className="phone-message__dismiss" onClick={() => onDismissMessage(message.id)}>
-                <Check size={16} aria-hidden="true" />
-                Got it
-              </button>
-            </Card>
+            <MessageCard key={message.id} message={message} onDismiss={onDismissMessage} />
           ))}
         </section>
       )}
@@ -183,12 +211,39 @@ function HomeTab({
 
       <NextSteps />
 
-      <YourChoicesCard memberId={memberId} refreshKey={state.voice?.phase === 'final' ? state.voice.callId : ''} />
+      <YourChoicesCard memberId={memberId} choices={choices} error={choicesError} onReload={reload} />
 
       <p className="phone-habit-line">
         If a call ever feels wrong: hang up and call back on the family number, or ask for the family word.
       </p>
     </>
+  );
+}
+
+const WHEN = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+function MessageCard({ message, onDismiss }: { message: PhoneMessage; onDismiss: (id: number) => void }) {
+  const alert = message.kind === 'alert';
+  const when = new Date(message.created_at);
+  return (
+    <Card className={`phone-message ${alert ? 'phone-message--alert' : ''}`}>
+      <div className="phone-message__head">
+        {alert ? (
+          <span className="phone-message__alert-label">
+            <BellRing size={16} aria-hidden="true" />
+            {MESSAGE_KINDS[message.kind]}
+          </span>
+        ) : (
+          <Badge tone={message.kind === 'callback_notice' ? 'good' : 'neutral'}>{MESSAGE_KINDS[message.kind]}</Badge>
+        )}
+        {!Number.isNaN(when.getTime()) && <time dateTime={message.created_at}>{WHEN.format(when)}</time>}
+      </div>
+      <p className="phone-message__text">{message.text}</p>
+      <button type="button" className="phone-message__dismiss" onClick={() => onDismiss(message.id)}>
+        <Check size={16} aria-hidden="true" />
+        Got it
+      </button>
+    </Card>
   );
 }
 

@@ -527,6 +527,51 @@ body:has(.phone-page) {
   max-width: 420px;
 }
 
+// The welcome call says plainly that the member's side is recorded.
+.call-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.call-note__recording {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.call-note__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff5f57;
+  animation: call-rec-blink 1.6s ease-in-out infinite;
+}
+
+.call-note__text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.66);
+  text-wrap: balance;
+}
+
+@keyframes call-rec-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
 .call-kicker {
   margin: 0 0 6px;
   font-size: 0.95rem;
@@ -957,9 +1002,8 @@ $shield-amber: #f5b94d;
   z-index: 5;
   padding: 6px 12px max(8px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
-  background: rgba(249, 251, 250, 0.94);
-  backdrop-filter: saturate(1.4) blur(14px);
-  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  background: var(--surface);
+  box-shadow: 0 -8px 24px rgba(17, 34, 49, 0.06);
 }
 
 .phone-tabs__list {
@@ -1296,9 +1340,38 @@ $shield-amber: #f5b94d;
   width: 60%;
 }
 
+.phone-message__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  time {
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+}
+
 .phone-page .phone-message--alert {
-  border-color: rgba(231, 109, 82, 0.4);
-  background: #fff6f3;
+  border: 1.5px solid rgba(196, 64, 46, 0.45);
+  background: #fff3ef;
+  box-shadow: 0 14px 32px rgba(196, 64, 46, 0.14);
+
+  .phone-message__text {
+    font-size: 1.12rem;
+    font-weight: 600;
+  }
+}
+
+.phone-message__alert-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #b2361f;
 }
 
 // Loading and error states inside a tab.
@@ -1703,4 +1776,14 @@ $shield-amber: #f5b94d;
   .call-rings__wave {
     opacity: 0.35;
   }
+}
+
+// Someone who left Callback: the page says so, calmly.
+.phone-status-off {
+  background: rgba(17, 34, 49, 0.07);
+  color: var(--muted);
+}
+
+.phone-page .phone-hero--left .phone-hero__title {
+  font-size: clamp(1.9rem, 8vw, 2.3rem);
 }

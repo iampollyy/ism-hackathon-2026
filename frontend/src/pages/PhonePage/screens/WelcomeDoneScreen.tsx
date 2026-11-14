@@ -16,7 +16,11 @@ type WelcomeDoneScreenProps = {
 export function WelcomeDoneScreen({ view, name, voice, welcomeStart, onStartWelcome, onDone }: WelcomeDoneScreenProps) {
   const failed = view.endedBy === 'error' && view.consent === null;
   const who = name ? `, ${name}` : '';
-  const ownVoice = voice && voice.callId === view.callId ? voice : null;
+  const sameCall = voice && voice.callId === view.callId ? voice : null;
+  // A call that never connected has nothing to say about a voice, unless the
+  // back end did start (or finish) a copy from it after all.
+  const decisive = sameCall?.state === 'cloning' || sameCall?.state === 'ready' || sameCall?.state === 'failed';
+  const ownVoice = sameCall && (view.connected || decisive) ? sameCall : null;
 
   let tone: 'good' | 'calm' | 'warn';
   let Icon = Check;

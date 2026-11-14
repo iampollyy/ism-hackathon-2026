@@ -193,6 +193,8 @@ export function usePhone(memberId: string) {
   const [soundBusy, setSoundBusy] = useState(false);
   const [alert, setAlert] = useState<AlertState>({ status: 'idle' });
   const [welcomeStart, setWelcomeStart] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
+  /** The welcome call's own recording is running (shown on the call screen). */
+  const [recording, setRecording] = useState(false);
   const soundRef = useRef<PhoneSound | null>(null);
   const runRef = useRef<CallRun | null>(null);
   const pendingRef = useRef<PendingAnswer | null>(null);
@@ -276,6 +278,7 @@ export function usePhone(memberId: string) {
       conversation?.endSession().catch(() => undefined); // nothing happens if it already ended
       // The microphone stops with the call.
       if (run.recorder && !run.recording) run.recording = run.recorder.finish();
+      if (run.recorder) setRecording(false);
       act({
         type: 'finished',
         callId: run.callId,
@@ -383,6 +386,7 @@ export function usePhone(memberId: string) {
         run.recorder = new WelcomeRecorder();
         await run.recorder.start();
         if (run.finished) return; // ended while the microphone opened: finish() has it
+        setRecording(run.recorder.recording);
       }
 
       try {
@@ -814,6 +818,7 @@ export function usePhone(memberId: string) {
     shield,
     alert,
     welcomeStart,
+    recording,
     switchOnSound,
     answer,
     decline,

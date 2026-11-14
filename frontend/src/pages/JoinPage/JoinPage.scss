@@ -351,6 +351,17 @@ $focus: rgba(29, 141, 100, 0.55);
 .join-hint--center {
   justify-content: center;
   text-align: center;
+  text-wrap: balance;
+}
+
+.join-hint__icon {
+  display: inline-block;
+  margin: 0 6px -2px 0;
+  vertical-align: baseline;
+}
+
+.join-hint .join-hint__icon {
+  margin-top: 0;
 }
 
 .join-error {
@@ -419,8 +430,17 @@ $focus: rgba(29, 141, 100, 0.55);
   }
 }
 
+// The icon sits inside the label, so a label on two lines keeps it beside
+// the words instead of stranded at the button's edge.
 .join-button__label {
   text-wrap: balance;
+  line-height: 1.25;
+}
+
+.join-button__icon {
+  display: inline-block;
+  margin: 0 10px -4px 0;
+  vertical-align: baseline;
 }
 
 .join-button--go {
@@ -444,6 +464,82 @@ $focus: rgba(29, 141, 100, 0.55);
 
 .join-spin {
   animation: join-spin 0.9s linear infinite;
+}
+
+// ---------------------------------------------------------------- leaving
+
+.join-leave__open {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  margin: -4px 0 0;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(93, 114, 128, 0.4);
+  text-underline-offset: 4px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--ink);
+  }
+}
+
+.join-leave {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.join-leave__question {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.join-leave__buttons {
+  display: flex;
+  gap: 10px;
+
+  button {
+    appearance: none;
+    flex: 1;
+    min-height: 50px;
+    padding: 0 16px;
+    border-radius: 14px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.7;
+    }
+  }
+}
+
+.join-leave__yes {
+  border: 1.5px solid rgba(180, 68, 47, 0.45);
+  background: #fff;
+  color: #a63c28;
+}
+
+.join-leave__no {
+  border: 0;
+  background: var(--navy);
+  color: #fff;
 }
 
 // ---------------------------------------------------------------- states

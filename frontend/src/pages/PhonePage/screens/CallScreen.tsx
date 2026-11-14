@@ -14,6 +14,8 @@ type CallScreenProps = {
   ending?: boolean;
   /** Callback Shield, only during a Shield call (null on every drill). */
   shield?: ShieldState | null;
+  /** The welcome call records the member's own side: say so, plainly. */
+  recording?: boolean;
   onCallBack?: (hasNumber: boolean) => void;
   onEnd: () => void;
 };
@@ -42,6 +44,7 @@ export function CallScreen({
   mode,
   ending = false,
   shield = null,
+  recording = false,
   onCallBack,
   onEnd,
 }: CallScreenProps) {
@@ -82,6 +85,22 @@ export function CallScreen({
           {status}
         </p>
       </div>
+
+      {variant === 'welcome' && (
+        <section className="call-note" aria-label="About this call">
+          {recording && (
+            <p className="call-note__recording" role="status">
+              <span className="call-note__dot" aria-hidden="true" />
+              Recording your side of the call
+            </p>
+          )}
+          <p className="call-note__text">
+            {recording
+              ? 'Callback keeps it only if you agreed when you joined and say yes on the call. You can delete it any time.'
+              : 'Just talk as you normally would. There are no wrong answers.'}
+          </p>
+        </section>
+      )}
 
       <div className="call-buttons call-buttons--single">
         <div className="call-button">

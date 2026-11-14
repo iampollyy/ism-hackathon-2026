@@ -84,6 +84,7 @@ function Phone({ memberId }: { memberId: string }) {
           mode={view.mode}
           ending={view.ending}
           shield={phone.shield}
+          recording={view.kind === 'welcome' && phone.recording}
           onCallBack={phone.callBackFromShield}
           onEnd={phone.hangUp}
         />
