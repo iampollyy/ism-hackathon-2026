@@ -17,6 +17,7 @@ export type CallState =
 
 export type Segment = 'hero' | 'problem' | 'habit' | 'story' | 'shield' | 'after';
 export type Mode = 'lite' | '3d';
+export type StageKey = 'hero' | 'problem' | 'habit' | 'story' | 'shield';
 
 export interface LpState {
   call: CallState;
@@ -47,6 +48,10 @@ export interface LpState {
   habitP: number;
   shieldP: number;
   heroLeave: number;
+  /** Which screen the 3D phone shows (the anchor it is nearest). */
+  stage: StageKey;
+  /** The 3D phone has passed the back during the reveal turn. */
+  turned: boolean;
 }
 
 const initial: LpState = {
@@ -70,6 +75,8 @@ const initial: LpState = {
   habitP: 0,
   shieldP: 0,
   heroLeave: 0,
+  stage: 'hero',
+  turned: false,
 };
 
 let state: LpState = { ...initial };

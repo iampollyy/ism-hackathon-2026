@@ -13,14 +13,55 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  transition: opacity 400ms ease;
-
-  &.is-off {
-    opacity: 0;
-    visibility: hidden;
-  }
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 300ms ease,
+    visibility 0s 300ms;
 
   canvas {
     display: block;
+  }
+
+  // The glitch: three single frames, desaturated and nudged.
+  &[data-glitch] canvas {
+    filter: saturate(0.2) contrast(1.35);
+    transform: translateX(6px);
+  }
+  &[data-glitch='1'] canvas {
+    transform: translateX(-6px);
+  }
+}
+
+.lp[data-mode='3d'] .lp-canvas.is-ready:not(.is-off) {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 300ms ease;
+}
+
+// The phone's screen on the 3D glass (rendered by drei Html at its 390 x 844 design size).
+.lp-3dscreen__wrap {
+  width: 390px;
+  height: 844px;
+  border-radius: 44px;
+  overflow: hidden;
+  background: #04080c;
+  transition: opacity 90ms linear;
+  backface-visibility: hidden;
+}
+
+.lp-3dscreen {
+  position: relative;
+  width: 390px;
+  height: 844px;
+}
+
+// In 3D mode the anchor boxes must not move or scale on their own.
+.lp[data-mode='3d'] {
+  .lp-hero__phonewrap {
+    animation: none;
+  }
+  .lp-phone--hero {
+    scale: none !important;
   }
 }
