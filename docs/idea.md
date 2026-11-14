@@ -11,12 +11,14 @@ Plan for Unfair Weekend 2026 (deadline Saturday 14 Nov, 20:00). "Callback" is a 
 **The form to build:** the practice call in a relative's cloned voice is the one path that must work. The person has agreed beforehand to get practice calls but doesn't know when, so the call feels real. The family number is its last ten seconds: the person hangs up, taps the family number, and the real relative hears that they called.
 
 **The channel this weekend: a web page that acts as the phone.** Each person keeps a page open on their phone that looks like the phone's own call screen. When a practice starts, it rings full screen from an unknown number; they tap Answer and talk to the agent through the page.
+
 - It is free: it uses only ElevenLabs credits, with no phone numbers or call charges.
 - It works with anyone at the venue who opens a link, not only verified numbers.
 - The page receives each line as it is spoken, so the laptop screen can show the conversation and label tactics live. A phone call might not give us that.
 - Say it plainly in the pitch and the video: the product rings the real phone; this weekend it runs in a web page.
 
 **Cut from the critical path:**
+
 - Twilio and real phone numbers. Optional: one real ring on Twilio's free trial for the video's first seconds, if someone has a spare half hour. What we found about Twilio is under "Later: real phone calls".
 - Every language except English. Lithuanian is dropped for the weekend.
 - Real families. For the demo the "family" is the three teammates; friends at the venue can join with a link.
@@ -50,14 +52,15 @@ Three screens (home, family page, live practice call), light mode, sample data: 
 
 ## What already exists, and what is ours
 
-| Product | What it does | Gap |
-|---|---|---|
-| [TrustboxAI](https://trustboxai.com/) | Clones your voice from 15 seconds, places one call to a relative, reveals, suggests a safe word. $4.90 a call or $46.80 a year. | US and Canada only. One-off. No consent step described for the person called. |
-| [Kinword](https://kinword.towers.app/) (pre-launch) | Recorded consent, calls up to four enrolled relatives in the cloned voice, never asks for money, debrief, safe word. | Not launched; no price; languages unknown. |
-| [ScamDrill](https://scamdrill.com/) | Opt-in email drills for families, $84 a year. | No calls. |
-| [Doppel](https://www.doppel.com/lp/vishing-simulation) and other enterprise vendors | Voice-deepfake drills for companies. | No family version found. |
+| Product                                                                             | What it does                                                                                                                    | Gap                                                                           |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [TrustboxAI](https://trustboxai.com/)                                               | Clones your voice from 15 seconds, places one call to a relative, reveals, suggests a safe word. $4.90 a call or $46.80 a year. | US and Canada only. One-off. No consent step described for the person called. |
+| [Kinword](https://kinword.towers.app/) (pre-launch)                                 | Recorded consent, calls up to four enrolled relatives in the cloned voice, never asks for money, debrief, safe word.            | Not launched; no price; languages unknown.                                    |
+| [ScamDrill](https://scamdrill.com/)                                                 | Opt-in email drills for families, $84 a year.                                                                                   | No calls.                                                                     |
+| [Doppel](https://www.doppel.com/lp/vishing-simulation) and other enterprise vendors | Voice-deepfake drills for companies.                                                                                            | No family version found.                                                      |
 
 **Our claim, in four parts**
+
 1. **Europe and its languages,** as the direction after the weekend. The voice platform already speaks many European languages. The demo is in English.
 2. **A recurring agent, not a one-off call.** It owns a job: keep one habit alive in this family, with short practices over months and a record of whether the habit holds.
 3. **Consented by design.** Everyone agrees beforehand to be cloned and to receive practice calls, and every call ends by revealing itself.
@@ -66,10 +69,12 @@ Three screens (home, family page, live practice call), light mode, sample data: 
 ## Impact and who pays
 
 **The problem is large and growing**
+
 - Lithuanian residents lose about €20 million a year to phone scams ([LRT, Feb 2026](https://lrt.lt/en/news-in-english/19/2852348/twenty-million-euros-15-million-calls-lithuanian-authorities-tackle-phone-swindlers); [national cyber report, May 2026](https://www.lrt.lt/en/news-in-english/19/2941159/lithuania-cyber-attacks-fall-overall-but-breaches-in-organisations-nearly-double)). AI-generated voices are already used in them ([OECD incident record, Mar 2026](https://oecd.ai/en/incidents/2026-03-27-e138)).
 - In the US, people over 60 reported $7.7 billion in losses in 2025, up 59% in a year ([AARP](https://www.aarp.org/money/scams-fraud/fbi-ftc-report-2025-losses), [HousingWire](https://www.housingwire.com/articles/fbi-seniors-cybercrime-2025/)).
 
 **Who pays, in order**
+
 1. **Banks.** They are being made to carry these losses, so prevention has a budget. A bank pays per enrolled family and gives the product to its customers for free.
    - In February 2026 the Bank of Lithuania proposed that banks compensate customers when they fail to stop a suspicious payment ([LRT](https://lrt.lt/en/news-in-english/19/2852348/twenty-million-euros-15-million-calls-lithuanian-authorities-tackle-phone-swindlers)).
    - The EU's new payment rules add a refund right for bank-impersonation scams. The final text is not confirmed here ([PwC](https://www.pwc.com/cz/cs/blog/rizeni-rizik/psd-3-the-psr-payments-reform.html), [The Register](https://www.theregister.com/2026/03/11/eu_psd2_compensation/)).
@@ -94,6 +99,7 @@ These decide the design. Not legal advice.
 - **What the evidence favours:** practice that is forewarned, interactive, about one behaviour, and repeated in short boosters. Large studies of surprise simulated attacks found effects of about two percentage points or none.
 
 **So every call follows these rules:**
+
 1. Consent from both people, spoken and recorded on the first call: the one whose voice is cloned, and the one who will be called.
 2. The person has agreed beforehand to get practice calls, without knowing when. Every call ends by saying it was a practice and that the voice was artificial.
 3. No emergencies, no kidnappings, and it never takes real payment details.
@@ -118,34 +124,34 @@ These decide the design. Not legal advice.
 
 ### The parts
 
-| Part | Built with | Notes from the docs check |
-|---|---|---|
-| Calls | ElevenLabs agents in the browser, with the `@elevenlabs/react` library | The phone page starts the conversation with a short-lived token from our back end ([React library](https://elevenlabs.io/docs/eleven-agents/libraries/react.md)). Browser conversations use the plan's agent minutes. |
-| Voice per call | A voice override, plus dynamic variables for the person and the story | The voice override must first be switched on in the agent's Security tab, or the conversation fails to start; variables need no switch ([overrides](https://elevenlabs.io/docs/eleven-agents/customization/personalization/overrides.md)). |
-| Cloning | ElevenLabs instant voice cloning | `POST /v1/voices/add` with `name` and `files`; returns `voice_id` ([docs](https://elevenlabs.io/docs/api-reference/voices/ivc/create.md)). The docs say under two minutes can give a usable clone; use one to two minutes of clean microphone audio. |
-| Live events | Client tools and the library's callbacks | The agent calls `mark_tactic` and `practice_result`, which run in the page ([client tools](https://elevenlabs.io/docs/eleven-agents/customization/tools/client-tools.md)). `onMessage` gives each line as it is spoken. |
-| The transcript after a call | `GET /v1/convai/conversations/{conversation_id}` | Each entry has `role` (`user` or `agent`), `message` and `time_in_call_secs` ([docs](https://elevenlabs.io/docs/eleven-agents/api-reference/conversations/get.md)). No webhook needed. |
-| Languages | English only this weekend | Other languages are a later step. |
-| The agent's reasoning, scoring and lessons | Claude API | Also writes each practice from current scam warnings. |
-| Sign-up and family page | A small web app | Lovable credits can produce the first version quickly. |
+| Part                                       | Built with                                                             | Notes from the docs check                                                                                                                                                                                                                            |
+| ------------------------------------------ | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Calls                                      | ElevenLabs agents in the browser, with the `@elevenlabs/react` library | The phone page starts the conversation with a short-lived token from our back end ([React library](https://elevenlabs.io/docs/eleven-agents/libraries/react.md)). Browser conversations use the plan's agent minutes.                                |
+| Voice per call                             | A voice override, plus dynamic variables for the person and the story  | The voice override must first be switched on in the agent's Security tab, or the conversation fails to start; variables need no switch ([overrides](https://elevenlabs.io/docs/eleven-agents/customization/personalization/overrides.md)).           |
+| Cloning                                    | ElevenLabs instant voice cloning                                       | `POST /v1/voices/add` with `name` and `files`; returns `voice_id` ([docs](https://elevenlabs.io/docs/api-reference/voices/ivc/create.md)). The docs say under two minutes can give a usable clone; use one to two minutes of clean microphone audio. |
+| Live events                                | Client tools and the library's callbacks                               | The agent calls `mark_tactic` and `practice_result`, which run in the page ([client tools](https://elevenlabs.io/docs/eleven-agents/customization/tools/client-tools.md)). `onMessage` gives each line as it is spoken.                              |
+| The transcript after a call                | `GET /v1/convai/conversations/{conversation_id}`                       | Each entry has `role` (`user` or `agent`), `message` and `time_in_call_secs` ([docs](https://elevenlabs.io/docs/eleven-agents/api-reference/conversations/get.md)). No webhook needed.                                                               |
+| Languages                                  | English only this weekend                                              | Other languages are a later step.                                                                                                                                                                                                                    |
+| The agent's reasoning, scoring and lessons | Claude API                                                             | Also writes each practice from current scam warnings.                                                                                                                                                                                                |
+| Sign-up and family page                    | A small web app                                                        | Lovable credits can produce the first version quickly.                                                                                                                                                                                               |
 
 ### How each hackathon tool is used
 
 Ordered by how much each one lifts the product, the video or the pitch.
 
-| Tool | What to do with it | Lifts | Effort |
-|---|---|---|---|
-| **ElevenLabs** | The whole product runs on it: three voice agents, voice cloning, tools the agent calls mid-conversation. Say this in the Devpost text, because their hacker guide leads with the agents platform. | Product, and their prize | Core work |
-| **ElevenLabs, for the pitch** | Open with two clips of the same sentence, one in a teammate's real voice and one in the clone: "Which one is real?" Let the room vote by hand, then reveal. | The first 20 seconds | 15 minutes |
-| **ElevenLabs, for realism** | Give the practice voice urgency and stress if the agent's voice model supports expression controls (check), and generate a ringtone and call sounds for the video. | Demo feel | 30 minutes |
-| **Screen Studio** | Record the live call screen with automatic zoom on each tactic label as it appears, next to a screen recording of the phone ringing. Their best-demo prize is judged on the video. | Video, and their prize | Saturday afternoon |
-| **Firecrawl** | One real "scam of the week": fetch a current warning from a public consumer-protection source, and show the note and the practice story built from it. It makes the agent visibly do something on its own. | The recurring-agent claim, and the Kilo track | 1 to 2 hours |
-| **Lovable** | A public landing page at a real address with a waiting list, built from the home screen of the mockup. Put its QR code on the last slide. Keep the app itself in `frontend/`, since Lovable works in its own repo. | Product feel, public vote | 1 hour |
-| **Claude or OpenAI API credits** | Scoring, readiness profiles, plans and lessons. | Product | Core work |
-| **Codex and Claude Code credits** | Building. | Speed | Ongoing |
-| **HeyGen** | Optional, one clip only: a ten-second "next: video calls" teaser for the end of the video, using a teammate's own consented avatar. Rendering takes about ten minutes per minute of video. | The "where it goes" beat | 30 minutes plus rendering |
-| **condense** | Optional: run the team's coding agents through it all weekend. The tokens-saved prize is a leaderboard, so it can be won without touching the product. Drop it at the first sign it slows anyone down. | Their prize | 10 minutes to set up |
-| NordVPN | Nothing to build. Mention consumer-security bundles as a route to customers. | Pitch only | None |
+| Tool                              | What to do with it                                                                                                                                                                                                 | Lifts                                         | Effort                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- | ------------------------- |
+| **ElevenLabs**                    | The whole product runs on it: three voice agents, voice cloning, tools the agent calls mid-conversation. Say this in the Devpost text, because their hacker guide leads with the agents platform.                  | Product, and their prize                      | Core work                 |
+| **ElevenLabs, for the pitch**     | Open with two clips of the same sentence, one in a teammate's real voice and one in the clone: "Which one is real?" Let the room vote by hand, then reveal.                                                        | The first 20 seconds                          | 15 minutes                |
+| **ElevenLabs, for realism**       | Give the practice voice urgency and stress if the agent's voice model supports expression controls (check), and generate a ringtone and call sounds for the video.                                                 | Demo feel                                     | 30 minutes                |
+| **Screen Studio**                 | Record the live call screen with automatic zoom on each tactic label as it appears, next to a screen recording of the phone ringing. Their best-demo prize is judged on the video.                                 | Video, and their prize                        | Saturday afternoon        |
+| **Firecrawl**                     | One real "scam of the week": fetch a current warning from a public consumer-protection source, and show the note and the practice story built from it. It makes the agent visibly do something on its own.         | The recurring-agent claim, and the Kilo track | 1 to 2 hours              |
+| **Lovable**                       | A public landing page at a real address with a waiting list, built from the home screen of the mockup. Put its QR code on the last slide. Keep the app itself in `frontend/`, since Lovable works in its own repo. | Product feel, public vote                     | 1 hour                    |
+| **Claude or OpenAI API credits**  | Scoring, readiness profiles, plans and lessons.                                                                                                                                                                    | Product                                       | Core work                 |
+| **Codex and Claude Code credits** | Building.                                                                                                                                                                                                          | Speed                                         | Ongoing                   |
+| **HeyGen**                        | Optional, one clip only: a ten-second "next: video calls" teaser for the end of the video, using a teammate's own consented avatar. Rendering takes about ten minutes per minute of video.                         | The "where it goes" beat                      | 30 minutes plus rendering |
+| **condense**                      | Optional: run the team's coding agents through it all weekend. The tokens-saved prize is a leaderboard, so it can be won without touching the product. Drop it at the first sign it slows anyone down.             | Their prize                                   | 10 minutes to set up      |
+| NordVPN                           | Nothing to build. Mention consumer-security bundles as a route to customers.                                                                                                                                       | Pitch only                                    | None                      |
 
 ## Technical design
 
@@ -158,6 +164,7 @@ The ElevenLabs names below were checked against their docs on 13 Nov at about 16
 **Confirmed on Friday 13 Nov, updated at about 16:30 for the browser version:** the stack below, the contract below, and the owners. Denis owns the back end and the ElevenLabs account, including its set-up. The front-end colleague owns `frontend/`. The data scientist owns the agents' scripts, the survey, the scoring scale and the plan format.
 
 **Stack**
+
 - Front end: React with Vite, already set up in `frontend/`, plus `@elevenlabs/react` for the agent conversation on the phone page.
 - Back end: Python with FastAPI in `backend/`. The repo's ignore file already covers Python, audio clean-up is easy with ffmpeg, and the prompts and scoring can be written by anyone on the team.
 - Database: SQLite to start.
@@ -167,30 +174,31 @@ The ElevenLabs names below were checked against their docs on 13 Nov at about 16
 
 **The contract between front end and back end.** Agree this first; then both sides work in parallel, and the front end builds against fixed sample responses until the back end is ready. Each member opens their own phone page at `/phone/{member_id}`.
 
-| Call | Purpose | Returns |
-|---|---|---|
-| `POST /api/families` | Create a family: name, a tick that a safe word is agreed (never the word itself), members (name, relationship, and their own tick agreeing to practice calls) | `family_id`, and each member's id and phone link |
-| `GET /api/families/{id}` | Everything the family page shows | The family object below |
-| `POST /api/members/{id}/voice` | Upload the one-minute microphone recording; the back end clones it | `voice_ready` |
-| `POST /api/members/{id}/welcome-call` | Ring that member's phone page with the welcome agent | `call_id` |
-| `POST /api/practice-calls` | Start a practice: `target_member_id`, `voice_member_id` or none, `scenario`. Rings the target's phone page | `call_id` |
-| `POST /api/calls/{id}/answer` | The phone page answers | The session object below |
-| `POST /api/calls/{id}/events` | The phone page reports what happens: turns, tactics, the outcome, the reveal | `ok` |
-| `POST /api/calls/{id}/end` | The phone page reports the end and who ended it. The back end scores the call and writes the lesson | `ok` |
-| `POST /api/members/{id}/family-line` | The person taps the family number after a practice | `call_id` and the session object |
-| `GET /api/calls/{id}` | A finished call: turns, tactics, result, lesson | The call object below |
-| `GET /api/calls/{id}/events` | Live stream for the laptop's call screen | Call events below |
-| `GET /api/members/{id}/phone-state` | What that member's phone page should show now; the page asks once a second | An incoming call or none, and unread messages. Shape in backend.md |
+| Call                                  | Purpose                                                                                                                                                       | Returns                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `POST /api/families`                  | Create a family: name, a tick that a safe word is agreed (never the word itself), members (name, relationship, and their own tick agreeing to practice calls) | `family_id`, and each member's id and phone link                   |
+| `GET /api/families/{id}`              | Everything the family page shows                                                                                                                              | The family object below                                            |
+| `POST /api/members/{id}/voice`        | Upload the one-minute microphone recording; the back end clones it                                                                                            | `voice_ready`                                                      |
+| `POST /api/members/{id}/welcome-call` | Ring that member's phone page with the welcome agent                                                                                                          | `call_id`                                                          |
+| `POST /api/practice-calls`            | Start a practice: `target_member_id`, `voice_member_id` or none, `scenario`. Rings the target's phone page                                                    | `call_id`                                                          |
+| `POST /api/calls/{id}/answer`         | The phone page answers                                                                                                                                        | The session object below                                           |
+| `POST /api/calls/{id}/events`         | The phone page reports what happens: turns, tactics, the outcome, the reveal                                                                                  | `ok`                                                               |
+| `POST /api/calls/{id}/end`            | The phone page reports the end and who ended it. The back end scores the call and writes the lesson                                                           | `ok`                                                               |
+| `POST /api/members/{id}/family-line`  | The person taps the family number after a practice                                                                                                            | `call_id` and the session object                                   |
+| `GET /api/calls/{id}`                 | A finished call: turns, tactics, result, lesson                                                                                                               | The call object below                                              |
+| `GET /api/calls/{id}/events`          | Live stream for the laptop's call screen                                                                                                                      | Call events below                                                  |
+| `GET /api/members/{id}/phone-state`   | What that member's phone page should show now; the page asks once a second                                                                                    | An incoming call or none, and unread messages. Shape in backend.md |
 
-*Session object,* what the phone page needs to start the conversation: `conversation_token`, `overrides`, `dynamic_variables`. The back end gets the token from `GET /v1/convai/conversation/token?agent_id=...` ([docs](https://elevenlabs.io/docs/eleven-agents/api-reference/conversations/get-webrtc-token.md)). That call also returns the `conversation_id`, which the back end stores on Answer. `overrides` carries only the voice, `{ tts: { voiceId } }`. Everything personal (names, the story, the ask, the first sentence) travels as `dynamic_variables`, and the prompts stay in the agents' own settings, so no prompt passes through the browser. The page then calls `startSession({ conversationToken, connectionType: 'webrtc', overrides, dynamicVariables, clientTools })`. A full example is in backend.md.
+_Session object,_ what the phone page needs to start the conversation: `conversation_token`, `overrides`, `dynamic_variables`. The back end gets the token from `GET /v1/convai/conversation/token?agent_id=...` ([docs](https://elevenlabs.io/docs/eleven-agents/api-reference/conversations/get-webrtc-token.md)). That call also returns the `conversation_id`, which the back end stores on Answer. `overrides` carries only the voice, `{ tts: { voiceId } }`. Everything personal (names, the story, the ask, the first sentence) travels as `dynamic_variables`, and the prompts stay in the agents' own settings, so no prompt passes through the browser. The page then calls `startSession({ conversationToken, connectionType: 'webrtc', overrides, dynamicVariables, clientTools })`. A full example is in backend.md.
 
-*Member, inside the family object:* `id`, `name`, `relationship`, `consent` (clone, practice), `voice_ready`, `readiness` (`before`, `now`, and `items` each with `label`, `before`, `now`, `max`), `weak_spot`, `said` (their quote from the welcome call), `plan` (`this_week`, and `steps` each with `when`, `scenario`, `why`, `status`).
+_Member, inside the family object:_ `id`, `name`, `relationship`, `consent` (clone, practice), `voice_ready`, `readiness` (`before`, `now`, and `items` each with `label`, `before`, `now`, `max`), `weak_spot`, `said` (their quote from the welcome call), `plan` (`this_week`, and `steps` each with `when`, `scenario`, `why`, `status`).
 
-*Family object:* `id`, `name`, `safe_word_set`, `family_number`, `members`, `readiness` (`before`, `now`), `week` (recent and planned activity).
+_Family object:_ `id`, `name`, `safe_word_set`, `family_number`, `members`, `readiness` (`before`, `now`), `week` (recent and planned activity).
 
-*Call object:* `id`, `kind`, `target`, `voice_of`, `scenario`, `status`, `turns` (`speaker`, `text`, `t`, optional `tactic`), `tactics` (`key`, `label`, `t`), `result` (`outcome`, `seconds_to_challenge`, `lesson`), `callback_seconds`.
+_Call object:_ `id`, `kind`, `target`, `voice_of`, `scenario`, `status`, `turns` (`speaker`, `text`, `t`, optional `tactic`), `tactics` (`key`, `label`, `t`), `result` (`outcome`, `seconds_to_challenge`, `lesson`), `callback_seconds`.
 
-*Call events, for the laptop's call screen:*
+_Call events, for the laptop's call screen:_
+
 - `call.status`: `ringing`, `in_progress` or `ended`
 - `turn`: `speaker`, `text`, `t`, from the library's `onMessage`
 - `tactic`: `key`, `label`, `t`
@@ -198,15 +206,17 @@ The ElevenLabs names below were checked against their docs on 13 Nov at about 16
 - `revealed`
 - `callback.connected`: `seconds`, from the end of the practice to tapping the family number
 
-*Phone state, for one member's phone page (returned by `phone-state`, not streamed):*
+_Phone state, for one member's phone page (returned by `phone-state`, not streamed):_
+
 - `incoming_call`: `call_id`, `kind` (`welcome` or `practice`), `caller` (what the screen shows: "Unknown number" and a made-up number)
 - `message`: `text` (for example the weekly message, or "Mum called the family number after a practice")
 
-*Fixed lists:* tactic keys are `new_number`, `urgency`, `secrecy`, `authority`, `emotional_appeal`, `small_ask_first`, `isolation`, `unusual_payment`. Outcomes are `asked_safe_word`, `hung_up`, `asked_personal_question`, `hesitated`, `agreed`. Scenarios are `relative_new_number`, `police`, `bank_security`, `hospital`.
+_Fixed lists:_ tactic keys are `new_number`, `urgency`, `secrecy`, `authority`, `emotional_appeal`, `small_ask_first`, `isolation`, `unusual_payment`. Outcomes are `asked_safe_word`, `hung_up`, `asked_personal_question`, `hesitated`, `agreed`. Scenarios are `relative_new_number`, `police`, `bank_security`, `hospital`.
 
 No provider webhooks this weekend. The agent's tools run in the phone page, which forwards them to the back end, and the back end fetches each transcript itself. So the back end needs no address that ElevenLabs can reach.
 
 **The first three hours, in parallel**
+
 - Back end: the first test below, then `POST /api/practice-calls`, `answer` with a real token, and both event streams.
 - Front end: the phone page first (waiting, ringing, in call, reveal), against sample data; then the laptop's live call screen, the family page and sign-up.
 - Data: the welcome agent's script with the five questions, the practice agent's script for the relative story, and the scoring scale.
@@ -226,6 +236,7 @@ Written so that a person or a coding agent can follow it. Steps marked "check" w
 7. Pick the language model for the agents: the fastest one that stays in role.
 
 **Then the first test, in this order**
+
 1. In the ElevenLabs dashboard, talk to the practice agent in a stock voice.
 2. Clone your voice from a one-minute microphone recording (`POST /v1/voices/add`).
 3. Make a bare page in `frontend/` that fetches a token from the back end and starts the conversation with your clone as the voice override. Open it on your own phone through the tunnel and talk to it.
@@ -252,19 +263,20 @@ Written so that a person or a coding agent can follow it. Steps marked "check" w
 - **Laptop:** sign-up (family name, each member's name and relationship, a tick that the family has agreed a safe word, each member's own tick agreeing to practice calls, the one-minute voice recording), the family page, and the live call screen for the demo.
 - **Backend:** one small server. It hands out conversation tokens with the right overrides, makes clones, rings phone pages, fetches transcripts, scores calls and pushes live updates. No provider calls it back.
 - **Database:** five tables.
-  - *families:* name, whether a safe word is agreed (the word itself is never collected)
-  - *members:* name, phone, relationship, consent times, voice id, readiness profile, plan
-  - *calls:* kind (welcome, practice, family line), who, ElevenLabs conversation id, status
-  - *events:* call, time, kind (tactic, outcome), detail
-  - *results:* call, outcome, seconds until the first challenge, tactics used, lesson text
+  - _families:_ name, whether a safe word is agreed (the word itself is never collected)
+  - _members:_ name, phone, relationship, consent times, voice id, readiness profile, plan
+  - _calls:_ kind (welcome, practice, family line), who, ElevenLabs conversation id, status
+  - _events:_ call, time, kind (tactic, outcome), detail
+  - _results:_ call, outcome, seconds until the first challenge, tactics used, lesson text
 - **Three ElevenLabs agents:**
-  - *Welcome:* a friendly stock voice. Explains, asks for consent, then runs the five-question readiness survey.
-  - *Practice:* the scammer role. Its voice is overridden per call with a member's clone. It calls the page's tools.
-  - *Family line:* answers when the person taps the family number, says it was a practice, and tells them the relative has been told.
+  - _Welcome:_ a friendly stock voice. Explains, asks for consent, then runs the five-question readiness survey.
+  - _Practice:_ the scammer role. Its voice is overridden per call with a member's clone. It calls the page's tools.
+  - _Family line:_ answers when the person taps the family number, says it was a practice, and tells them the relative has been told.
 
 ### The flows
 
 **1. Voice sample and welcome call**
+
 1. On the sign-up page, each member reads a short text aloud for about a minute. It opens with their consent: "I'm [name], and I agree to Callback cloning my voice for practice calls inside my family." The page records it with the microphone and uploads it.
 2. The back end cuts the silence, evens out the loudness, sends the audio to instant cloning, and stores the returned `voice_id` on the member.
 3. On the same page each member ticks "I agree to receive practice calls without knowing when". That tick is enough for a practice call, so practice calls work on Friday, before the welcome call exists.
@@ -274,6 +286,7 @@ Written so that a person or a coding agent can follow it. Steps marked "check" w
 Later, in the product, the voice sample comes from the welcome call itself, as in "The path".
 
 **2. Practice call**
+
 1. The back end picks the target and the voice (another member's clone), fills the scenario (who the caller claims to be, the story, the ask), creates the call as `ringing` and sends `incoming_call` to the target's phone page.
 2. The page rings. On Answer it calls `POST /api/calls/{id}/answer` and gets a token, the voice override and the call's variables (names, the story, the ask, the first sentence).
 3. The page starts the conversation. Each line from `onMessage`, and each call of `mark_tactic` or `practice_result`, goes to `POST /api/calls/{id}/events`; the back end pushes it to the laptop's call screen.
@@ -281,11 +294,13 @@ Later, in the product, the voice sample comes from the welcome call itself, as i
 5. The page sends `POST /api/calls/{id}/end`. The back end decides the outcome from the lines and tool calls it already has, a model writes the short debrief, and the ElevenLabs transcript is fetched afterwards as the record.
 
 **3. The family number**
+
 1. After the reveal, the phone page shows the family number with a call button.
 2. Tapping it starts a conversation with the family-line agent, which knows the caller's name and whose voice was just used.
 3. The agent says it was a practice and that the relative has been told. The relative's phone page shows a `message`: "Mum called the family number after a practice." The back end records the seconds from the end of the practice to the tap.
 
 **4. Readiness survey and family plan**
+
 1. In the welcome call, after consent, the agent asks five open questions. Open questions make people talk, which the clone needs.
    - "Has anyone ever phoned or messaged you pretending to be family, your bank or the police? What happened?"
    - "If your son rang from a new number, said he'd lost his phone and needed money today, what would you do first?"
@@ -300,12 +315,12 @@ Later, in the product, the voice sample comes from the welcome call itself, as i
 
 Many phone scams don't imitate family at all. The caller claims to be the police, the bank or a hospital. These need no cloning: the practice agent takes a ready-made voice from the voice library and a role.
 
-| Scenario | Voice | The story | Main tactics |
-|---|---|---|---|
-| Relative with a new number | A family member's clone | "I lost my phone, I need a transfer today" | New number, urgency, emotional appeal |
-| Police officer | Ready-made voice | "Your account is being used by criminals; move your money to a safe account" | Authority, secrecy, urgency |
-| Bank security team | Ready-made voice | "We blocked a payment; read me the code we just sent" | Authority, a small ask first |
-| Nurse or hospital | Ready-made voice | "Your relative has had an accident; a payment is needed before treatment" | Emotional appeal, urgency, isolation |
+| Scenario                   | Voice                   | The story                                                                    | Main tactics                          |
+| -------------------------- | ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------- |
+| Relative with a new number | A family member's clone | "I lost my phone, I need a transfer today"                                   | New number, urgency, emotional appeal |
+| Police officer             | Ready-made voice        | "Your account is being used by criminals; move your money to a safe account" | Authority, secrecy, urgency           |
+| Bank security team         | Ready-made voice        | "We blocked a payment; read me the code we just sent"                        | Authority, a small ask first          |
+| Nurse or hospital          | Ready-made voice        | "Your relative has had an accident; a payment is needed before treatment"    | Emotional appeal, urgency, isolation  |
 
 - A scenario is data: a role, a voice (a clone or a library voice), the stages and the tactics. Adding one is writing a prompt, not code.
 - The plan picks the scenario from the survey. Someone who says they would trust a call from their bank gets the bank story first.
@@ -339,19 +354,19 @@ For the weekend: generate one real weekly digest from live sources, send one rea
 - **A scam is a sequence of stages:** hook, story, urgency, the ask, pressure, fallback. The practice prompt walks through them using the family's own names and relationships.
 - **A fixed list of tactics:** new number, urgency, secrecy, authority, emotional appeal, a small ask first, isolation ("don't call anyone"), and payment by an unusual route. The on-screen labels and the debrief both use this list.
 - **Scoring what the person did:**
-  - *Outcome:* asked for the safe word, hung up, asked a personal question, hesitated, or agreed.
-  - *Seconds until the first challenge:* the one number that should fall with practice.
-  - *Tactics that worked on them,* which choose the next practice.
+  - _Outcome:_ asked for the safe word, hung up, asked a personal question, hesitated, or agreed.
+  - _Seconds until the first challenge:_ the one number that should fall with practice.
+  - _Tactics that worked on them,_ which choose the next practice.
 - **Choosing the next practice:** start with a simple rule (repeat the tactic that worked, in a new story). A proper schedule of spaced boosters is later work.
 - **Hard stops:** two minutes at most; no card or account numbers ever requested; if the person sounds distressed or says stop, reveal at once.
 
 ### What each person builds
 
-| Person | Builds |
-|---|---|
-| Engineer | The backend: conversation tokens and overrides, cloning, the three agents' set-up, transcripts and scoring, the live updates, the tunnel |
-| Front end and design | The phone page (waiting, ringing, in call, reveal, family number), sign-up with the voice recording, the family page, the live call screen with tactic labels, the debrief view |
-| Data scientist | The scenario stages and the tactic list, the three agents' prompts, the survey and its scoring scale, the plan format, the scoring prompt and its checks, and the small tests below |
+| Person               | Builds                                                                                                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Engineer             | The backend: conversation tokens and overrides, cloning, the three agents' set-up, transcripts and scoring, the live updates, the tunnel                                            |
+| Front end and design | The phone page (waiting, ringing, in call, reveal, family number), sign-up with the voice recording, the family page, the live call screen with tactic labels, the debrief view     |
+| Data scientist       | The scenario stages and the tactic list, the three agents' prompts, the survey and its scoring scale, the plan format, the scoring prompt and its checks, and the small tests below |
 
 ### Small tests that make the demo credible
 
@@ -371,15 +386,15 @@ For the weekend: generate one real weekly digest from live sources, send one rea
 
 **Video, 3 minutes**
 
-| Time | On screen |
-|---|---|
-| 0:00–0:20 | A phone rings. "Mum, it's me, I lost my phone." Caption: this voice is artificial. Then the fact: in a 2025 study, listeners took a cloned voice for the real person about 80% of the time ([Scientific Reports](https://www.nature.com/articles/s41598-025-94170-3)). |
-| 0:20–0:50 | Sign-up: the family, a tick that they have agreed a safe word (we never ask for the word), and a one-minute voice recording that opens with spoken consent. The welcome agent talks to a teammate and asks the five questions. |
+| Time      | On screen                                                                                                                                                                                                                                                                                                                                                                  |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0:00–0:20 | A phone rings. "Mum, it's me, I lost my phone." Caption: this voice is artificial. Then the fact: in a 2025 study, listeners took a cloned voice for the real person about 80% of the time ([Scientific Reports](https://www.nature.com/articles/s41598-025-94170-3)).                                                                                                     |
+| 0:20–0:50 | Sign-up: the family, a tick that they have agreed a safe word (we never ask for the word), and a one-minute voice recording that opens with spoken consent. The welcome agent talks to a teammate and asks the five questions.                                                                                                                                             |
 | 0:50–1:40 | The practice call. The cloned voice asks for an urgent transfer, while the screen labels each pressure tactic as it is used (new number, urgency, secrecy). The parent asks for the safe word, and the call ends with the reveal and the one-line lesson. Then ten seconds of a second call, a "police officer" in a ready-made voice, to show it covers more than family. |
-| 1:40–2:00 | The family page: each person's readiness before and after, and their personal plan with the next practice. |
-| 2:00–2:25 | The rules on screen: consent from both sides, a reveal in every call, no money, clones locked and deletable. One line: this weekend the call runs in a web page; the product rings the real phone. |
-| 2:25–2:45 | What happened this weekend: how many pairs practised, how many did the safe thing the first and the second time. |
-| 2:45–3:00 | Who pays: "Banks are being made liable for these losses. This is the practice they give their customers' families." Then the close. |
+| 1:40–2:00 | The family page: each person's readiness before and after, and their personal plan with the next practice.                                                                                                                                                                                                                                                                 |
+| 2:00–2:25 | The rules on screen: consent from both sides, a reveal in every call, no money, clones locked and deletable. One line: this weekend the call runs in a web page; the product rings the real phone.                                                                                                                                                                         |
+| 2:25–2:45 | What happened this weekend: how many pairs practised, how many did the safe thing the first and the second time.                                                                                                                                                                                                                                                           |
+| 2:45–3:00 | Who pays: "Banks are being made liable for these losses. This is the practice they give their customers' families." Then the close.                                                                                                                                                                                                                                        |
 
 **On stage:** a teammate's phone rings on speaker, with a practice call in another teammate's voice, cloned beforehand; the laptop shows the tactics as they are used. The teammate asks for the safe word, hangs up and taps the family number. Run the phones and the laptop on a hotspot, and keep a recording ready.
 
@@ -393,17 +408,18 @@ For the weekend: generate one real weekly digest from live sources, send one rea
 
 Replanned on Friday at about 16:30 for the browser version.
 
-| When | Milestone |
-|---|---|
+| When            | Milestone                                                                                                                                                                                                       |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Fri 16:30–18:30 | **First test:** the four steps in the set-up checklist: a conversation on your own phone through the tunnel, in your cloned voice, with a client tool firing. Send the question to ElevenLabs' sponsor contact. |
-| Fri 18:30 | **Go or no-go:** that conversation works on a phone. |
-| Fri 18:30–23:00 | **M1:** the practice call end to end: the phone page rings, the cloned voice, tactic labels on the laptop, the reveal, the scoring. Sign-up with the voice recording. |
-| Sat 09:00–12:00 | **M2:** the welcome call (consent, survey, readiness), the family page, the family number. First practice for pairs at the venue. Feature freeze at 12:00. |
-| Sat 12:00–15:00 | Second practice for the pairs; numbers; screen takes for the video. |
-| Sat 15:00–18:00 | Video recorded and edited. |
-| Sat 18:00–19:30 | Submitted by 19:30. |
+| Fri 18:30       | **Go or no-go:** that conversation works on a phone.                                                                                                                                                            |
+| Fri 18:30–23:00 | **M1:** the practice call end to end: the phone page rings, the cloned voice, tactic labels on the laptop, the reveal, the scoring. Sign-up with the voice recording.                                           |
+| Sat 09:00–12:00 | **M2:** the welcome call (consent, survey, readiness), the family page, the family number. First practice for pairs at the venue. Feature freeze at 12:00.                                                      |
+| Sat 12:00–15:00 | Second practice for the pairs; numbers; screen takes for the video.                                                                                                                                             |
+| Sat 15:00–18:00 | Video recorded and edited.                                                                                                                                                                                      |
+| Sat 18:00–19:30 | Submitted by 19:30.                                                                                                                                                                                             |
 
 **Decision points**
+
 - **Fri 18:30:** if the per-call voice override doesn't work, make one practice agent per cloned voice, with the voice set in the agent itself.
 - **If the voice connection fails on the venue network:** switch the page to `connectionType: 'websocket'` with a signed URL from `GET /v1/convai/conversation/get-signed-url`. It expires after 15 minutes, so fetch it on Answer.
 - **If ElevenLabs says the practice call is not allowed:** the practice announces itself in its first sentence, and the family listens to it together on the laptop as a labelled demonstration.

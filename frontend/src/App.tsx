@@ -8,6 +8,9 @@ import { FamilyDashboardPage } from './pages/FamilyDashboardPage/FamilyDashboard
 import { PracticeCallPage } from './pages/PracticeCallPage/PracticeCallPage';
 import { CallResultPage } from './pages/CallResultPage/CallResultPage';
 import { DashboardLayout } from './layouts/DashboardLayout';
+// Polina's mock sign-in state, used only by her original mock pages (/signin, /mock/signup).
+// The real app uses organiser accounts (layouts/useMe.ts and /api/auth).
+import { AuthProvider } from './contexts/AuthContext';
 
 // Every real screen loads on demand, so heavy parts (the call SDK on the phone
 // page, the 3D landing page) never weigh on pages that don't need them.
@@ -35,6 +38,7 @@ const landingFallback = <div style={{ minHeight: '100vh', background: '#07111a' 
 
 export default function App() {
   return (
+    <AuthProvider>
     <BrowserRouter>
       <Suspense fallback={<div className="route-loading" aria-busy="true" />}>
         <Routes>
@@ -73,5 +77,6 @@ export default function App() {
         </Routes>
       </Suspense>
     </BrowserRouter>
+    </AuthProvider>
   );
 }
