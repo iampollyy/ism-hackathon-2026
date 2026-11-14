@@ -70,8 +70,10 @@ export function CallPanel({ call, status, endedBy, connection, hadConversation }
   const pill = STATUS_PILL[status];
   const unanswered = ['declined', 'missed', 'failed'].includes(status);
   const Icon = status === 'ringing' ? PhoneIncoming : running ? PhoneCall : unanswered ? PhoneOff : Phone;
+  // A finished practice keeps its stream open for the family number tap; that
+  // is not a live call any more, so it says nothing then.
   const connectionText = connection === 'live'
-    ? 'Live'
+    ? (status === 'scored' ? '' : 'Live')
     : connection === 'polling'
       ? 'Updating every second'
       : connection === 'connecting' && status !== 'scored' && !unanswered ? 'Connecting…' : '';

@@ -26,6 +26,10 @@ export type LiveResult = {
   tactics_worked: Tactic[];
 };
 
+/** The Shield alerted the family (a shield call only, at most once).
+ * turnIndex: the caller line whose risk check set it off, when known. */
+export type ShieldAlert = { alerted: number; level: RiskLevel | null; t: number | null; turnIndex: number | null };
+
 export type LiveState = {
   /** Where the conversation below came from. */
   source: 'none' | 'snapshot' | 'stream';
@@ -42,6 +46,7 @@ export type LiveState = {
   consent: boolean | null;
   callback: { seconds: number | null } | null;
   result: LiveResult | null;
+  shieldAlert: ShieldAlert | null;
 };
 
 export type RawEvent = { type: StreamEventType; data: unknown; seq: number };
@@ -67,6 +72,7 @@ export const initialState: LiveState = {
   consent: null,
   callback: null,
   result: null,
+  shieldAlert: null,
 };
 
 // ---------------------------------------------------------------- statuses
@@ -219,9 +225,50 @@ function applyEvent(state: LiveState, event: RawEvent): LiveState {
       const point = riskPoint({ ...data, t });
       return point ? { ...state, risk: [...state.risk, point] } : state;
     }
+    case 'shield.alert': {
+      if (state.shieldAlert) return state; // once per call
+      const level = str(data.level);
+      // It comes right after the risk event that set it off.
+      const last = state.risk.length ? state.risk[state.risk.length - 1] : null;
+      return {
+        ...state,
+        shieldAlert: {
+          alerted: num(data.alerted) ?? 0,
+          level: level === 'green' || level === 'yellow' || level === 'red' ? level : null,
+          t,
+          turnIndex: last && last.turn_index >= 0 ? last.turn_index : null,
+        },
+      };
+    }
     default:
       return state;
   }
+}
+
+// ---------------------------------------------------------------- the Shield
+
+/** Signals that warn even on yellow (backend: services/shield.py WARN_SIGNALS). */
+const WARN_SIGNALS: readonly RiskSignal[] = ['money_request', 'asks_for_code', 'refuses_callback'];
+
+/** A risk reading the Shield acts on: red, or yellow with money, a code or a dodged call-back. */
+export function riskWarns(point: RiskPointView | null | undefined): boolean {
+  if (!point) return false;
+  return point.level === 'red' || (point.level === 'yellow' && point.signals.some((signal) => WARN_SIGNALS.includes(signal)));
+}
+
+/** The alert as the call object tells it (replay, or the screen polling). */
+function shieldAlertFromCall(call: CallView): ShieldAlert | null {
+  const shield = call.shield;
+  if (!shield || !shield.alerted_at) return null;
+  const at = parseTime(shield.alerted_at);
+  const answered = parseTime(call.answered_at);
+  const first = (call.risk ?? []).find(riskWarns);
+  return {
+    alerted: shield.alerted,
+    level: shield.alert_level ?? null,
+    t: at !== null && answered !== null ? Math.max(0, (at - answered) / 1000) : null,
+    turnIndex: first && first.turn_index >= 0 ? first.turn_index : null,
+  };
 }
 
 /** The whole state rebuilt from the call object: the replay path when there is no stream. */
@@ -248,7 +295,10 @@ export function stateFromCall(call: CallView): LiveState {
       tactics_worked: call.result.tactics_worked ?? [],
     }
     : null;
-  const challengeAt = result?.seconds_to_challenge ?? null;
+  // Before scoring, the call object carries the first outcome the phone
+  // reported (live_outcome) and the welcome call's consent answer so far.
+  const outcomeKey = result?.outcome ?? call.live_outcome ?? null;
+  const challengeAt = result ? result.seconds_to_challenge : call.live_seconds_to_challenge ?? null;
   return {
     ...initialState,
     source: 'snapshot',
@@ -258,15 +308,19 @@ export function stateFromCall(call: CallView): LiveState {
     turns,
     tactics,
     risk: call.risk ?? [],
-    outcome: result
+    outcome: outcomeKey
       ? {
-        outcome: result.outcome,
+        outcome: outcomeKey,
         secondsToChallenge: challengeAt,
         afterTurns: challengeAt === null ? turns.length : turns.filter((turn) => turn.t === null || turn.t <= challengeAt).length,
       }
       : null,
+    // The phone always shows the reveal after an answered practice that ended.
+    revealed: call.kind === 'practice' && !!call.answered_at && (call.status === 'ended' || call.status === 'scored'),
+    consent: call.consent_given ?? null,
     callback: call.callback_seconds !== null ? { seconds: call.callback_seconds } : null,
     result,
+    shieldAlert: shieldAlertFromCall(call),
   };
 }
 
@@ -290,6 +344,7 @@ export function liveReducer(state: LiveState, action: LiveAction): LiveState {
         status: laterStatus(state.status, action.call.status),
         endedBy: state.endedBy ?? action.call.ended_by ?? null,
         callback: state.callback ?? (action.call.callback_seconds !== null ? { seconds: action.call.callback_seconds } : null),
+        shieldAlert: state.shieldAlert ?? shieldAlertFromCall(action.call),
       };
     }
     default:

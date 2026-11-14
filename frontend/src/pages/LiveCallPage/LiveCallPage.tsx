@@ -4,19 +4,24 @@
 // Everything comes from the call's live stream, or from the call object when
 // the call is opened later or the stream is not available (see useLiveCall).
 
-import { ArrowLeft, LoaderCircle, ShieldCheck, UserRoundCheck, UserRoundX } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, LoaderCircle, ShieldAlert, ShieldCheck, UserRoundCheck, UserRoundX } from 'lucide-react';
+import { useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { CallStatus, CallView } from '../../api/types';
 import { CallPanel } from './CallPanel';
 import { Conversation } from './Conversation';
 import { possessive, useCallTitle } from './format';
 import {
-  agreeing, callbackWindowOver, deriveStages, FINAL_STATUSES, latestRisk, riskChanges, stoppedAt, type LiveOutcome, type LiveState,
+  agreeing, callbackWindowOver, deriveStages, FINAL_STATUSES, latestRisk, riskChanges, riskWarns, stoppedAt, type LiveOutcome,
+  type LiveState,
 } from './liveCallState';
 import { OutcomeTiles, ResultPanel } from './Outcome';
+import { ShieldPanel } from './ShieldPanel';
 import { StageLine } from './StageLine';
 import { TrafficLight } from './TrafficLight';
 import { useLiveCall } from './useLiveCall';
+import { VoiceTile } from './VoiceTile';
+import { saveFamilyId } from '../FamilySignUpPage/familyStorage';
 import './LiveCallPage.scss';
 
 function emptyConversationText(status: CallStatus, target: string): string {
@@ -55,7 +60,7 @@ export function LiveCallPage() {
             <span>Back</span>
           </button>
           <div className="header-center">
-            <span className="live-kicker">Practice call</span>
+            <span className="live-kicker">Call</span>
             <h1>{error ? 'Call not found' : 'Loading the call…'}</h1>
           </div>
         </header>
@@ -94,26 +99,47 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
   const stages = deriveStages(state, revealed);
   const stopped = stoppedAt(stages, outcome);
 
-  // Polling rebuilds the screen from the call object, which has no outcome,
-  // reveal or consent: those are only known from the stream (or the result).
-  const fromCallObject = connection === 'polling' || (connection === 'done' && state.source === 'snapshot');
+  // A shield call: a simulated real scam call, with Callback Shield on.
+  const isShield = isPractice && !!call.shield;
+
+  // Remember the family, so the sidebar finds it when this page was opened from a link.
+  const familyId = call.family_id;
+  useEffect(() => {
+    if (familyId) saveFamilyId(familyId);
+  }, [familyId]);
 
   const risk = latestRisk(state);
   const agreed = agreeing(state);
   const callerMarked = new Set<string>(state.tactics.map((tactic) => tactic.key));
 
+  let kicker = `Call with ${target}`;
+  if (isShield) kicker = live ? 'Live Shield demo' : 'Shield demo call';
+  else if (isPractice) kicker = live ? 'Live practice' : 'Practice call';
+
   return (
-    <div className={`live-call live-call--${status}`}>
+    <div className={`live-call live-call--${status}${isShield ? ' live-call--shield' : ''}`}>
       <header className="practice-header lc-header">
-        <button type="button" className="header-back lc-back" onClick={onBack}>
-          <ArrowLeft size={18} />
-          <span>Back</span>
-        </button>
+        {call.family_id ? (
+          <Link to={`/family/${call.family_id}`} className="header-back lc-back">
+            <ArrowLeft size={18} />
+            <span>Back to the family</span>
+          </Link>
+        ) : (
+          <button type="button" className="header-back lc-back" onClick={onBack}>
+            <ArrowLeft size={18} />
+            <span>Back</span>
+          </button>
+        )}
         <div className="header-center">
-          <span className="live-kicker">{isPractice ? (live ? 'Live practice' : 'Practice call') : `Call with ${target}`}</span>
+          <span className="live-kicker">{kicker}</span>
           <h1>{title}</h1>
         </div>
-        {isPractice ? (
+        {isShield ? (
+          <div className="header-badge lc-badge--shield">
+            <ShieldAlert size={15} />
+            <span>Shield call: a simulated scam</span>
+          </div>
+        ) : isPractice ? (
           <div className="header-badge">
             <ShieldCheck size={15} />
             <span>Practice: it always reveals itself</span>
@@ -131,8 +157,24 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
             hadConversation={state.turns.length > 0}
           />
 
+          {isShield && !final ? (
+            <ShieldPanel
+              target={target}
+              status={status}
+              alert={state.shieldAlert}
+              warning={riskWarns(risk)}
+              voiceOf={call.voice_of?.name ?? null}
+            />
+          ) : null}
+
           {isPractice && !final ? (
-            <TrafficLight risk={risk} callerMarked={callerMarked} listening={live && !risk} over={over} />
+            <TrafficLight
+              risk={risk}
+              callerMarked={callerMarked}
+              listening={live && !risk}
+              over={over}
+              title={isShield ? 'What the Shield hears' : undefined}
+            />
           ) : null}
 
           {call.kind === 'welcome' ? (
@@ -145,10 +187,14 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
                     ? `${target} agreed to practice calls`
                     : state.consent === false
                       ? `${target} said no to practice calls`
-                      : fromCallObject ? `${possessive(target)} answer is shown on the family page` : 'Not asked yet'}
+                      : over ? 'No answer recorded on this call' : 'Not asked yet'}
                 </strong>
               </div>
             </section>
+          ) : null}
+
+          {call.kind === 'welcome' && answered ? (
+            <VoiceTile callId={call.id} target={target} status={status} endedAt={call.ended_at} />
           ) : null}
         </div>
 
@@ -163,9 +209,14 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
                 result={state.result}
                 callback={state.callback}
                 callbackClosed={callbackWindowOver(call.ended_at)}
-                fromCallObject={fromCallObject}
               />
-              <ResultPanel target={target} status={status} result={state.result} hadConversation={state.turns.length > 0} />
+              <ResultPanel
+                target={target}
+                status={status}
+                result={state.result}
+                hadConversation={state.turns.length > 0}
+                familyId={call.family_id}
+              />
             </>
           ) : null}
 
@@ -176,6 +227,7 @@ function LiveCallView({ call, state, title, connection, onBack }: LiveCallViewPr
             agreed={agreed}
             callerName={callerName(call)}
             personName={target}
+            shieldAlert={isShield ? state.shieldAlert : null}
             listening={live}
             emptyText={emptyConversationText(status, target)}
           />

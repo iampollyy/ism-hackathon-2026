@@ -1,4 +1,7 @@
-import { CircleCheck, Hourglass, LoaderCircle, PhoneForwarded, ShieldCheck, TriangleAlert } from 'lucide-react';
+import {
+  BookOpen, ChevronRight, CircleCheck, Hourglass, Lightbulb, LoaderCircle, PhoneForwarded, ShieldCheck, TriangleAlert,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { CallStatus, Outcome as OutcomeKey, Tactic } from '../../api/types';
 import { OUTCOME_LABELS, TACTIC_LABELS } from '../../api/types';
 import { duration } from './format';
@@ -30,13 +33,10 @@ type OutcomeTilesProps = {
   callback: { seconds: number | null } | null;
   /** Ten minutes have passed since the call ended, so the family number can no longer be tapped for it. */
   callbackClosed: boolean;
-  /** The screen is fed by the call object (polling), which carries no outcome
-   * before scoring: say nothing about what the person did until then. */
-  fromCallObject: boolean;
 };
 
 /** "What Sara did" and "Family number", side by side. */
-export function OutcomeTiles({ target, status, outcome, result, callback, callbackClosed, fromCallObject }: OutcomeTilesProps) {
+export function OutcomeTiles({ target, status, outcome, result, callback, callbackClosed }: OutcomeTilesProps) {
   const done = result?.outcome ?? outcome?.outcome ?? null;
   const seconds = result?.seconds_to_challenge ?? outcome?.secondsToChallenge ?? null;
   const safe = isSafe(done);
@@ -47,9 +47,6 @@ export function OutcomeTiles({ target, status, outcome, result, callback, callba
   if (done) {
     didText = OUTCOME_LABELS[done];
     didDetail = outcomeDetail(done, seconds);
-  } else if (status === 'in_progress' && fromCallObject) {
-    didText = 'Shown when the call is scored';
-    didDetail = `This screen is updating every second, and learns what ${target} did once the call is scored.`;
   } else if (status === 'in_progress') {
     didText = 'Listening…';
     didDetail = `This turns green when ${target} checks who is calling or hangs up.`;
@@ -86,7 +83,7 @@ export function OutcomeTiles({ target, status, outcome, result, callback, callba
       <section className={`lc-card lc-tile${done ? (safe ? ' is-safe' : ' is-unsafe') : ''}`} aria-live="polite">
         <span className="small-label">What {target} did</span>
         <div className="lc-tile__value" key={done ?? 'none'}>
-          {done ? (safe ? <ShieldCheck size={22} /> : <TriangleAlert size={22} />) : status === 'ended' ? <LoaderCircle size={20} className="lc-spin" /> : null}
+          {done ? (safe ? <ShieldCheck size={22} /> : <Lightbulb size={22} />) : status === 'ended' ? <LoaderCircle size={20} className="lc-spin" /> : null}
           <strong>{didText}</strong>
         </div>
         {didDetail ? <p className="lc-tile__detail">{didDetail}</p> : null}
@@ -119,10 +116,12 @@ type ResultPanelProps = {
   status: CallStatus;
   result: LiveResult | null;
   hadConversation: boolean;
+  /** For a link to the tactic's card on the family's learning page. */
+  familyId?: string | null;
 };
 
 /** After scoring: the lesson, the debrief, and the tactics used against those that worked. */
-export function ResultPanel({ target, status, result, hadConversation }: ResultPanelProps) {
+export function ResultPanel({ target, status, result, hadConversation, familyId = null }: ResultPanelProps) {
   if (status === 'ended') {
     return (
       <section className="lc-card lc-result lc-result--pending">
@@ -147,6 +146,8 @@ export function ResultPanel({ target, status, result, hadConversation }: ResultP
 
   const worked = new Set<Tactic>(result.tactics_worked);
   const safe = isSafe(result.outcome);
+  // The tactic worth reading about first: one that worked, else the first used.
+  const learnKey = result.tactics_worked[0] ?? result.tactics_used[0] ?? null;
   return (
     <section className={`lc-card lc-result${safe ? ' is-safe' : ''}`} aria-label="Result">
       <div className="lc-result__head">
@@ -177,6 +178,13 @@ export function ResultPanel({ target, status, result, hadConversation }: ResultP
               </span>
             ))}
           </div>
+        ) : null}
+        {familyId && learnKey ? (
+          <Link to={`/family/${familyId}/learn#tactic-${learnKey}`} className="lc-result__learn">
+            <BookOpen size={15} aria-hidden />
+            {result.tactics_used.length > 1 ? 'How to handle these tactics' : `How to handle “${TACTIC_LABELS[learnKey]}”`}
+            <ChevronRight size={15} aria-hidden />
+          </Link>
         ) : null}
       </div>
     </section>
