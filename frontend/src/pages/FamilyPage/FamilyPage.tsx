@@ -4,20 +4,25 @@
 //
 // Laid out as: the family and the way into the other screens; Protection
 // (the product's heart) beside the demo buttons; the family, one row each;
-// readiness and plans; a practice by hand; this week. The family word itself
-// never appears, only whether the family has agreed one.
+// readiness and plans; a practice by hand; this week. In one column the demo
+// buttons move up under Protection in the page itself (not only on screen),
+// so the keyboard order follows what is shown. The family word itself never
+// appears, only whether the family has agreed one.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../api/client';
-import type { FamilyPlanView, FamilyView, ProtectionView, ScenarioView, VoiceSampleStatus } from '../../api/types';
+import type { FamilyPlanView, FamilyView, MemberView, ProtectionView, ScenarioView, VoiceSampleStatus } from '../../api/types';
 import { forgetFamilyId, saveFamilyId } from '../FamilySignUpPage/familyStorage';
 import { DemoPanel } from './DemoPanel';
 import { FamilyHeader } from './FamilyHeader';
 import { MemberPlan } from './MemberPlan';
 import { MemberRoster } from './MemberRoster';
+import { peopleOf } from './people';
 import { PracticeForm } from './PracticeForm';
 import { ProtectionPanel } from './ProtectionPanel';
+import { useDemo } from './useDemo';
+import { useMediaQuery } from './useMediaQuery';
 import { usePoll } from './usePoll';
 import { WeekList } from './WeekList';
 import './FamilyPage.scss';
@@ -25,15 +30,9 @@ import './FamilyPage.scss';
 const FAMILY_MS = 3000;
 const PROTECTION_MS = 5000;
 const VOICE_MS = 6000;
-
-const AVATAR_COLORS = ['#e76d52', '#1d8d64', '#213d52', '#b77a15', '#2f7ea8', '#8a5a44'];
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
+/** Below this width the page is one column (FamilyPage.scss has the same number). */
+const ONE_COLUMN = '(max-width: 1239px)';
+const NO_MEMBERS: MemberView[] = [];
 
 export function FamilyPage() {
   const { familyId = '' } = useParams();
@@ -127,16 +126,9 @@ export function FamilyPage() {
   }, [loadedId, location.hash, location.key]);
 
   const members = family.data?.members;
-  const people = useMemo(
-    () =>
-      Object.fromEntries(
-        (members ?? []).map((member, index) => [
-          member.id,
-          { initials: initials(member.name), color: AVATAR_COLORS[index % AVATAR_COLORS.length] },
-        ]),
-      ),
-    [members],
-  );
+  const people = useMemo(() => peopleOf(members ?? NO_MEMBERS), [members]);
+  const demo = useDemo(familyId, members ?? NO_MEMBERS, protection.data);
+  const oneColumn = useMediaQuery(ONE_COLUMN);
 
   if (!family.data || !members) {
     if (!family.error) {
@@ -197,6 +189,8 @@ export function FamilyPage() {
   const fallbackSelected =
     members.find((member) => !member.is_organiser && member.plan) ?? members.find((member) => !member.is_organiser) ?? members[0];
   const selected = members.find((member) => member.id === selectedId) ?? fallbackSelected;
+  // The demo's state lives in useDemo, so moving the panel keeps a drill on its way.
+  const demoPanel = <DemoPanel key="demo" members={members} protection={protection.data} demo={demo} />;
 
   return (
     <div className="fh">
@@ -210,8 +204,10 @@ export function FamilyPage() {
 
       <div className="fh-layout">
         <div className="fh-main">
-          <ProtectionPanel familyId={data.id} poll={protection} people={people} pageStale={Boolean(family.error)} />
+          <ProtectionPanel key="protection" familyId={data.id} poll={protection} people={people} pageStale={Boolean(family.error)} />
+          {oneColumn ? demoPanel : null}
           <MemberRoster
+            key="roster"
             family={data}
             protection={protection.data}
             samples={samples.data ?? {}}
@@ -219,14 +215,29 @@ export function FamilyPage() {
             onChanged={refreshAll}
           />
           {selected ? (
-            <MemberPlan members={members} selected={selected} scenarios={scenarios} onSelect={setSelectedId} />
+            <MemberPlan
+              key="plan"
+              members={members}
+              selected={selected}
+              week={data.week}
+              scenarios={scenarios}
+              onSelect={setSelectedId}
+            />
           ) : null}
         </div>
 
         <aside className="fh-side" aria-label="Calls">
-          <DemoPanel familyId={data.id} members={members} protection={protection.data} />
-          <WeekList week={data.week} familyId={data.id} scenarios={scenarios} />
+          {oneColumn ? null : demoPanel}
+          <WeekList
+            key="week"
+            week={data.week}
+            familyId={data.id}
+            scenarios={scenarios}
+            people={people}
+            zone={protection.data?.timezone ?? null}
+          />
           <PracticeForm
+            key="practice"
             familyId={data.id}
             members={members}
             week={data.week}

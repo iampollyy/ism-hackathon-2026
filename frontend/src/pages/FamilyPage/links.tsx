@@ -59,29 +59,74 @@ export function usePhoneAddress(): [string, (value: string) => void] {
   return [base, update];
 }
 
-/** Shown only while links would point at localhost. */
+/**
+ * Shown only while links would point at localhost: the full note until a
+ * working address is set, then one quiet line that opens the field again.
+ */
 export function PhoneAddressNote({ base, onChange }: { base: string; onChange: (value: string) => void }) {
+  const clean = cleanBase(base);
+  const valid = clean !== '';
+  const [editing, setEditing] = useState(!valid);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    // Only when the field opens again, not on every keystroke.
+    if (editing && valid) input.current?.focus();
+  }, [editing]);
+
   if (!linksAreLocal()) return null;
-  const valid = cleanBase(base) !== '';
+
+  if (valid && !editing) {
+    return (
+      <p className="fh-address-set">
+        <Smartphone size={16} aria-hidden="true" />
+        <span>
+          Phone links use <strong>{clean}</strong>
+        </span>
+        <button type="button" className="fh-text-button" onClick={() => setEditing(true)}>
+          Change
+        </button>
+      </p>
+    );
+  }
+
   return (
-    <div className="fh-address-note">
+    <div className={`fh-address-note${valid ? ' is-set' : ''}`}>
       <Smartphone size={18} aria-hidden="true" />
-      <div>
-        <strong>Phones can't open this laptop's address.</strong>
-        <p>Paste the HTTPS address phones can reach (the tunnel), and every invite link and QR code will use it.</p>
-        <label className="fh-field">
-          <span>Address for phones</span>
-          <input
-            type="url"
-            inputMode="url"
-            placeholder="https://your-tunnel.trycloudflare.com"
-            value={base}
-            onChange={(event) => onChange(event.target.value)}
-            aria-invalid={base !== '' && !valid}
-          />
-        </label>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (valid) setEditing(false);
+        }}
+      >
+        {valid ? (
+          <strong>The address phones open</strong>
+        ) : (
+          <>
+            <strong>Phones can't open this laptop's address.</strong>
+            <p>Paste the HTTPS address phones can reach (the tunnel), and every invite link and QR code will use it.</p>
+          </>
+        )}
+        <div className="fh-address-row">
+          <label className="fh-field">
+            <span>Address for phones</span>
+            <input
+              ref={input}
+              type="url"
+              inputMode="url"
+              placeholder="https://your-tunnel.trycloudflare.com"
+              value={base}
+              onChange={(event) => onChange(event.target.value)}
+              aria-invalid={base !== '' && !valid}
+            />
+          </label>
+          {valid ? (
+            <button type="submit" className="fh-chip-button strong">
+              Done
+            </button>
+          ) : null}
+        </div>
         {base !== '' && !valid ? <small className="fh-field-error">Start the address with https://</small> : null}
-      </div>
+      </form>
     </div>
   );
 }

@@ -2,17 +2,17 @@
 // the hours they may ring, the Shield, and each person's drills (paused or
 // not, why someone cannot get one, their next drill, how many this week).
 // GET on open and every few seconds; a PUT on each change, then the answer.
+// The organiser gets drills too, so their own next drill is never shown.
 
 import { useRef, useState } from 'react';
 import { EyeOff, PhoneCall, Radio, ShieldCheck } from 'lucide-react';
 import { api } from '../../api/client';
 import type { ProtectionMemberView, ProtectionUpdate, ProtectionView } from '../../api/types';
+import type { Person } from './people';
 import { Switch } from './Switch';
 import type { Poll } from './usePoll';
 import { WeekAhead } from './WeekAhead';
 import { browserZone, errorText, hourLabel, whenInZone, zoneCity } from './words';
-
-type Person = { initials: string; color: string };
 
 type Props = {
   familyId: string;
@@ -35,10 +35,16 @@ function reasonWords(reason: string | null | undefined): string {
   }
 }
 
-function drillLine(member: ProtectionMemberView, protection: ProtectionView): { text: string; tone: 'next' | 'quiet' | 'warn' } {
+function drillLine(
+  member: ProtectionMemberView,
+  protection: ProtectionView,
+  organiser: boolean,
+): { text: string; tone: 'next' | 'quiet' | 'warn' } {
   if (!member.eligible) {
     return { text: reasonWords(member.reason_if_not), tone: member.paused ? 'quiet' : 'warn' };
   }
+  // Whether one is booked, and when, would give it away.
+  if (organiser && protection.enabled) return { text: 'Your own drills stay a surprise too.', tone: 'next' };
   if (member.next_drill_at) {
     return { text: `Next drill ${whenInZone(member.next_drill_at, protection.timezone)}`, tone: 'next' };
   }
@@ -130,9 +136,11 @@ export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
         <div>
           <h2 id="protection-title">Protection</h2>
           <p className="fh-prot-lede">
-            {on
-              ? `On for ${eligible === 1 ? '1 person' : `${eligible} people`}. Practice calls ring at random.`
-              : 'Off. No practice call rings by itself.'}
+            {!on
+              ? 'Off. No practice call rings by itself.'
+              : eligible === 0
+                ? 'On, but nobody can get a drill right now. See who below.'
+                : `On for ${eligible === 1 ? '1 person' : `${eligible} people`}. Practice calls ring at random.`}
           </p>
         </div>
         <Switch
@@ -161,7 +169,7 @@ export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
           <EyeOff size={18} aria-hidden="true" />
           <div>
             <strong>Nobody is told when</strong>
-            <span>A drill feels like a real call, so the habit of checking sticks. Only you see the times.</span>
+            <span>A drill feels like a real call, so the habit of checking sticks. You see everyone's times but your own.</span>
           </div>
         </li>
         <li>
@@ -267,9 +275,11 @@ export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
         <h3>Who gets drills</h3>
         <ul>
           {data.members.map((member) => {
-            const line = drillLine(member, data);
             const person = people[member.member_id];
+            const line = drillLine(member, data, Boolean(person?.organiser));
             const left = member.reason_if_not === 'Has left Callback.';
+            // Green only for someone a drill can reach now; otherwise the switch only says they are not paused.
+            const covered = on && member.eligible && !member.paused;
             return (
               <li key={member.member_id}>
                 <span className="fh-mini-avatar" style={{ background: person?.color }} aria-hidden="true">
@@ -286,8 +296,9 @@ export function ProtectionPanel({ familyId, poll, people, pageStale }: Props) {
                   surface="dark"
                   checked={!member.paused}
                   label={`Drills for ${member.name}`}
-                  onText="Drills on"
+                  onText={covered ? 'Drills on' : 'Not paused'}
                   offText="Paused"
+                  tone={covered ? 'good' : 'neutral'}
                   disabled={left}
                   busy={pausing === member.member_id}
                   onChange={(next) => void pause(member, !next)}

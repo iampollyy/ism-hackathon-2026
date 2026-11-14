@@ -3,13 +3,14 @@
 
 import type { FamilyView, ProtectionView, VoiceSampleStatus } from '../../api/types';
 import { MemberRow } from './MemberRow';
+import type { Person } from './people';
 import { PhoneAddressNote, usePhoneAddress } from './links';
 
 type Props = {
   family: FamilyView;
   protection: ProtectionView | null;
   samples: Record<string, VoiceSampleStatus>;
-  people: Record<string, { initials: string; color: string }>;
+  people: Record<string, Person>;
   onChanged: () => void;
 };
 
@@ -30,7 +31,7 @@ export function MemberRoster({ family, protection, samples, people, onChanged }:
       <p className="fh-panel-note">
         {waiting > 0
           ? `Send each person their invite link. When they open it on their phone and join, the welcome call starts by itself.`
-          : 'Everyone has joined. Practice consent stays theirs to change, and yours to see here.'}
+          : "Everyone has joined. Each person can change their practice consent on their phone, and you can switch it here too."}
       </p>
       <PhoneAddressNote base={base} onChange={setBase} />
 

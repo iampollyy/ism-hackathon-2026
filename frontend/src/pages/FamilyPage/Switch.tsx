@@ -12,10 +12,13 @@ type Props = {
   /** 'dark' for the navy protection panel. */
   surface?: 'light' | 'dark';
   size?: 'md' | 'lg';
+  /** 'neutral': on, but not a green "all good" (on for someone a drill cannot reach yet). */
+  tone?: 'good' | 'neutral';
 };
 
 export function Switch({
   checked, onChange, label, onText = 'On', offText = 'Off', disabled = false, busy = false, surface = 'light', size = 'md',
+  tone = 'good',
 }: Props) {
   return (
     <button
@@ -24,7 +27,7 @@ export function Switch({
       aria-checked={checked}
       aria-label={label}
       aria-busy={busy || undefined}
-      className={`fh-switch ${surface} ${size}${checked ? ' on' : ''}`}
+      className={`fh-switch ${surface} ${size}${checked ? ' on' : ''}${tone === 'neutral' ? ' neutral' : ''}`}
       onClick={() => onChange(!checked)}
       disabled={disabled || busy}
     >

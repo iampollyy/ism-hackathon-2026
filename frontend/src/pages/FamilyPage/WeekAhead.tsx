@@ -1,12 +1,12 @@
 // The week ahead, as a timetable: one row a day, the hours drills may ring
 // shaded on each, and each person's next planned practice call where it
-// falls. For the organiser only; the people called never see these times.
+// falls. For the organiser only; the people called never see these times,
+// and the organiser's own drill is left off, so theirs stays a surprise too.
 
 import { useEffect, useState } from 'react';
 import type { ProtectionView } from '../../api/types';
+import type { Person } from './people';
 import { hourLabel, whenInZone, zoneCity, zonedTime } from './words';
-
-type Person = { initials: string; color: string };
 
 type Props = {
   protection: ProtectionView;
@@ -44,7 +44,7 @@ export function WeekAhead({ protection, people }: Props) {
   });
 
   const planned = protection.members
-    .filter((member) => member.next_drill_at)
+    .filter((member) => member.next_drill_at && !people[member.member_id]?.organiser)
     .map((member) => {
       const at = new Date(member.next_drill_at as string);
       const when = zonedTime(at, zone);

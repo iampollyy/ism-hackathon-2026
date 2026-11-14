@@ -1,32 +1,46 @@
 // One person's plan: what they said, what to work on, this week, the plan's
 // steps, and their readiness item by item (before → now, each out of 2).
+//
+// Whose voice a step uses stays out while a drill has taken it (the step is
+// `scheduled`) or while a practice call for this person is still to come or
+// ringing, so the page never tells anyone whose voice is about to ring. The
+// organiser is a person called too: their own steps never say whose voice,
+// and the time of their booked drill stays a surprise.
 
 import { ArrowRight, Quote } from 'lucide-react';
-import type { MemberView, ScenarioView } from '../../api/types';
+import type { MemberView, PlanStepView, ScenarioView, WeekItem } from '../../api/types';
 import { ProgressBar } from '../../components/atoms/ProgressBar';
-import { capitalise, DIFFICULTY_WORDS, scenarioTitle, statusWords } from './words';
+import { capitalise, DIFFICULTY_WORDS, isLiveStatus, scenarioTitle, statusWords } from './words';
 
 type Props = {
   members: MemberView[];
   selected: MemberView;
+  week: WeekItem[];
   scenarios: ScenarioView[];
   onSelect: (memberId: string) => void;
 };
 
-export function MemberPlan({ members, selected, scenarios, onSelect }: Props) {
+export function MemberPlan({ members, selected, week, scenarios, onSelect }: Props) {
   const { plan, readiness } = selected;
+  const organiser = selected.is_organiser;
+  const callComing = week.some(
+    (item) => item.kind === 'practice' && item.member_id === selected.id && isLiveStatus(item.status),
+  );
+  const showVoice = (step: PlanStepView) =>
+    Boolean(step.voice_of) && step.status !== 'scheduled' && (step.status === 'done' || (!callComing && !organiser));
+  const stepWhen = (step: PlanStepView) =>
+    organiser && step.status === 'scheduled' ? "When: a surprise, like everyone's" : capitalise(step.when);
 
   return (
     <section id="plan" className="fh-panel fh-plan" aria-labelledby="plan-title">
       <div className="fh-panel-head wrap">
         <h2 id="plan-title">Readiness and plans</h2>
-        <div className="fh-tabs" role="tablist" aria-label="Choose a person">
+        <div className="fh-tabs" role="group" aria-label="Choose a person">
           {members.map((member) => (
             <button
               key={member.id}
               type="button"
-              role="tab"
-              aria-selected={member.id === selected.id}
+              aria-pressed={member.id === selected.id}
               className={member.id === selected.id ? 'on' : undefined}
               onClick={() => onSelect(member.id)}
             >
@@ -36,7 +50,7 @@ export function MemberPlan({ members, selected, scenarios, onSelect }: Props) {
         </div>
       </div>
 
-      <div className="fh-plan-grid" role="tabpanel" aria-label={`${selected.name}'s plan`}>
+      <div className="fh-plan-grid">
         <div className="fh-plan-story">
           {selected.said ? (
             <blockquote className="fh-plan-quote">
@@ -70,8 +84,8 @@ export function MemberPlan({ members, selected, scenarios, onSelect }: Props) {
                         <span className={`fh-step-status ${step.status}`}>{statusWords(step.status)}</span>
                       </div>
                       <span className="fh-plan-step-meta">
-                        {capitalise(step.when)} · {DIFFICULTY_WORDS[step.difficulty] ?? `Level ${step.difficulty}`}
-                        {step.voice_of ? ` · in ${step.voice_of}'s voice` : ''}
+                        {stepWhen(step)} · {DIFFICULTY_WORDS[step.difficulty] ?? `Level ${step.difficulty}`}
+                        {showVoice(step) ? ` · in ${step.voice_of}'s voice` : ''}
                       </span>
                       <p>{step.why}</p>
                     </li>

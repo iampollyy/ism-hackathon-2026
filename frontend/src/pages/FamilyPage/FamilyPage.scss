@@ -24,12 +24,20 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   h1, h2, h3 { text-wrap: balance; }
 
+  // Solid accent (about 3.1:1 on white); mint on the navy Protection panel.
   a:focus-visible,
   button:focus-visible,
   select:focus-visible,
   input:focus-visible {
-    outline: 3px solid rgba(231, 109, 82, 0.6);
+    outline: 3px solid var(--accent);
     outline-offset: 2px;
+  }
+
+  .fh-protection {
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible { outline-color: $mint; }
   }
 
   // ---------------------------------------------------------------- page states
@@ -328,6 +336,12 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     &.dark.on { color: $mint; }
     &.dark.on .fh-switch-track { background: #22b07d; }
 
+    // On, but not "all good": not paused, yet no drill can reach them.
+    &.neutral.on { color: var(--muted); }
+    &.neutral.on .fh-switch-track { background: rgba(17, 34, 49, 0.4); }
+    &.dark.neutral.on { color: $on-dark-muted; }
+    &.dark.neutral.on .fh-switch-track { background: rgba(255, 255, 255, 0.34); }
+
     &:hover:not(:disabled) .fh-switch-track { filter: brightness(1.08); }
     &:disabled { cursor: not-allowed; opacity: 0.5; }
     &[aria-busy='true'] { cursor: progress; opacity: 0.75; }
@@ -431,7 +445,8 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
       font-weight: 500;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
-      &:focus { outline: none; border-color: rgba(231, 109, 82, 0.55); box-shadow: 0 0 0 4px rgba(231, 109, 82, 0.1); }
+      &:focus { outline: none; border-color: var(--accent); }
+      &:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       &:disabled { opacity: 0.6; background-color: rgba(17, 34, 49, 0.03); }
       &::placeholder { color: rgba(18, 33, 47, 0.35); }
       &[aria-invalid='true'] { border-color: rgba(231, 109, 82, 0.7); }
@@ -466,6 +481,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   // ---------------------------------------------------------------- protection (navy)
 
   .fh-protection {
+    container: prot / inline-size;
     position: relative;
     overflow: hidden;
     padding: 26px 26px 0;
@@ -586,7 +602,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
       &:hover { background: rgba(255, 255, 255, 0.12); color: #fff; transform: translateY(-1px); }
       &.on { background: #fff; border-color: #fff; color: var(--navy); }
-      &:has(input:focus-visible) { outline: 3px solid rgba(127, 224, 184, 0.7); outline-offset: 2px; }
+      &:has(input:focus-visible) { outline: 3px solid $mint; outline-offset: 2px; }
     }
 
     input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
@@ -877,10 +893,10 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .fh-demo-notice {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 10px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    column-gap: 10px;
     padding: 12px 14px;
     border-radius: 14px;
     font-weight: 600;
@@ -897,9 +913,16 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   .fh-demo-pulse {
     width: 9px;
     height: 9px;
-    flex-shrink: 0;
+    margin-top: calc((1.4em - 9px) / 2); // centred on the first line
     border-radius: 50%;
     background: currentColor;
+  }
+
+  .fh-demo-notice-text {
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+    min-width: 0;
   }
 
   .fh-demo-notice.wait .fh-demo-pulse,
@@ -918,10 +941,46 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
     border: 1px solid rgba(245, 185, 77, 0.45);
 
     > svg { flex-shrink: 0; margin-top: 2px; color: $warn-text; }
+    > form { flex: 1; min-width: 0; display: grid; gap: 6px; }
     strong { font-size: 0.92rem; }
-    p { margin: 2px 0 10px; color: var(--ink); font-size: 0.86rem; line-height: 1.45; }
-    .fh-field { max-width: 440px; }
+    p { margin: 0 0 4px; color: var(--ink); font-size: 0.86rem; line-height: 1.45; }
+
+    &.is-set {
+      background: rgba(17, 34, 49, 0.03);
+      border-color: var(--line);
+
+      > svg { color: var(--good); }
+    }
   }
+
+  .fh-address-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    max-width: 520px;
+
+    .fh-field { flex: 1; min-width: 0; }
+    .fh-chip-button { min-height: 44px; }
+  }
+
+  .fh-address-set {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    margin: -6px 0 16px;
+    color: var(--muted);
+    font-size: 0.86rem;
+
+    > svg { flex-shrink: 0; color: var(--good); }
+    > span { min-width: 0; overflow-wrap: anywhere; }
+    strong { color: var(--ink); font-weight: 600; }
+    .fh-text-button { padding: 2px 0; font-size: 0.84rem; }
+  }
+
+  // The family and the plans also follow their own width, not only the window's.
+  .fh-roster { container: roster / inline-size; }
+  .fh-plan { container: plan / inline-size; }
 
   .fh-member-list {
     list-style: none;
@@ -1366,6 +1425,8 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   // ---------------------------------------------------------------- this week
 
+  .fh-week-zone { margin: 2px 0 0; color: var(--muted); font-size: 0.8rem; font-weight: 500; }
+
   .fh-week-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; }
 
   .fh-week-item {
@@ -1449,7 +1510,7 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
       &:hover { border-color: rgba(18, 33, 47, 0.3); }
       &.on { border-color: rgba(231, 109, 82, 0.5); background: var(--accent-soft); color: $accent-text; }
-      &:has(input:focus-visible) { outline: 3px solid rgba(231, 109, 82, 0.6); outline-offset: 2px; }
+      &:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
     }
 
     input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
@@ -1497,24 +1558,20 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
 // ---------------------------------------------------------------- narrower screens
 
-// One column: Protection first, then the demo buttons, the family, this week,
-// readiness and plans, and a practice by hand.
-@media (max-width: 1320px) {
+// One column (the same width as ONE_COLUMN in FamilyPage.tsx): Protection,
+// the demo buttons (FamilyPage puts them there in the page, so the keyboard
+// order matches), the family, readiness and plans, this week, and a practice
+// by hand.
+@media (max-width: 1239px) {
   .fh {
     .fh-layout { grid-template-columns: minmax(0, 1fr); }
     .fh-main, .fh-side { display: contents; }
-    .fh-protection { order: 1; }
-    .fh-demo { order: 2; }
-    .fh-roster { order: 3; }
-    .fh-week { order: 4; }
-    .fh-plan { order: 5; }
-    .fh-practice { order: 6; }
     .fh-practice .fh-form,
     .fh-practice .fh-panel-note { max-width: 640px; }
   }
 }
 
-@media (max-width: 1320px) and (min-width: 900px) {
+@media (max-width: 1239px) and (min-width: 900px) {
   .fh .fh-demo {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1577,6 +1634,54 @@ $ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
     .fh-member-ready { padding: 0; text-align: left; display: flex; align-items: baseline; gap: 10px; }
   }
+}
+
+// Protection in a narrow column: what "on" means stacks, and each person's
+// switch sits beside their name with the count underneath.
+@container prot (max-width: 640px) {
+  .fh {
+    .fh-prot-means { grid-template-columns: 1fr; gap: 14px; }
+    .fh-prot-means li { padding: 0; border-left: 0; }
+
+    .fh-prot-people li {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      row-gap: 2px;
+    }
+
+    .fh-prot-people .fh-mini-avatar { grid-row: 1 / span 2; align-self: start; margin-top: 2px; }
+    .fh-prot-person { grid-column: 2; grid-row: 1; }
+    .fh-prot-count { grid-column: 2; grid-row: 2; }
+    .fh-prot-people .fh-switch { grid-column: 3; grid-row: 1 / span 2; }
+  }
+}
+
+// On a phone: the switch goes under the name, so the reason keeps its width.
+@container prot (max-width: 420px) {
+  .fh {
+    .fh-prot-people li { grid-template-columns: auto minmax(0, 1fr); }
+    .fh-prot-people .fh-mini-avatar { grid-row: 1 / span 3; }
+    .fh-prot-people .fh-switch { grid-column: 2; grid-row: 3; }
+  }
+}
+
+// The family in a narrow column: two facts a line, the phone link with the welcome call.
+@container roster (max-width: 620px) {
+  .fh .fh-member-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 20px;
+  }
+
+}
+
+@container roster (max-width: 520px) {
+  .fh {
+    .fh-member-facts, .fh-invite, .fh-row-notice, .fh-row-confirm { padding-left: 0; margin-left: 0; }
+    .fh-row-confirm { padding-left: 14px; }
+  }
+}
+
+@container plan (max-width: 640px) {
+  .fh .fh-plan-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
