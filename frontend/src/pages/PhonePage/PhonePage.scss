@@ -966,7 +966,7 @@ $shield-amber: #f5b94d;
 }
 
 .shield-button--call {
-  background: $call-green;
+  background: #137a4b; // darker than $call-green so the white label reads (about 5:1)
   color: #fff;
 }
 
