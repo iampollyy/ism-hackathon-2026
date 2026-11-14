@@ -22,8 +22,6 @@ export function WaitlistForm() {
   const [formErr, setFormErr] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const boxRef = useRef<HTMLDivElement>(null);
-  const [minH, setMinH] = useState<number | undefined>(undefined);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,7 +29,7 @@ export function WaitlistForm() {
     const value = email.trim();
     setFormErr(null);
     if (!emailLooksValid(value)) {
-      setEmailErr(errors.email);
+      setEmailErr(value ? errors.email : errors.emailEmpty);
       inputRef.current?.focus();
       return;
     }
@@ -39,7 +37,6 @@ export function WaitlistForm() {
     setStatus('sending');
     try {
       await joinWaitlist({ email: value, kind: 'family', source: 'close' });
-      setMinH(boxRef.current?.offsetHeight);
       setSentTo(value);
       setStatus('done');
     } catch (err) {
@@ -53,7 +50,7 @@ export function WaitlistForm() {
   };
 
   return (
-    <div className="lp-form lp-form--dark" ref={boxRef} style={{ minHeight: minH }}>
+    <div className="lp-form lp-form--dark">
       {status === 'done' ? (
         <div className="lp-form__success" role="status">
           <p className="lp-form__successtitle">{close.successTitle}</p>
@@ -119,8 +116,6 @@ export function BankForm() {
   const [sent, setSent] = useState({ email: '', org: '' });
   const emailRef = useRef<HTMLInputElement>(null);
   const orgRef = useRef<HTMLInputElement>(null);
-  const boxRef = useRef<HTMLDivElement>(null);
-  const [minH, setMinH] = useState<number | undefined>(undefined);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -131,7 +126,7 @@ export function BankForm() {
     setFormErr(null);
     const eBad = !emailLooksValid(em);
     const oBad = or.length === 0 || or.length > 120;
-    setEmailErr(eBad ? errors.email : null);
+    setEmailErr(eBad ? (em ? errors.email : errors.workEmailEmpty) : null);
     setOrgErr(oBad ? errors.org : null);
     if (eBad) {
       emailRef.current?.focus();
@@ -144,7 +139,6 @@ export function BankForm() {
     setStatus('sending');
     try {
       await joinWaitlist({ email: em, kind: 'bank', organisation: or, message: msg || undefined, source: 'banks' });
-      setMinH(boxRef.current?.offsetHeight);
       setSent({ email: em, org: or });
       setStatus('done');
     } catch (err) {
@@ -158,7 +152,7 @@ export function BankForm() {
   };
 
   return (
-    <div className="lp-form lp-form--paper" ref={boxRef} style={{ minHeight: minH }}>
+    <div className="lp-form lp-form--paper">
       <h3 className="lp-h3 lp-form__title">{f.title}</h3>
       {status === 'done' ? (
         <div className="lp-form__success" role="status">

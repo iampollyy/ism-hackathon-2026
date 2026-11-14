@@ -101,6 +101,14 @@
     &:hover {
       color: var(--nav-fg);
     }
+
+    // The page you are on (Pricing on /pricing).
+    &[aria-current='page'] {
+      color: var(--nav-fg);
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 8px;
+    }
   }
 }
 
@@ -199,6 +207,13 @@
     font-size: 18px;
     font-weight: 500;
     border-bottom: 1px solid var(--lp-line-dark);
+
+    &[aria-current='page'] {
+      font-weight: 600;
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 6px;
+    }
   }
 
   &[hidden] {
