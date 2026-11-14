@@ -68,11 +68,13 @@ backend/
       audio.py         ffmpeg clean-up of the recording
       sessions.py      builds the session object for a call
       pipeline.py      what happens after a call ends
+      live_risk.py     runs the live risk check during a practice, publishes `risk`
       readiness.py     the scale and its update rules
       scheduler.py     rings due calls, marks missed ones
       firecrawl.py     this week's scam warnings
+      push.py          Web Push to the phones (routers/push.py takes the subscriptions)
     agents/            model jobs; see ai.md
-      llm.py  profiler.py  planner.py  director.py  scorer.py  digest.py
+      llm.py  profiler.py  planner.py  director.py  scorer.py  digest.py  risk.py
       prompts/         one file per job and version
     scenarios/         one JSON file per scenario
   voice_agents/        the three ElevenLabs agents as files
@@ -94,6 +96,8 @@ Add `backend/data/` and `backend/media/` to `.gitignore` before the first record
 | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | The model jobs. Each job has a first choice at one provider and a second choice at the other; the table is in ai.md. |
 | `FIRECRAWL_API_KEY` | Optional, for the weekly run. |
 | `DATABASE_URL` | Default `sqlite:///data/app.db`. |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` | Web Push to the phones; push is off while either is empty. Make a pair with `.venv/bin/python scripts/make_vapid_keys.py`, which only prints the two lines. |
+| `VAPID_SUBJECT` | A contact for the push services, `mailto:` or `https:`. Empty: a `mailto:` placeholder. |
 
 **Run:** `uvicorn app.main:app --reload --port 8000` from `backend/`. Vite proxies `/api` to port 8000, and the tunnel points at Vite, as idea.md describes.
 
@@ -176,7 +180,7 @@ CREATE TABLE results (
 CREATE TABLE consents (                       -- the record behind the two consent columns
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   member_id  TEXT NOT NULL REFERENCES members(id),
-  kind       TEXT NOT NULL,                   -- clone | practice | opt_out
+  kind       TEXT NOT NULL,                   -- clone | practice | practice_withdrawn | opt_out
   source     TEXT NOT NULL,                   -- voice_recording | welcome_call | manual
   evidence   TEXT,                            -- a file path, or the sentence they said
   call_id    TEXT,
@@ -200,6 +204,17 @@ CREATE TABLE messages (
   text       TEXT NOT NULL,
   created_at TEXT NOT NULL,
   read_at    TEXT
+);
+
+CREATE TABLE push_subscriptions (             -- one browser's Web Push subscription; see "Waking the phone"
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id       TEXT NOT NULL REFERENCES members(id),
+  endpoint        TEXT NOT NULL UNIQUE,        -- the push service's address for this browser
+  p256dh          TEXT NOT NULL,               -- the browser's keys, from PushSubscription.toJSON()
+  auth            TEXT NOT NULL,
+  created_at      TEXT NOT NULL,
+  last_success_at TEXT,
+  failure_count   INTEGER NOT NULL DEFAULT 0   -- failures in a row; a success resets it
 );
 
 CREATE TABLE digests (
@@ -240,17 +255,21 @@ any state ──► failed            (token or connection error)
 | `POST /api/members/{id}/voice` | Upload the recording; clone it | `voice_ready` |
 | `DELETE /api/members/{id}/voice` | Delete the clone | `ok` |
 | `POST /api/members/{id}/opt-out` | Leave for good; deletes the clone | `ok` |
+| `POST /api/members/{id}/consent` | The practice tick again, later: give or withdraw | `ok` |
 | `POST /api/members/{id}/welcome-call` | Ring their phone page with the welcome agent | `call_id` |
 | `GET /api/members/{id}/phone-state` | What the phone page should show now; asked each second | Phone state |
 | `POST /api/members/{id}/messages/read` | Mark messages as seen | `ok` |
 | `POST /api/members/{id}/family-line` | They tapped the family number | `call_id` and a session |
+| `GET /api/push/public-key` | The key the phone subscribes to Web Push with | `enabled`, `public_key` |
+| `POST /api/members/{id}/push-subscription` | Store this phone's push subscription | `ok` |
+| `DELETE /api/members/{id}/push-subscription` | Remove it | `ok` |
 | `GET /api/scenarios` | The scenarios, for the picker | List |
 | `POST /api/practice-calls` | Start or schedule a practice | `call_id` |
 | `POST /api/calls/{id}/answer` | The phone answers | Session object |
 | `POST /api/calls/{id}/decline` | The phone declines | `ok` |
 | `POST /api/calls/{id}/events` | The phone reports turns, tactics, the outcome, the reveal | `ok` |
 | `POST /api/calls/{id}/end` | The phone reports the end | `ok` |
-| `GET /api/calls/{id}` | A call with its turns, tactics and result | Call object |
+| `GET /api/calls/{id}` | A call with its turns, tactics, risk points and result | Call object |
 | `GET /api/calls/{id}/events` | Live stream for the laptop | Call events |
 
 ### Families
@@ -272,7 +291,25 @@ Returns `201`:
                { "id": "mem_7Lr2pWcd", "name": "Jon",  "phone_link": "/phone/mem_7Lr2pWcd" } ] }
 ```
 
-`consent_practice` is each member's own tick on the sign-up page: "I agree to receive practice calls without knowing when." When it is true, the back end sets `consent_practice_at` and writes a `consents` row with `source: manual`. That passes the consent check, so a practice call works before the welcome call is built. The welcome call asks again and records a spoken yes as a second row.
+`consent_practice` is each member's own tick on the sign-up page: "I agree to receive practice calls without knowing when." When it is true, the back end sets `consent_practice_at` and writes a `consents` row with `source: manual`. That passes the consent check, so a practice call works before the welcome call is built. The welcome call asks again and records a spoken yes as a second row; a spoken no withdraws the tick (below).
+
+### Practice consent
+
+`members.consent_practice_at` is what the consent gate reads. Every change to it after sign-up writes one `consents` row (`services/consent.py`):
+
+| What happened | `consent_practice_at` | `consents` row (`kind`, `source`, `call_id`) |
+|---|---|---|
+| Ticked at sign-up | set | `practice`, `manual`, empty |
+| A yes on the welcome call (`consent` event, `given: true`) | set, if it was empty | `practice`, `welcome_call`, the welcome call |
+| An explicit no on the welcome call (`consent` event, `given: false`) | cleared | `practice_withdrawn`, `welcome_call`, the welcome call |
+| The tick again, later: `POST /api/members/{id}/consent` with `{ "consent_practice": true }` | set | `practice`, `manual`, empty |
+| The tick taken away: the same with `false` | cleared | `practice_withdrawn`, `manual`, empty |
+
+- **A no withdraws.** The welcome agent tells a person who does not say a clear yes that nothing will be sent to them, so a `given: false` from `consent_result` clears `consent_practice_at` at once, when the phone sends the event. From then on the consent gate refuses practice calls to them with `409 consent_missing`: a new one is not created, a scheduled one fails when it comes due, and a ringing one cannot be answered. The family page shows `consent.practice: false`.
+- **Only the explicit event counts.** No `consent` event, or the profiler's reading of the transcript (a "maybe" it reads as no), never withdraws. The profiler can still record a clear yes it reads, but never against a `given: false` in the same call, even one that arrives while it runs.
+- **The latest answer wins.** A yes after a no, in the same call or a later welcome call, gives consent again; so does a new tick. A no from someone who had not consented changes nothing and writes no row (the stored event is the record). The same answer twice writes one row.
+- The `consent_result` tool has only `given` ("true only for a clear yes"), so the agent sends `false` for any answer that is not a clear yes.
+- `POST /api/members/{id}/consent` answers `409 consent_missing` to a `true` from someone who opted out (they left for good), and `404` for an unknown member.
 
 `GET /api/families/{id}` returns the family object from idea.md, with two additions per member: `phone_online` (their page asked for phone-state in the last five seconds) and `voice_status`.
 
@@ -341,7 +378,7 @@ Returns `201`:
 - The back end checks `key` and `outcome` against the fixed lists in idea.md, adds the tactic's label, stamps `t` and `seq`, stores each event and publishes it to the call's stream.
 - On the first `outcome` it computes `seconds_to_challenge` as the time since `answered_at` and adds it to the published event.
 - Only final lines should be sent as `turn`; the library's `onMessage` also delivers tentative ones.
-- For a welcome call the page may also send `{ "type": "consent", "given": true }` from the `consent_result` tool.
+- For a welcome call the page may also send `{ "type": "consent", "given": true }` (or `false`) from the `consent_result` tool. A yes records consent; a no withdraws it ("Practice consent", above). On other calls it changes nothing.
 
 `POST /api/calls/{id}/end` with `{ "ended_by": "agent" }` (`user` when the person tapped End, `timeout`, `error`). The back end sets `ended`, publishes `call.status`, answers `ok` at once and starts the after-call work in the background.
 
@@ -383,7 +420,145 @@ Returns `201` with `{ "call_id": "call_9f3k", "status": "ringing" }`.
 - Send a comment line every 15 seconds to keep the connection open.
 - Headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `X-Accel-Buffering: no`.
 
-Event types are the ones in idea.md: `call.status`, `turn`, `tactic`, `outcome`, `revealed`, `callback.connected`. One is added when scoring finishes: `result`, carrying the lesson and the debrief.
+Event types are the ones in idea.md: `call.status`, `turn`, `tactic`, `outcome`, `revealed`, `callback.connected`. One is added when scoring finishes: `result`, carrying the lesson and the debrief. One more comes during a practice: `risk`, the live risk check (below).
+
+**The `risk` event: the laptop's traffic light.** During a practice call (never a welcome or family-line call), each events batch that holds a caller line (`turn` with `speaker: "agent"`) starts a check in the background; `POST /events` does not wait for it. A fast model reads the turns so far (only the words, never the `tactic` events) and names warning signals; code turns them into a level (ai.md, "The live risk check"). Each result is stored as a call event and sent on the stream:
+
+```
+id: 14
+event: risk
+data: {"level": "red",
+       "signals": ["new_number", "urgency", "money_request"],
+       "labels": ["New number", "Urgency", "Asks for money"],
+       "reason": "Asks for money today",
+       "turn_index": 4,
+       "source": "risk.v1",
+       "t": 21.7}
+```
+
+| Field | Meaning |
+|---|---|
+| `level` | `green`, `yellow` or `red`. Never lower than the call's previous `risk` event. |
+| `signals` | Every signal seen so far in the call, first seen first; it only grows. Keys from the list below. |
+| `labels` | The signals' labels for chips on the screen, in the same order. |
+| `reason` | A few plain words for under the light, such as "Asks for money and to keep it quiet". "Nothing worrying yet" when green. |
+| `turn_index` | The index, in the call object's `turns` (all speakers, from 0), of the last caller line this check read. |
+| `source` | The prompt version (`risk.v1`) when the model answered, `fallback` when keywords in code did (no model key, too slow, or refused). |
+| `t` | Seconds since the call was answered, when the result was stored (a second or two after that line). |
+
+Signals: the eight tactics (`new_number`, `urgency`, `secrecy`, `authority`, `emotional_appeal`, `small_ask_first`, `isolation`, `unusual_payment`) plus `money_request` ("Asks for money"), `asks_for_code` ("Asks for a code") and `refuses_callback` ("Avoids a call-back"). The level rule, in code: no signals is green; only softer pressure (`new_number`, `urgency`, `authority`, `emotional_appeal`, `small_ask_first`) is yellow; any of `money_request`, `unusual_payment`, `asks_for_code`, `refuses_callback`, `secrecy` or `isolation` is red.
+
+Building the light:
+- Start every practice screen at green with "Nothing worrying yet"; the first `risk` event comes after the caller's first line.
+- On each `risk` event, show its `level` and `reason` and its `labels` as chips. Take the event as it is: it already carries everything so far, and the back end never lowers the level, so there is nothing to merge.
+- There is at most one check per call at a time. Lines that arrive during a check are read by one more check right after it, so the light can skip a line, but it always catches up with the latest one. Checks stop at the first `outcome` event (the agent then reveals), so the light holds its last state through the reveal.
+- Replay: `GET /api/calls/{id}` has `risk`, the same events in order (`level`, `signals`, `labels`, `reason`, `turn_index`, `source`, `t`), so the result screen can show the light beside the matching line in `turns`. It is `[]` for welcome and family-line calls, and for a practice before the caller has spoken.
+- Through the tunnel there is no stream: polling `GET /api/calls/{id}` gives the same points; show the last one.
+
+`RISK_CHECK_ENABLED=false` in `.env` switches the check off (the test suite does).
+
+### Waking the phone: Web Push
+
+Polling only works while the phone page is open. With Web Push (VAPID) the back end also tells a phone whose page is closed. **Push is only a wake-up:** it shows a notification, a tap opens the phone page, and the page then polls `phone-state` exactly as before. Nothing about polling changes, and the page must work the same without push. Push changes no rule either: a call started now still needs the page open (`phone_offline`), but a scheduled call (a delay, or the weekly run) rings whether or not the page is open, and push is how a closed phone learns of it.
+
+Push is off while `VAPID_PUBLIC_KEY` or `VAPID_PRIVATE_KEY` is empty. It does not depend on `FAKE_ELEVENLABS`.
+
+`GET /api/push/public-key` returns `{ "enabled": true, "public_key": "BN…" }`, or `{ "enabled": false, "public_key": null }` while push is off. When it is off, the page does not subscribe.
+
+`POST /api/members/{id}/push-subscription` takes the browser's `PushSubscription.toJSON()` as it is:
+
+```json
+{ "endpoint": "https://fcm.googleapis.com/fcm/send/…", "expirationTime": null,
+  "keys": { "p256dh": "BOr…", "auth": "k2…" } }
+```
+
+- It stores the subscription for this member, or updates the row with the same `endpoint` (new keys, failure count back to 0). The same browser subscribing on another member's page moves the row to that member: one browser, one member.
+- `endpoint` must be `https` on a browser push service (Google's for Chrome and Android, Apple's for Safari and iOS, Mozilla's, Microsoft's); `p256dh` must be a 65-byte P-256 key and `auth` 16 bytes, both URL-safe base64. Anything else is `422 invalid_request`. An unknown member is `404`.
+- Returns `{ "ok": true }`.
+
+`DELETE /api/members/{id}/push-subscription` with `{ "endpoint": "…" }` (`toJSON()` works too) removes that subscription of this member; with no body it removes all of the member's. Returns `{ "ok": true }`, also when there was nothing to remove.
+
+**When a push is sent.** Once, when a welcome or practice call starts ringing for the member (the welcome call, a practice started now, the scheduler ringing a scheduled one), and once for each message written for them (`callback_notice`, the weekly run's `weekly` and `reminder`). The hook is in `services/push.py` and catches these rows as they are committed, so the push goes out exactly when `phone-state` can first see them, whoever wrote them. Every subscription of the member gets one. Nobody is pushed to after they opt out.
+
+**What it carries.** Small JSON, encrypted for the browser. For a call it shows no more than the ringing screen: the same caller label and number as `incoming_call`, and never that it is a practice or which scenario.
+
+```json
+{ "type": "incoming_call", "call_id": "call_9f3k", "title": "Unknown number",
+  "body": "Incoming call · +00 600 555 0142", "url": "/phone/mem_Qz81hT0a", "tag": "call_9f3k" }
+
+{ "type": "message", "message_id": 12, "kind": "callback_notice", "title": "Family number",
+  "body": "Sara called the family number after a practice.", "url": "/phone/mem_7Lr2pWcd", "tag": "message_12" }
+```
+
+`title` is the caller label for a call (`Callback` for the welcome call); for a message it is `Family number`, `This week` or `Reminder`. `body` is the message text, cut at 180 characters. A call push lives 45 seconds (TTL, the ring time) with `Urgency: high`; a message push lives a day.
+
+**Sending.** In the background, on a small thread pool: it never slows down or fails the request that caused it. Just before sending, the back end reads the row again and skips it if the call stopped ringing or the message was read. A `404` or `410` from the push service means the browser unsubscribed: the row is deleted. Any other failure adds one to `failure_count`; a success sets `last_success_at` and resets it. Tests replace `push.send`, so they never reach the network.
+
+**Front-end recipe.** Web Push needs HTTPS (the tunnel) or `localhost`. On iPhone it works only in the installed web app (Add to Home Screen, iOS 16.4 or later), never in a Safari tab, and the web app manifest needs `"display": "standalone"`. Leave `start_url` out of the manifest, or make it the member's own link, so the home-screen icon opens `/phone/{id}`. A subscription belongs to one web address: a quick tunnel gets a new address each time it starts, so install the app from the address the demo will use.
+
+On the phone page:
+
+```js
+const fromB64url = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+const toB64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)))
+  .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+// On load. Offer an "Alert me when a call comes" button only when push can work here
+// (on iPhone that means inside the installed app) and the person has not refused.
+const canPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const swReady = canPush ? navigator.serviceWorker.register('/sw.js') : null;
+const pushKey = fetch('/api/push/public-key').then((r) => r.json());
+const showAlertButton = canPush && Notification.permission === 'default';
+
+async function subscribe(memberId) {
+  const { enabled, public_key } = await pushKey;
+  if (!enabled) return;                                    // push is off on the back end
+  const reg = await swReady;
+  let sub = await reg.pushManager.getSubscription();
+  if (sub && toB64url(sub.options.applicationServerKey) !== public_key) {
+    await sub.unsubscribe();                               // the back end has new keys
+    sub = null;
+  }
+  sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromB64url(public_key) });
+  await fetch(`/api/members/${memberId}/push-subscription`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()),
+  });
+}
+
+// The button's click handler. Ask for permission first, straight from the tap:
+// iOS refuses a request that does not come from one.
+async function onAlertButtonTap(memberId) {
+  if (await Notification.requestPermission() === 'granted') await subscribe(memberId);
+}
+
+// On every later load, keep the back end's copy fresh without asking again.
+if (canPush && Notification.permission === 'granted') subscribe(memberId);
+```
+
+The service worker, served at the site root as `/sw.js` (in Vite, `frontend/public/sw.js`). It must show a notification for every push: iOS and Chrome expect one, and Safari stops delivering to a site that pushes silently.
+
+```js
+self.addEventListener('push', (event) => {
+  const data = event.data ? event.data.json() : {};
+  event.waitUntil(self.registration.showNotification(data.title || 'Callback', {
+    body: data.body || '',
+    tag: data.tag,                                      // one notification per call or message
+    data: { url: data.url || '/' },
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data.url, self.location.origin);
+  event.waitUntil((async () => {
+    const pages = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const open = pages.find((page) => new URL(page.url).pathname === url.pathname);
+    return open ? open.focus() : clients.openWindow(url.href);
+  })());
+});
+```
+
+Show only `title` and `body`; do not add words such as "practice". When the page opens it polls as usual, and rings only if `incoming_call` is still set: a call missed while the phone slept is gone. An open page gets the notification too; when it shows the ringing screen it can close it with `(await navigator.serviceWorker.ready).getNotifications({ tag: callId })`, then `close()` on each.
 
 ## Live updates inside the back end
 
@@ -404,14 +579,14 @@ Event types are the ones in idea.md: `call.status`, `turn`, `tactic`, `outcome`,
 **2. Welcome call**
 1. Laptop: `POST /api/members/{id}/welcome-call`. The call is `ringing`.
 2. Phone: sees `incoming_call`, rings. Answer: `POST /api/calls/{id}/answer`, then `startSession`.
-3. The agent asks for consent and calls `consent_result`; the page forwards it as an event. On `given: true` the back end sets `consent_practice_at` and writes a `consents` row.
+3. The agent asks for consent and calls `consent_result`; the page forwards it as an event. On `given: true` the back end sets `consent_practice_at` and writes a `consents` row. On `given: false` it clears `consent_practice_at` and writes a `practice_withdrawn` row, so no practice call reaches them until they tick again or say yes on a later welcome call.
 4. The agent runs the five questions and ends the call. Phone: `POST /api/calls/{id}/end`.
 5. After-call work: transcript, then the profiler, then the planner (below).
 
 **3. Practice call**
 1. Laptop or scheduler: `POST /api/practice-calls`. The checks pass; the brief is built; the call rings.
 2. Phone: Answer, session, `startSession` with the voice override and the variables.
-3. Phone: forwards each line and each `mark_tactic` and `practice_result` as events. Laptop: shows them from the stream.
+3. Phone: forwards each line and each `mark_tactic` and `practice_result` as events. Laptop: shows them from the stream. Back end: after each batch with a caller line, the live risk check runs in the background and publishes `risk` (see "Reading a call").
 4. The agent reveals and calls `end_call`, or the person taps End. Phone: `POST /api/calls/{id}/end`.
 5. Phone: shows the reveal screen whatever happened, with fixed wording and `reveal.voice_of`. The reveal never depends on the agent having said it.
 6. After-call work: scoring.
@@ -458,7 +633,7 @@ One file, `services/elevenlabs.py`, with one `httpx.AsyncClient` and the header 
 | `conversation(conversation_id)` | `GET /v1/convai/conversations/{id}` | `status`, `transcript` (`role`, `message`, `time_in_call_secs`), `analysis`. |
 | `conversation_audio(conversation_id)` | `GET /v1/convai/conversations/{id}/audio` | Check. Useful for the video. |
 
-**The agents as files.** `voice_agents/` holds each agent's prompt as a Markdown file and its tools as JSON. `sync.py` pushes them with the official Python SDK, using the two calls shown in ElevenLabs' docs: `conversational_ai.tools.create(...)` for a client tool, and `conversational_ai.agents.update(agent_id=…, conversation_config=…, platform_settings=…)` for the prompt, first message, variable placeholders, call length and override toggles. Prompts then live in git and are reviewed like code. Create the three agents once in the dashboard, because agents created there get the `end_call` tool by default and agents created through the API do not ([docs](https://elevenlabs.io/docs/eleven-agents/customization/tools/system-tools/end-call.md)). After the first sync, check in the dashboard that `end_call` is still on.
+**The agents as files.** `voice_agents/` holds each agent's prompt as a Markdown file and its tools as JSON. `sync.py --push` creates what is missing and updates the rest over the REST API: the client tools with `POST /v1/convai/tools` (found by name afterwards and updated), the three agents with `POST /v1/convai/agents/create` (found by name if their id is not in `.env`), then each agent's prompt, first message, language model, voice, variable placeholders, call length, authentication, override toggles, `tool_ids` and the `end_call` system tool (`prompt.built_in_tools.end_call`) with `PATCH /v1/convai/agents/{id}`. `--write-env` puts the agent and library voice ids in `.env`. Prompts live in git and are reviewed like code. `voice_agents/agent_tests.py` runs scripted conversations against the real agents (ElevenLabs agent tests) and checks the tool calls; see `voice_agents/README.md`.
 
 The agents' settings, variables and prompts are in ai.md.
 
@@ -466,7 +641,7 @@ The agents' settings, variables and prompts are in ai.md.
 
 These are checks in the back end, not instructions to a model.
 
-1. **Consent gate.** No practice call is created unless the target has consented to practice and the voice's owner has consented to cloning. See the checks under "Starting a practice".
+1. **Consent gate.** No practice call is created unless the target has consented to practice and the voice's owner has consented to cloning. See the checks under "Starting a practice". Practice consent can be withdrawn (a no on the welcome call, or the tick taken away; "Practice consent"), and the gate is checked again when a scheduled practice comes due and when a call is answered.
 2. **Same family only.** A clone can be used only on a call inside its owner's family.
 3. **The safe word is never collected.** Sign-up takes only `safe_word_set`, and no table has a column for the word.
 4. **The brief is checked before it is sent:** no run of six or more digits, no name from a short list of real banks and institutions, tactic keys only from the fixed list, length limits on every field. A brief that fails is replaced by the scenario's fixed template.
@@ -497,6 +672,7 @@ The front end can build against steps 2, 4 and 5 as soon as their shapes are fix
 
 - The consent gate: each missing consent gives its `409`.
 - The sign-up tick: a member with `consent_practice: true` can receive a practice call before any welcome call.
+- A no on the welcome call: consent is withdrawn, a practice gets `409 consent_missing`, the family page shows it; a new tick or a later yes gives it back (`tests/test_consent.py`).
 - The brief checks: a brief with a card-like number or a listed bank name is replaced by the template.
 - The outcome rules: the four cases above, from stored events.
 - Readiness: each outcome moves the scores as the table in ai.md says.

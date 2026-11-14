@@ -1,0 +1,110 @@
+# Every push to main: run the back-end tests and build the front end; if both
+# pass, copy both to the server and restart the back end. See deploy/README.md.
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits for the running one instead of
+# cutting it off halfway.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SITE: https://callback.denishoti.dev
+  DEPLOY_TARGET: callback@callback.denishoti.dev
+
+jobs:
+  test:
+    name: Test and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Back-end tests (offline; live tests are skipped by default)
+        working-directory: backend
+        run: |
+          python -m pip install -q -r requirements.txt
+          python -m pytest -q
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build the front end
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 3
+
+  deploy:
+    name: Deploy to the server
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist
+
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::error::The DEPLOY_SSH_KEY secret is missing (see deploy/README.md, 'Automatic deploys')."
+            exit 1
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          cp deploy/known_hosts ~/.ssh/known_hosts
+
+      - name: Copy the back end and the front end
+        run: |
+          SSH="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          rsync -a --delete -e "$SSH" \
+            --exclude .venv --exclude data --exclude media --exclude .env --exclude __pycache__ \
+            backend/ "$DEPLOY_TARGET:app/backend/"
+          rsync -a --delete -e "$SSH" frontend-dist/ "$DEPLOY_TARGET:app/frontend-dist/"
+
+      - name: Install requirements and restart
+        run: |
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$DEPLOY_TARGET" 'bash -s' < deploy/remote-update.sh
+
+      - name: Check the public site
+        run: |
+          curl -fsS "$SITE/api/health"; echo
+          curl -fsS -o /dev/null -w "front end: %{http_code}\n" "$SITE/"
+
+      - name: Remove the key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

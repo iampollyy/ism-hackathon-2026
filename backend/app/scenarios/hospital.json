@@ -1,0 +1,17 @@
+{
+  "key": "hospital",
+  "title": "Clinic with an unpaid fee",
+  "voice": "ELEVENLABS_NURSE_VOICE_ID",
+  "caller_label": "Unknown number",
+  "allowed_tactics": ["authority", "urgency", "unusual_payment", "small_ask_first", "emotional_appeal"],
+  "summary": "about an unpaid fee for a clinic appointment",
+  "default_caller": { "name": "Claire", "relationship": "clinic receptionist" },
+  "template": {
+    "caller_claim": "{caller_name}, from the appointments office of {target_name}'s clinic",
+    "address_as": "{target_name}",
+    "opening_line": "Hello, is that {target_name}? It's {caller_name} from the clinic's appointments office.",
+    "scenario_brief": "You say {target_name} has a routine check-up booked for next week, but the booking fee of 85 euros was never paid. Unless it is paid today, the appointment goes to someone on the waiting list and the next free one is months away. The card machine is down, so it has to be paid another way.",
+    "ask": "paying the 85 euro booking fee today with a voucher code or a transfer to an account you give them",
+    "tactic_order": ["authority", "urgency", "unusual_payment"]
+  }
+}

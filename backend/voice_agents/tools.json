@@ -1,0 +1,16 @@
+[
+  { "type": "client", "name": "mark_tactic", "expects_response": false,
+    "description": "Call this in the same turn in which you start using a pressure tactic, once per tactic, so the practice screen can label it.",
+    "parameters": { "type": "object", "required": ["key"], "properties": {
+      "key": { "type": "string", "description": "Exactly one of: new_number, urgency, secrecy, authority, emotional_appeal, small_ask_first, isolation, unusual_payment" } } } },
+
+  { "type": "client", "name": "practice_result", "expects_response": false,
+    "description": "Call this once, at the moment the practice is decided and before you speak the reveal.",
+    "parameters": { "type": "object", "required": ["outcome"], "properties": {
+      "outcome": { "type": "string", "description": "Exactly one of: asked_safe_word, hung_up, asked_personal_question, hesitated, agreed" } } } },
+
+  { "type": "client", "name": "consent_result", "expects_response": false,
+    "description": "Call this once, right after the person answers the question about receiving practice calls.",
+    "parameters": { "type": "object", "required": ["given"], "properties": {
+      "given": { "type": "boolean", "description": "true only for a clear yes" } } } }
+]
