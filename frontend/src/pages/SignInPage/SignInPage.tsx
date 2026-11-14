@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/atoms/Badge';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function SignInPage() {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    signIn();
     navigate('/dashboard');
   };
 

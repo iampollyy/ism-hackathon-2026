@@ -2,6 +2,7 @@ import {
   BookText,
   House,
   ListChecks,
+  LogOut,
   Phone,
   Settings,
   ShieldCheck,
@@ -9,6 +10,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 const familyItems = [
   { label: 'Overview', to: '/dashboard', icon: House },
@@ -25,6 +27,7 @@ const resourceItems = [
 
 export function Sidebar() {
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <aside className="practice-sidebar">
@@ -70,6 +73,11 @@ export function Sidebar() {
           ))}
         </nav>
       </div>
+
+      <button type="button" className="sidebar-link" onClick={signOut}>
+        <LogOut size={18} />
+        <span>Sign out</span>
+      </button>
 
       <div className="family-strip">
         <div className="family-avatar">MF</div>

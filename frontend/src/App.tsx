@@ -7,21 +7,24 @@ import { FamilyDashboardPage } from './pages/FamilyDashboardPage/FamilyDashboard
 import { PracticeCallPage } from './pages/PracticeCallPage/PracticeCallPage';
 import { CallResultPage } from './pages/CallResultPage/CallResultPage';
 import { DashboardLayout } from './layouts/DashboardLayout';
+import { AuthProvider } from './contexts/AuthContext';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<DashboardLayout />}>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
           <Route path="/" element={<SignUpPage />} />
           <Route path="/signup" element={<SignUpFormPage />} />
           <Route path="/signin" element={<SignInPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/dashboard" element={<FamilyDashboardPage />} />
-          <Route path="/practice" element={<PracticeCallPage />} />
-          <Route path="/result" element={<CallResultPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          <Route element={<DashboardLayout />}>
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/dashboard" element={<FamilyDashboardPage />} />
+            <Route path="/practice" element={<PracticeCallPage />} />
+            <Route path="/result" element={<CallResultPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

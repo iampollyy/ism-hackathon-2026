@@ -22,7 +22,7 @@ export function SettingsPage() {
       <div className="settings-grid">
         <section className="settings-card profile-card">
           <div className="user-row">
-            <div className="avatar avatar-lg" style={{ background: 'linear-gradient(135deg, #e7c7d7, #d8b7a4)' }}>DP</div>
+            <div className="avatar avatar-lg" style={{ background: 'linear-gradient(135deg, #4e38b2, #352a7c)' }}>DP</div>
             <div>
               <h2>Daniel Parker</h2>
               <p>Family admin · Morgan household</p>

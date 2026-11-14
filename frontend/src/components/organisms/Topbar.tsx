@@ -15,7 +15,7 @@ export function Topbar() {
           <Bell size={16} />
         </button>
         <Link to="/settings" className="profile-pill" aria-label="Open personal settings">
-          <Avatar initials="DP" color="#112231" size="sm" />
+          <Avatar initials="DP" color="#352A7C" size="sm" />
           <span>Daniel Parker</span>
           <ChevronDown size={14} />
         </Link>

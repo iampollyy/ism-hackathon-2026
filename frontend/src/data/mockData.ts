@@ -28,7 +28,7 @@ export const familyData: FamilySummary = {
       weakSpot: 'Urgent requests by text and voice.',
       quote: '“I hate to be rushed, so I need a beat to stop and check.”',
       nextPractice: 'Wednesday · Bank security story',
-      accent: '#ef7d5d',
+      accent: '#735ac8',
       plan: {
         thisWeek: 'Practice the “hang up, then call back” habit while the call is still active.',
         steps: [
@@ -71,7 +71,7 @@ export const familyData: FamilySummary = {
       weakSpot: 'Trusting caller ID when the voice sounds familiar.',
       quote: '“The voice sounds like my mum, so I need a clear reset step.”',
       nextPractice: 'Thursday · Policed call script',
-      accent: '#3fa87d',
+      accent: '#4e38b2',
       plan: {
         thisWeek: 'Keep using the family number as the verification step after any suspicious call.',
         steps: [
@@ -114,7 +114,7 @@ export const familyData: FamilySummary = {
       weakSpot: 'Pressure to help with a “family emergency”.',
       quote: '“I need a rule for not acting while feeling worried.”',
       nextPractice: 'Friday · Family emergency story',
-      accent: '#6d7cf8',
+      accent: '#5b469b',
       plan: {
         thisWeek: 'Use a one-minute pause and safe word check before transferring money or helping.',
         steps: [

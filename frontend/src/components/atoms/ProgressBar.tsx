@@ -4,7 +4,7 @@ type ProgressBarProps = {
   color?: string;
 };
 
-export function ProgressBar({ value, max = 100, color = '#e76d52' }: ProgressBarProps) {
+export function ProgressBar({ value, max = 100, color = 'var(--accent-fill)' }: ProgressBarProps) {
   const pct = Math.min((value / max) * 100, 100);
 
   return (
