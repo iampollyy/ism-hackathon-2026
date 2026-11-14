@@ -29,12 +29,13 @@ export function usePolled<T>(load: () => Promise<T>, key: string, intervalMs: nu
   useEffect(() => {
     let live = true;
     let inFlight = false;
+    let gone = false; // a 404: asking again every few seconds won't change it
     setData(null);
     setError(null);
     setNotFound(false);
     setLoading(true);
     const run = async () => {
-      if (inFlight) return;
+      if (inFlight || gone) return;
       inFlight = true;
       try {
         const next = await loadRef.current();
@@ -45,7 +46,8 @@ export function usePolled<T>(load: () => Promise<T>, key: string, intervalMs: nu
       } catch (err) {
         if (!live) return;
         setError(err instanceof ApiError ? err.message : fallbackError);
-        setNotFound(err instanceof ApiError && err.status === 404);
+        gone = err instanceof ApiError && err.status === 404;
+        setNotFound(gone);
       } finally {
         inFlight = false;
         if (live) setLoading(false);

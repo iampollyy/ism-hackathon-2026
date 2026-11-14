@@ -20,6 +20,7 @@ import {
 import { clockTime, dayHeading, dayKey, drillState, plural, type ActivityItem, type DrillView } from '../DrillsPage/reviewWords';
 import { usePolled } from '../DrillsPage/usePolled';
 import { useShieldCalls, type ShieldInfo } from '../DrillsPage/useShieldCalls';
+import { parseTime } from '../LiveCallPage/liveCallState';
 import '../DrillsPage/review.scss';
 import './ActivityPage.scss';
 
@@ -62,6 +63,20 @@ function lookFor(item: ActivityItem, drills: Map<string, DrillView>, shields: Ma
   return { ...base, icon: PhoneCall, tone: 'neutral', label: name };
 }
 
+/** The Shield call an alert came from. An alert item has no call, but the
+ * Shield writes its alerts the moment it alerts (call.shield.alerted_at); the
+ * "Something's wrong" button only works outside a call. */
+function shieldCallFor(item: ActivityItem, shields: Map<string, ShieldInfo>): string | null {
+  if (item.kind !== 'alert') return null;
+  const at = parseTime(item.when);
+  if (at === null) return null;
+  for (const [callId, shield] of shields) {
+    const alerted = parseTime(shield.alertedAt);
+    if (alerted !== null && Math.abs(at - alerted) <= 15_000) return callId;
+  }
+  return null;
+}
+
 type Day = { key: string; title: string; detail: string | null; items: ActivityItem[] };
 
 function byDay(items: ActivityItem[]): Day[] {
@@ -94,14 +109,28 @@ export function ActivityPage() {
     [drillList.data],
   );
   const shields = useShieldCalls(drillList.data?.drills);
+  // Whom each item is about: its member, and for a Shield alert (whose member
+  // is who got it) also the person on the Shield call.
+  const people = useMemo(() => {
+    const map = new Map<ActivityItem, Set<string>>();
+    for (const item of items ?? []) {
+      const ids = new Set<string>();
+      if (item.member) ids.add(item.member.id);
+      const shieldCall = shieldCallFor(item, shields);
+      const onCall = shieldCall ? drills.get(shieldCall)?.member.id : undefined;
+      if (onCall) ids.add(onCall);
+      map.set(item, ids);
+    }
+    return map;
+  }, [items, shields, drills]);
   const counts = useMemo(() => {
     const map = new Map<string, number>();
-    for (const item of items ?? []) if (item.member) map.set(item.member.id, (map.get(item.member.id) ?? 0) + 1);
+    for (const ids of people.values()) for (const id of ids) map.set(id, (map.get(id) ?? 0) + 1);
     return map;
-  }, [items]);
+  }, [people]);
   const shown = useMemo(
-    () => (items ?? []).filter((item) => !memberId || item.member?.id === memberId),
-    [items, memberId],
+    () => (items ?? []).filter((item) => !memberId || people.get(item)?.has(memberId)),
+    [items, memberId, people],
   );
   const days = useMemo(() => byDay(shown), [shown]);
   const members = family.data?.members ?? [];
@@ -199,6 +228,7 @@ export function ActivityPage() {
                       key={`${item.when}-${item.kind}-${index}`}
                       item={item}
                       look={lookFor(item, drills, shields)}
+                      shieldCallId={shieldCallFor(item, shields)}
                       colorIndex={item.member ? memberIndex(family.data, item.member.id) : 0}
                     />
                   ))}
@@ -215,10 +245,20 @@ export function ActivityPage() {
 // For a message, `member` is who got it, not who did something.
 const SENT_KINDS: readonly Kind[] = ['alert', 'weekly_note', 'reminder', 'message'];
 
-function TimelineItem({ item, look, colorIndex }: { item: ActivityItem; look: Look; colorIndex: number }) {
+type TimelineItemProps = {
+  item: ActivityItem;
+  look: Look;
+  /** For an alert the Shield sent during a Shield demo call: that call. */
+  shieldCallId: string | null;
+  colorIndex: number;
+};
+
+function TimelineItem({ item, look, shieldCallId, colorIndex }: TimelineItemProps) {
   const Icon = look.icon;
   const sent = SENT_KINDS.includes(item.kind);
-  const label = sent ? `${look.label} · sent to ${item.member ? item.member.name : 'the family'}` : look.label;
+  const name = shieldCallId ? 'Shield alert' : look.label;
+  const label = sent ? `${name} · sent to ${item.member ? item.member.name : 'the family'}` : name;
+  const callId = item.call_id ?? shieldCallId;
   return (
     <li className={`rv-event is-${look.tone}`}>
       <time className="rv-event__time" dateTime={item.when}>{clockTime(item.when)}</time>
@@ -230,9 +270,9 @@ function TimelineItem({ item, look, colorIndex }: { item: ActivityItem; look: Lo
           {label}
         </span>
       </div>
-      {item.call_id ? (
-        <Link to={`/calls/${item.call_id}`} className="rv-event__open">
-          {look.open ?? 'Open the call'} <ChevronRight size={15} aria-hidden />
+      {callId ? (
+        <Link to={`/calls/${callId}`} className="rv-event__open">
+          {shieldCallId ? 'Replay the call' : look.open ?? 'Open the call'} <ChevronRight size={15} aria-hidden />
         </Link>
       ) : <span />}
     </li>

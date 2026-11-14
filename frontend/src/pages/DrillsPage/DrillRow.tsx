@@ -98,7 +98,10 @@ export function DrillRow({
         </div>
 
         <div className="rv-drill__risk">
-          {state === 'upcoming' ? <span className="rv-drill__dash" aria-hidden>–</span> : <RiskLamp level={drill.peak_risk_level} />}
+          {/* Nothing has been said yet while it is planned or ringing. */}
+          {state === 'upcoming' || drill.status === 'ringing'
+            ? <span className="rv-drill__dash" aria-hidden>–</span>
+            : <RiskLamp level={drill.peak_risk_level} />}
         </div>
 
         <span className="rv-drill__open">
