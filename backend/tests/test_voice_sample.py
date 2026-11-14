@@ -442,6 +442,10 @@ def test_a_new_clone_replaces_and_deletes_the_older_one(client, sara_joined, fak
     upload(client, call_id)
     assert wait_until_done(call_id).state == "ready"
     assert member(sara).voice_id == "voice_from_call"
+    # The older clone is deleted just after the new one is marked ready.
+    deadline = time.monotonic() + 5
+    while not fakes.deleted and time.monotonic() < deadline:
+        time.sleep(0.05)
     assert fakes.deleted == ["voice_old"]
 
 
