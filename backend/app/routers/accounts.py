@@ -43,7 +43,7 @@ from app.db import get_db, now_iso
 from app.models import Account, Member, MemberJoin
 from app.routers.calls import get_member
 from app.routers.families import phone_link
-from app.services import accounts, joining
+from app.services import accounts, joining, limits
 
 router = APIRouter(tags=["accounts"])
 
@@ -56,6 +56,7 @@ WRONG_LOGIN = "Wrong email or password."
 @router.post("/auth/register", status_code=201, response_model=schemas.Me)
 async def register(body: schemas.RegisterIn, request: Request, response: Response,
                    db: DbSession = Depends(get_db)) -> schemas.Me:
+    limits.check_signups_open()
     if len(body.password) < accounts.PASSWORD_MIN_CHARS:
         raise schemas.ApiError(422, "password_too_short",
                                f"The password needs at least {accounts.PASSWORD_MIN_CHARS} characters.")

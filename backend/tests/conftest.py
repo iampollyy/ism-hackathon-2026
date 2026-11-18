@@ -22,6 +22,8 @@ from app.config import get_settings
 TEST_ENV = {
     "FAKE_ELEVENLABS": "true",
     "SCHEDULER_ENABLED": "false",
+    "SIGNUPS_OPEN": "true",  # closed by default; tests/test_hardening.py checks the closed path
+    "API_DOCS": "false",
     "RISK_CHECK_ENABLED": "false",  # tests/test_risk.py switches it on
     "ELEVENLABS_API_KEY": "",
     "OPENAI_API_KEY": "",

@@ -19,6 +19,7 @@ from app.db import init_db, new_session
 from app.models import Call
 from app.routers import accounts, billing, calls, dev, families, live, phone, protection, push, review, scenarios, streams, voice, voice_sample, waitlist, weekly
 from app.schemas import ApiError
+from app.security_headers import SecurityHeaders
 from app.services import access, scheduler
 
 log = logging.getLogger("app")
@@ -88,7 +89,10 @@ def error_body(code: str, message: str) -> dict:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Callback", lifespan=lifespan)
+    # /docs, /redoc and /openapi.json only with API_DOCS=true (config.py).
+    docs = get_settings().api_docs
+    app = FastAPI(title="Callback", lifespan=lifespan, docs_url="/docs" if docs else None,
+                  redoc_url="/redoc" if docs else None, openapi_url="/openapi.json" if docs else None)
     # The family dashboard is the owner's (services/access.py). Added before
     # CORS, so CORS stays outermost and also answers for its refusals.
     app.add_middleware(access.OwnerOnly)
@@ -99,6 +103,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # Outermost: security headers on every response, refusals included.
+    app.add_middleware(SecurityHeaders)
 
     @app.exception_handler(ApiError)
     async def api_error_handler(_request: Request, exc: ApiError) -> JSONResponse:
