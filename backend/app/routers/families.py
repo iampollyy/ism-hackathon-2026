@@ -44,7 +44,9 @@ async def create_family(body: schemas.FamilyCreate, db: Session = Depends(get_db
     """Works without a log-in; with one, the family also belongs to the
     account (family_owners, track 1), and only the organiser's own practice
     tick counts: everyone else agrees on their invite page or the welcome
-    call."""
+    call. While sign-up is closed, only a logged-in account may make one."""
+    if account is None:
+        limits.check_signups_open()
     limits.check(db, "family")
     now = now_iso()
     family = Family(id=new_family_id(), name=body.name.strip(), safe_word_set=body.safe_word_set, created_at=now)

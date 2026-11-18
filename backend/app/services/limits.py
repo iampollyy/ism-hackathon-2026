@@ -45,6 +45,14 @@ def used_today(db: DbSession, kind: Kind) -> int:
     return int(db.scalar(query) or 0)
 
 
+def check_signups_open() -> None:
+    """Raise 403 signups_closed while public sign-up is closed (SIGNUPS_OPEN
+    false): no new accounts and no families made without a log-in."""
+    if not get_settings().signups_open:
+        raise schemas.ApiError(403, "signups_closed",
+                               "Sign-ups are closed for now. If you already have an account, please log in.")
+
+
 def check(db: DbSession, kind: Kind) -> None:
     """Raise 429 daily_limit if today's cap for this kind is reached."""
     limit = int(getattr(get_settings(), f"daily_{kind}_limit", 0) or 0)

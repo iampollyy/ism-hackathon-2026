@@ -62,6 +62,16 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///data/app.db"
     media_dir: str = "media"
 
+    # Public sign-up: new accounts, and families made without a log-in
+    # (services/limits.py). Closed by default since the hackathon ended, so a
+    # deploy of main never reopens it by accident; set SIGNUPS_OPEN=true in a
+    # local .env to try sign-up. Logging in and joining by invite stay open.
+    signups_open: bool = False
+
+    # FastAPI's /docs, /redoc and /openapi.json. Off by default, because on a
+    # public server they map every endpoint; set API_DOCS=true locally.
+    api_docs: bool = False
+
     # Daily caps for a public deployment (services/limits.py); 0 means no cap.
     daily_family_limit: int = 0
     daily_clone_limit: int = 0
